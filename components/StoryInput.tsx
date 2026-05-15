@@ -1,16 +1,12 @@
 'use client'
 
-import type { SceneDensity, StickStyle, VoiceTone } from '@/lib/types'
+import type { SceneDensity, StickStyle, VoiceTone, GenerateOptions } from '@/lib/types'
 
 interface StoryInputProps {
   storyInput: string
   onStoryChange: (value: string) => void
-  options: {
-    density: SceneDensity
-    style: StickStyle
-    tone: VoiceTone
-  }
-  onOptionsChange: (options: { density: SceneDensity; style: StickStyle; tone: VoiceTone }) => void
+  options: GenerateOptions
+  onOptionsChange: (options: GenerateOptions) => void
   onGenerate: () => void
   isGenerating: boolean
 }
@@ -84,6 +80,34 @@ export function StoryInput({
             <option value="casual">Casual</option>
             <option value="documentary">Documentary</option>
             <option value="pitch">Pitch</option>
+          </select>
+        </div>
+
+        <div className="option">
+          <label htmlFor="imageModel">Image Model</label>
+          <select
+            id="imageModel"
+            value={options.imageModel}
+            onChange={(e) => onOptionsChange({ ...options, imageModel: e.target.value as GenerateOptions['imageModel'] })}
+            disabled={isGenerating}
+          >
+            <option value="flux-schnell-fal">Flux Schnell — fast · $0.003</option>
+            <option value="sdxl-lightning-fal">SDXL Lightning — fastest · $0.002</option>
+            <option value="flux-dev-fal">Flux Dev — quality · $0.04</option>
+          </select>
+        </div>
+
+        <div className="option">
+          <label htmlFor="videoModel">Video Model</label>
+          <select
+            id="videoModel"
+            value={options.videoModel}
+            onChange={(e) => onOptionsChange({ ...options, videoModel: e.target.value as GenerateOptions['videoModel'] })}
+            disabled={isGenerating}
+          >
+            <option value="ltx-video-fal">LTX Video — fast · $0.02</option>
+            <option value="longcat-fal">LongCat — balanced · $0.03</option>
+            <option value="kling-fal">Kling v2.6 — quality · $0.05</option>
           </select>
         </div>
       </div>

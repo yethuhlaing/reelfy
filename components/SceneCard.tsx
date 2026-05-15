@@ -7,6 +7,8 @@ interface SceneCardProps {
   index: number
   isPlaying: boolean
   onClick: () => void
+  onAnimate?: () => void
+  isAnimating?: boolean
 }
 
 const emotionColors: Record<Emotion, string> = {
@@ -21,7 +23,7 @@ const emotionColors: Record<Emotion, string> = {
   neutral: '#9ca3af',
 }
 
-export function SceneCard({ scene, index, isPlaying, onClick }: SceneCardProps) {
+export function SceneCard({ scene, index, isPlaying, onClick, onAnimate, isAnimating }: SceneCardProps) {
   return (
     <div
       className={`scene-card ${isPlaying ? 'playing' : ''}`}
@@ -37,7 +39,16 @@ export function SceneCard({ scene, index, isPlaying, onClick }: SceneCardProps) 
     >
       <div className="scene-number">Scene {index + 1}</div>
       <div className="svg-container">
-        {scene.imageUrl ? (
+        {isPlaying && scene.videoUrl ? (
+          <video
+            src={scene.videoUrl}
+            className="scene-image"
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+        ) : scene.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={scene.imageUrl} alt={scene.sentence} className="scene-image" />
         ) : (
@@ -45,6 +56,9 @@ export function SceneCard({ scene, index, isPlaying, onClick }: SceneCardProps) 
             <span className="scene-skeleton-spinner" />
             <span className="scene-skeleton-label">Generating…</span>
           </div>
+        )}
+        {scene.videoUrl && !isPlaying && (
+          <span className="scene-video-badge" title="Animated">▶</span>
         )}
       </div>
       <div className="scene-content">
@@ -61,6 +75,19 @@ export function SceneCard({ scene, index, isPlaying, onClick }: SceneCardProps) 
           </span>
         </div>
       </div>
+      {onAnimate && scene.imageUrl && scene.motionPrompt && !scene.videoUrl && (
+        <button
+          className="scene-animate-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            onAnimate()
+          }}
+          disabled={isAnimating}
+          title="Animate this scene"
+        >
+          {isAnimating ? '⟳ Animating…' : '✦ Animate'}
+        </button>
+      )}
       {isPlaying && (
         <div className="playing-indicator">
           <span className="wave-bar" />

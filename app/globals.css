@@ -330,6 +330,144 @@ body {
   cursor: not-allowed;
 }
 
+.animate-all-btn {
+  font-family: var(--font-body);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.animate-all-btn:hover:not(:disabled) {
+  border-color: #a855f7;
+  color: #a855f7;
+}
+
+.animate-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Per-scene animate button */
+.scene-animate-btn {
+  font-family: var(--font-body);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0.5rem 0.75rem 0.25rem;
+  width: calc(100% - 1.5rem);
+}
+
+.scene-animate-btn:hover:not(:disabled) {
+  border-color: #a855f7;
+  color: #a855f7;
+}
+
+.scene-animate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Export */
+.export-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.export-btn {
+  font-family: var(--font-body);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-btn:hover:not(:disabled) {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.export-download-btn {
+  font-family: var(--font-body);
+  background: #22c55e;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.export-download-btn:hover {
+  background: #16a34a;
+}
+
+.export-reset-btn {
+  font-family: var(--font-body);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-reset-btn:hover {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.export-error {
+  font-size: 0.75rem;
+  color: #ef4444;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Scene video badge (PR4) */
+.scene-video-badge {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 0.6rem;
+  border-radius: 4px;
+  padding: 2px 5px;
+  pointer-events: none;
+}
+
 /* Scene Grid */
 .scene-grid {
   display: grid;
@@ -381,6 +519,7 @@ body {
 }
 
 .svg-container {
+  position: relative;
   aspect-ratio: 16 / 9;
   background: white;
   display: flex;

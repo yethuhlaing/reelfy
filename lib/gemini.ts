@@ -21,16 +21,18 @@ Return ONLY valid JSON matching this exact schema — no markdown, no prose, no 
   "title": string,
   "tagline": string,
   "protagonist": string,           // 1 sentence character base — repeated VERBATIM at the start of every imagePrompt for visual consistency. Example: "A simple black stickman with a round head, clean smooth lines, 2-dot eyes, expressive mouth, minimalist proportions, matching the ${tone} mood of the story."
+  "thumbnailPrompt": string,      // 100-180 words, see THUMBNAIL RULES
   "scenes": [{
     "id": string,                 // "S1", "S2"...
     "sentence": string,           // exact phrase from story
-    "voiceover": string,          // 1-2 short sentences, conversational beginner-friendly English, tone: ${tone}. Describe what stickman is doing + feeling + purpose of the moment.
+    "voiceover": string,          // ${{ '1': '1 sentence (~15 words, ~6s spoken)', '2': '1-2 sentences (~20 words, ~8s spoken)', '3': '2 sentences max (~25 words, ~10s spoken)' }[density]}, conversational beginner-friendly English, tone: ${tone}. Describe what stickman is doing + feeling + purpose of the moment.
     "action": string,             // physical stickman action, one sentence
     "setting": string,            // location in <=8 words
     "emotion": "frustration" | "hope" | "excitement" | "despair" | "triumph" | "curiosity" | "relief" | "determination" | "neutral",
     "characters": 1 | 2 | 3,
     "props": string[],             // REQUIRED: at least 1 concrete prop per scene
-    "imagePrompt": string         // 90-160 words, see RULES
+    "imagePrompt": string,        // 90-160 words, see RULES
+    "motionPrompt": string        // 15-30 words: specific motion for LTX-Video I2V — describe body movements, prop FX, particles. Must match scene.action.
   }]
 }
 
@@ -71,6 +73,32 @@ EMOTION ENCODING via body posture (must match scene.emotion):
   neutral → arms at 35° down, calm stance
 
 ============================================================
+THUMBNAIL PROMPT — REQUIRED CONTENT (140-200 words):
+
+Goal: YouTube-style click-bait thumbnail. Dramatic, eye-catching, readable at 200px wide. Think MrBeast energy applied to hand-drawn stickman comic art.
+
+Must include, in this order:
+1. Opening: "Hand-drawn stickman comic thumbnail. Use the same stickman character as before: <protagonist>."
+2. BACKGROUND: bold solid or simple 2-tone background — vivid orange, electric yellow, deep red, bright cyan, or hot pink. NOT white paper. Character must POP against it.
+3. HERO POSE: character LARGE (fills 60%+ of frame height), centered. Extreme dramatic pose — arms flung wide, jumping, fist pumping, or pointing directly at viewer. Eyes wide, exaggerated triumph/shock/excitement matching arc resolution. Make it BIGGER than feels necessary.
+4. SINGLE DOMINANT FX: ONE huge FX behind character — giant radiating sunburst, massive upward arrow, exploding sparkle burst, or bold speed-line halo. Must be large and bold, not subtle.
+5. TITLE TEXT: story title in HUGE bold hand-lettered uppercase ink text at TOP. Inside a thick torn-paper banner or bold drop-shadow box. Must be legible at thumbnail size. Quote verbatim: "<TITLE>".
+6. TAGLINE: smaller text at BOTTOM in contrasting color band. Quote verbatim: "<TAGLINE>".
+7. STYLE LOCK: thick black ink outlines, flat vivid accent colors — pick ONE high-contrast pair: (orange + yellow) OR (red + white) OR (cyan + black). Stickman stays black ink. No gradients on character. 16:9. Bleeds to edges. No frame, no border.
+
+============================================================
+MOTION PROMPT — REQUIRED (15-30 words per scene):
+
+Each motionPrompt is fed to LTX-Video image-to-video to animate the static PNG.
+Describe ONLY physical motion visible in the frame — no camera cuts, no scene changes.
+Include in order:
+1. CHARACTER MOVEMENT: what the stickman body does (arms raise slowly, head turns left, body slumps forward, legs kick off ground)
+2. PROP/FX MOTION: what props or FX move (steam rises from cup, speech bubble pops in, sparkles drift upward, arrow sweeps right)
+3. CAMERA: holds steady / slow push in / gentle pan right (keep subtle — no fast cuts)
+Example: "Stickman slowly raises both arms above head, sparkles drift upward, laptop screen flickers, camera holds steady."
+Keep it tight — LTX-Video responds to concrete physical verbs, not adjectives.
+
+============================================================
 HARD RULES:
 - Stickmen: circle head, single-line torso, line arms, line legs. Black ink only. No detailed faces — emotion conveyed by 2-dot eyes + simple mouth + posture + FX.
 - Same protagonist across ALL scenes — only pose/expression/props/setting change.
@@ -106,7 +134,7 @@ export async function planStory(
   density: SceneDensity,
   style: StickStyle,
   tone: VoiceTone
-): Promise<{ title: string; tagline: string; protagonist: string; scenes: ScenePlan[] }> {
+): Promise<{ title: string; tagline: string; protagonist: string; thumbnailPrompt: string; scenes: (ScenePlan & { motionPrompt: string })[] }> {
   const model = genAI.getGenerativeModel({
     model: TEXT_MODEL,
     generationConfig: {

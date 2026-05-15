@@ -12,13 +12,11 @@ export interface ImageProvider {
 import { fluxSchnellFal } from './image-fal-flux-schnell'
 import { fluxDevFal } from './image-fal-flux-dev'
 import { sdxlLightningFal } from './image-fal-sdxl-lightning'
-import { nanoBananaGemini } from './image-nano-banana'
 
 export const IMAGE_PROVIDERS: Record<string, ImageProvider> = {
   'flux-schnell-fal': fluxSchnellFal,
   'flux-dev-fal': fluxDevFal,
   'sdxl-lightning-fal': sdxlLightningFal,
-  'nano-banana': nanoBananaGemini,
 }
 
 export function getImageProvider(id?: string): ImageProvider {

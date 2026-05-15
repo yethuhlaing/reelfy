@@ -8,9 +8,11 @@ interface SceneGridProps {
   scenes: Scene[]
   playingIndex: number | null
   onSceneClick: (index: number) => void
+  onAnimateScene?: (sceneId: string) => void
+  animatingSceneIds?: Set<string>
 }
 
-export function SceneGrid({ scenes, playingIndex, onSceneClick }: SceneGridProps) {
+export function SceneGrid({ scenes, playingIndex, onSceneClick, onAnimateScene, animatingSceneIds }: SceneGridProps) {
   const gridRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 
@@ -38,6 +40,8 @@ export function SceneGrid({ scenes, playingIndex, onSceneClick }: SceneGridProps
             index={index}
             isPlaying={playingIndex === index}
             onClick={() => onSceneClick(index)}
+            onAnimate={onAnimateScene ? () => onAnimateScene(scene.id) : undefined}
+            isAnimating={animatingSceneIds?.has(scene.id)}
           />
         </div>
       ))}

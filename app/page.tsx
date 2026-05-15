@@ -6,6 +6,8 @@ import { SceneGrid } from '@/components/SceneGrid'
 import { VoiceoverBar } from '@/components/VoiceoverBar'
 import { StageList } from '@/components/StageList'
 import { RecentStories } from '@/components/RecentStories'
+import { ThumbnailSlot } from '@/components/ThumbnailSlot'
+import { ExportButton } from '@/components/ExportButton'
 import { readSSE } from '@/lib/sse'
 import {
   deleteStory,
@@ -14,6 +16,7 @@ import {
   listStories,
   saveStory,
   updateStoryScene,
+  updateThumbnail,
   type StoredStorySummary,
 } from '@/lib/storage'
 import type {
@@ -21,6 +24,7 @@ import type {
   SceneDensity,
   StickStyle,
   VoiceTone,
+  GenerateOptions,
   Stage,
   StageId,
 } from '@/lib/types'
@@ -38,14 +42,12 @@ function newStoryId(): string {
 
 export default function Home() {
   const [storyInput, setStoryInput] = useState('')
-  const [options, setOptions] = useState<{
-    density: SceneDensity
-    style: StickStyle
-    tone: VoiceTone
-  }>({
+  const [options, setOptions] = useState<GenerateOptions>({
     density: '2',
     style: 'expressive',
     tone: 'inspirational',
+    imageModel: 'flux-schnell-fal',
+    videoModel: 'ltx-video-fal',
   })
   const [storyId, setStoryId] = useState<string | null>(null)
   const [storyData, setStoryData] = useState<StoryData | null>(null)
@@ -57,6 +59,8 @@ export default function Home() {
     isPlaying: boolean
     currentIndex: number
   }>({ isPlaying: false, currentIndex: -1 })
+  const [animateProgress, setAnimateProgress] = useState<{ done: number; total: number } | null>(null)
+  const [animatingSceneIds, setAnimatingSceneIds] = useState<Set<string>>(new Set())
   const [recent, setRecent] = useState<StoredStorySummary[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const isPlayingAllRef = useRef(false)
@@ -124,7 +128,19 @@ export default function Home() {
             updateStage(evt.id as StageId, { status: evt.status, detail: evt.detail })
             break
           case 'story':
-            setStoryData({ title: evt.title, tagline: evt.tagline, scenes: [] })
+            setStoryData({
+              title: evt.title,
+              tagline: evt.tagline,
+              protagonist: evt.protagonist,
+              thumbnailPrompt: null,
+              thumbnailUrl: null,
+              scenes: [],
+            })
+            break
+          case 'thumbnail-prompt':
+            setStoryData((prev) =>
+              prev ? { ...prev, thumbnailPrompt: evt.prompt } : prev
+            )
             break
           case 'scene-planned':
             setStoryData((prev) =>
@@ -287,6 +303,96 @@ export default function Home() {
     playScene(index)
   }
 
+  const handleAnimateAll = async () => {
+    if (!storyData || !storyId) return
+    const scenes = storyData.scenes.filter((s) => s.imageUrl && s.motionPrompt && !s.videoUrl)
+    if (scenes.length === 0) return
+
+    setAnimateProgress({ done: 0, total: scenes.length })
+
+    await Promise.allSettled(
+      scenes.map(async (scene) => {
+        try {
+          const res = await fetch('/api/animate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              storyId,
+              sceneId: scene.id,
+              imageUrl: scene.imageUrl,
+              motionPrompt: scene.motionPrompt,
+            }),
+          })
+          if (!res.ok) {
+            const d = await res.json()
+            console.error('Animate failed', scene.id, res.status, d)
+            return
+          }
+          const { videoUrl } = (await res.json()) as { videoUrl: string }
+          setStoryData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  scenes: prev.scenes.map((s) => (s.id === scene.id ? { ...s, videoUrl } : s)),
+                }
+              : prev
+          )
+          updateStoryScene(storyId, scene.id, { videoUrl })
+        } finally {
+          setAnimateProgress((prev) => prev ? { ...prev, done: prev.done + 1 } : prev)
+        }
+      })
+    )
+
+    setAnimateProgress(null)
+  }
+
+  const handleAnimateScene = async (sceneId: string) => {
+    if (!storyData || !storyId) return
+    const scene = storyData.scenes.find((s) => s.id === sceneId)
+    if (!scene || !scene.imageUrl || !scene.motionPrompt || scene.videoUrl) return
+
+    setAnimatingSceneIds((prev) => new Set(prev).add(sceneId))
+    try {
+      const res = await fetch('/api/animate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storyId,
+          sceneId: scene.id,
+          imageUrl: scene.imageUrl,
+          motionPrompt: scene.motionPrompt,
+          videoModel: options.videoModel,
+        }),
+      })
+      if (!res.ok) {
+        const d = await res.json()
+        console.error('Animate failed', scene.id, res.status, d)
+        return
+      }
+      const { videoUrl } = (await res.json()) as { videoUrl: string }
+      setStoryData((prev) =>
+        prev
+          ? { ...prev, scenes: prev.scenes.map((s) => (s.id === sceneId ? { ...s, videoUrl } : s)) }
+          : prev
+      )
+      updateStoryScene(storyId, sceneId, { videoUrl })
+    } finally {
+      setAnimatingSceneIds((prev) => {
+        const next = new Set(prev)
+        next.delete(sceneId)
+        return next
+      })
+    }
+  }
+
+  const handleThumbnailGenerated = (url: string) => {
+    const sid = storyIdRef.current
+    if (!sid) return
+    setStoryData((prev) => (prev ? { ...prev, thumbnailUrl: url } : prev))
+    updateThumbnail(sid, url)
+  }
+
   const handleSelectRecent = (id: string) => {
     if (id === storyId) return
     const s = getStory(id)
@@ -343,6 +449,13 @@ export default function Home() {
                 <p>{storyData.tagline}</p>
               </div>
 
+              <ThumbnailSlot
+                storyId={storyId}
+                prompt={storyData.thumbnailPrompt}
+                url={storyData.thumbnailUrl}
+                onGenerated={handleThumbnailGenerated}
+              />
+
               <div className="panel-controls">
                 <div className="tabs">
                   <button
@@ -366,6 +479,22 @@ export default function Home() {
                 >
                   ▶ Play All
                 </button>
+                {storyId && (
+                  <ExportButton storyId={storyId} scenes={storyData.scenes} />
+                )}
+                <button
+                  className="animate-all-btn"
+                  onClick={handleAnimateAll}
+                  disabled={
+                    !!animateProgress ||
+                    storyData.scenes.every((s) => !s.imageUrl || !s.motionPrompt || !!s.videoUrl)
+                  }
+                  title="Animate all scenes with LTX-Video"
+                >
+                  {animateProgress
+                    ? `Animating ${animateProgress.done}/${animateProgress.total}…`
+                    : '✦ Animate All'}
+                </button>
               </div>
             </div>
 
@@ -374,6 +503,8 @@ export default function Home() {
                 scenes={storyData.scenes}
                 playingIndex={playState.isPlaying ? playState.currentIndex : null}
                 onSceneClick={handleSceneClick}
+                onAnimateScene={handleAnimateScene}
+                animatingSceneIds={animatingSceneIds}
               />
             ) : (
               <div className="script-view">

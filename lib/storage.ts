@@ -1,4 +1,4 @@
-import type { Scene, SceneDensity, StickStyle, StoryData, VoiceTone } from './types'
+import type { Scene, StoryData, GenerateOptions } from './types'
 
 const LIST_KEY = 'stickman:list'
 const STORY_PREFIX = 'stickman:story:'
@@ -14,9 +14,10 @@ export interface StoredStorySummary {
 export interface StoredStory {
   id: string
   storyInput: string
-  options: { density: SceneDensity; style: StickStyle; tone: VoiceTone }
+  options: GenerateOptions
   storyData: StoryData
   savedAt: number
+  composedVideoUrl?: string | null
 }
 
 function isBrowser(): boolean {
@@ -82,6 +83,7 @@ function sanitizeStoryData(data: StoryData): StoryData {
       ...s,
       imageUrl: stripDataUrl(s.imageUrl),
       voiceoverUrl: stripDataUrl(s.voiceoverUrl),
+      videoUrl: s.videoUrl != null ? stripDataUrl(s.videoUrl) : s.videoUrl,
     })),
   }
 }
@@ -93,7 +95,7 @@ function trySaveStored(id: string, stored: StoredStory): boolean {
 export function saveStory(input: {
   id?: string
   storyInput: string
-  options: { density: SceneDensity; style: StickStyle; tone: VoiceTone }
+  options: GenerateOptions
   storyData: StoryData
 }): StoredStory {
   const id =
@@ -141,6 +143,23 @@ export function updateStoryScene(id: string, sceneId: string, patch: Partial<Sce
     ...stored.storyData,
     scenes: stored.storyData.scenes.map((s) => (s.id === sceneId ? { ...s, ...patch } : s)),
   }
+  writeJSON(STORY_PREFIX + id, stored)
+}
+
+export function updateThumbnail(id: string, url: string): void {
+  const stored = getStory(id)
+  if (!stored) return
+  stored.storyData = {
+    ...stored.storyData,
+    thumbnailUrl: stripDataUrl(url),
+  }
+  writeJSON(STORY_PREFIX + id, stored)
+}
+
+export function updateComposedVideo(id: string, url: string): void {
+  const stored = getStory(id)
+  if (!stored) return
+  stored.composedVideoUrl = url
   writeJSON(STORY_PREFIX + id, stored)
 }
 
