@@ -4,8 +4,22 @@ import { useState, useCallback, useRef } from 'react'
 import { StoryInput } from '@/components/StoryInput'
 import { SceneGrid } from '@/components/SceneGrid'
 import { VoiceoverBar } from '@/components/VoiceoverBar'
-import { ProgressBar } from '@/components/ProgressBar'
-import type { StoryData, SceneDensity, StickStyle, VoiceTone } from '@/lib/types'
+import { StageList } from '@/components/StageList'
+import { readSSE } from '@/lib/sse'
+import type {
+  StoryData,
+  SceneDensity,
+  StickStyle,
+  VoiceTone,
+  Stage,
+  StageId,
+} from '@/lib/types'
+
+const INITIAL_STAGES: Stage[] = [
+  { id: 'analyze', label: 'Analyze story', status: 'pending' },
+  { id: 'plan', label: 'Plan scenes', status: 'pending' },
+  { id: 'images', label: 'Generate images', status: 'pending' },
+]
 
 export default function Home() {
   const [storyInput, setStoryInput] = useState('')
@@ -20,7 +34,8 @@ export default function Home() {
   })
   const [storyData, setStoryData] = useState<StoryData | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [progress, setProgress] = useState({ pct: 0, label: '' })
+  const [stages, setStages] = useState<Stage[]>(INITIAL_STAGES)
+  const [imageProgress, setImageProgress] = useState<{ done: number; total: number } | null>(null)
   const [activeTab, setActiveTab] = useState<'scenes' | 'script'>('scenes')
   const [playState, setPlayState] = useState<{
     isPlaying: boolean
@@ -30,15 +45,19 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const isPlayingAllRef = useRef(false)
 
+  const updateStage = (id: StageId, patch: Partial<Stage>) => {
+    setStages((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+  }
+
   const handleGenerate = async () => {
     if (!storyInput.trim()) return
 
     setIsGenerating(true)
-    setProgress({ pct: 10, label: 'Analyzing your story...' })
+    setStoryData(null)
+    setStages(INITIAL_STAGES)
+    setImageProgress(null)
 
     try {
-      setProgress({ pct: 30, label: 'Generating scenes with AI...' })
-
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,22 +69,57 @@ export default function Home() {
         }),
       })
 
-      setProgress({ pct: 80, label: 'Processing SVG scenes...' })
-
-      const result = await response.json()
-
-      if (result.error) {
-        throw new Error(result.error)
+      if (!response.ok) {
+        const text = await response.text()
+        throw new Error(text || `HTTP ${response.status}`)
       }
 
-      setProgress({ pct: 100, label: 'Complete!' })
-      setStoryData(result.data)
+      for await (const evt of readSSE(response)) {
+        switch (evt.type) {
+          case 'stage':
+            updateStage(evt.id as StageId, { status: evt.status, detail: evt.detail })
+            break
+          case 'story':
+            setStoryData({ title: evt.title, tagline: evt.tagline, scenes: [] })
+            break
+          case 'scene-planned':
+            setStoryData((prev) =>
+              prev ? { ...prev, scenes: [...prev.scenes, evt.scene] } : prev
+            )
+            break
+          case 'scene-image':
+            setStoryData((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    scenes: prev.scenes.map((s) =>
+                      s.id === evt.sceneId ? { ...s, imageUrl: evt.imageUrl } : s
+                    ),
+                  }
+                : prev
+            )
+            break
+          case 'scene-image-error':
+            console.error('Scene image failed', evt.sceneId, evt.error)
+            break
+          case 'image-progress':
+            setImageProgress({ done: evt.done, total: evt.total })
+            break
+          case 'error':
+            throw new Error(evt.error)
+          case 'complete':
+            break
+        }
+      }
     } catch (error) {
       console.error('Failed to generate:', error)
-      alert(error instanceof Error ? error.message : 'Failed to generate story')
+      const msg = error instanceof Error ? error.message : 'Failed to generate story'
+      setStages((prev) =>
+        prev.map((s) => (s.status === 'active' ? { ...s, status: 'error', detail: msg } : s))
+      )
+      alert(msg)
     } finally {
       setIsGenerating(false)
-      setProgress({ pct: 0, label: '' })
     }
   }
 
@@ -75,7 +129,6 @@ export default function Home() {
 
       const scene = storyData.scenes[index]
 
-      // Stop current audio if any
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current = null
@@ -168,7 +221,9 @@ export default function Home() {
           onGenerate={handleGenerate}
           isGenerating={isGenerating}
         />
-        {isGenerating && <ProgressBar progress={progress} />}
+        {(isGenerating || stages.some((s) => s.status !== 'pending')) && (
+          <StageList stages={stages} imageProgress={imageProgress} />
+        )}
       </div>
 
       <div className="right-panel">
@@ -199,7 +254,7 @@ export default function Home() {
                 <button
                   className="play-all-btn"
                   onClick={playAll}
-                  disabled={playState.isPlaying}
+                  disabled={playState.isPlaying || storyData.scenes.length === 0}
                 >
                   ▶ Play All
                 </button>

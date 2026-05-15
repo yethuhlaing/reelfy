@@ -9,7 +9,7 @@ export type Emotion =
   | 'determination'
   | 'neutral'
 
-export interface Scene {
+export interface ScenePlan {
   id: string
   sentence: string
   voiceover: string
@@ -18,7 +18,11 @@ export interface Scene {
   emotion: Emotion
   characters: 1 | 2 | 3
   props: string[]
-  svgScene: string // raw SVG string from Gemini
+  imagePrompt: string
+}
+
+export interface Scene extends ScenePlan {
+  imageUrl: string | null
 }
 
 export interface StoryData {
@@ -36,3 +40,28 @@ export interface GenerateOptions {
   style: StickStyle
   tone: VoiceTone
 }
+
+export type StageId =
+  | 'analyze'
+  | 'plan'
+  | 'images'
+  | 'done'
+
+export type StageStatus = 'pending' | 'active' | 'done' | 'error'
+
+export interface Stage {
+  id: StageId
+  label: string
+  status: StageStatus
+  detail?: string
+}
+
+export type StreamEvent =
+  | { type: 'stage'; id: StageId; status: StageStatus; detail?: string }
+  | { type: 'story'; title: string; tagline: string }
+  | { type: 'scene-planned'; scene: Scene }
+  | { type: 'scene-image'; sceneId: string; imageUrl: string }
+  | { type: 'scene-image-error'; sceneId: string; error: string }
+  | { type: 'image-progress'; done: number; total: number }
+  | { type: 'error'; error: string }
+  | { type: 'complete' }
