@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 import { generateVoiceover } from '@/lib/elevenlabs'
-
-// Simple in-memory cache for audio (resets on server restart - fine for MVP)
-const audioCache = new Map<string, ArrayBuffer>()
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { text, sceneId } = body as { text: string; sceneId: string }
+    const { text, sceneId, storyId } = body as {
+      text: string
+      sceneId: string
+      storyId: string
+    }
 
-    if (!text || !sceneId) {
+    if (!text || !sceneId || !storyId) {
       return NextResponse.json(
-        { error: 'Missing required fields: text, sceneId' },
+        { error: 'Missing required fields: text, sceneId, storyId' },
         { status: 400 }
       )
     }
@@ -23,23 +25,23 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check cache first
-    const cached = audioCache.get(sceneId)
-    if (cached) {
-      return new Response(cached, {
-        headers: { 'Content-Type': 'audio/mpeg' },
-      })
-    }
-
-    // Generate new audio
     const audioBuffer = await generateVoiceover(text)
 
-    // Cache the result
-    audioCache.set(sceneId, audioBuffer)
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      const base64 = Buffer.from(audioBuffer).toString('base64')
+      const url = `data:audio/mpeg;base64,${base64}`
+      return NextResponse.json({ url, sceneId, fallback: 'data-url' })
+    }
 
-    return new Response(audioBuffer, {
-      headers: { 'Content-Type': 'audio/mpeg' },
+    const path = `voiceovers/${storyId}/${sceneId}.mp3`
+    const { url } = await put(path, Buffer.from(audioBuffer), {
+      access: 'public',
+      contentType: 'audio/mpeg',
+      addRandomSuffix: false,
+      allowOverwrite: true,
     })
+
+    return NextResponse.json({ url, sceneId })
   } catch (error) {
     console.error('Voiceover API error:', error)
     return NextResponse.json(

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         send({ type: 'story', title: plan.title, tagline: plan.tagline })
 
         for (const p of plan.scenes) {
-          const scene: Scene = { ...p, imageUrl: null }
+          const scene: Scene = { ...p, imageUrl: null, voiceoverUrl: null }
           send({ type: 'scene-planned', scene })
         }
 

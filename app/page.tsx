@@ -1,11 +1,21 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { StoryInput } from '@/components/StoryInput'
 import { SceneGrid } from '@/components/SceneGrid'
 import { VoiceoverBar } from '@/components/VoiceoverBar'
 import { StageList } from '@/components/StageList'
+import { RecentStories } from '@/components/RecentStories'
 import { readSSE } from '@/lib/sse'
+import {
+  deleteStory,
+  getStory,
+  latestStoryId,
+  listStories,
+  saveStory,
+  updateStoryScene,
+  type StoredStorySummary,
+} from '@/lib/storage'
 import type {
   StoryData,
   SceneDensity,
@@ -21,6 +31,11 @@ const INITIAL_STAGES: Stage[] = [
   { id: 'images', label: 'Generate images', status: 'pending' },
 ]
 
+function newStoryId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
 export default function Home() {
   const [storyInput, setStoryInput] = useState('')
   const [options, setOptions] = useState<{
@@ -32,6 +47,7 @@ export default function Home() {
     style: 'expressive',
     tone: 'inspirational',
   })
+  const [storyId, setStoryId] = useState<string | null>(null)
   const [storyData, setStoryData] = useState<StoryData | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [stages, setStages] = useState<Stage[]>(INITIAL_STAGES)
@@ -41,9 +57,33 @@ export default function Home() {
     isPlaying: boolean
     currentIndex: number
   }>({ isPlaying: false, currentIndex: -1 })
-  const [audioCache] = useState<Map<string, string>>(() => new Map())
+  const [recent, setRecent] = useState<StoredStorySummary[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const isPlayingAllRef = useRef(false)
+  const storyIdRef = useRef<string | null>(null)
+  const storyDataRef = useRef<StoryData | null>(null)
+  const inflightVoiceover = useRef<Map<string, Promise<string>>>(new Map())
+
+  useEffect(() => {
+    storyIdRef.current = storyId
+  }, [storyId])
+  useEffect(() => {
+    storyDataRef.current = storyData
+  }, [storyData])
+
+  useEffect(() => {
+    const id = latestStoryId()
+    if (id) {
+      const s = getStory(id)
+      if (s) {
+        setStoryId(s.id)
+        setStoryInput(s.storyInput)
+        setOptions(s.options)
+        setStoryData(s.storyData)
+      }
+    }
+    setRecent(listStories())
+  }, [])
 
   const updateStage = (id: StageId, patch: Partial<Stage>) => {
     setStages((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
@@ -52,10 +92,14 @@ export default function Home() {
   const handleGenerate = async () => {
     if (!storyInput.trim()) return
 
+    const newId = newStoryId()
+    setStoryId(newId)
+    storyIdRef.current = newId
     setIsGenerating(true)
     setStoryData(null)
     setStages(INITIAL_STAGES)
     setImageProgress(null)
+    inflightVoiceover.current.clear()
 
     try {
       const response = await fetch('/api/generate', {
@@ -111,6 +155,12 @@ export default function Home() {
             break
         }
       }
+
+      const finalData = storyDataRef.current
+      if (finalData) {
+        saveStory({ id: newId, storyInput, options, storyData: finalData })
+        setRecent(listStories())
+      }
     } catch (error) {
       console.error('Failed to generate:', error)
       const msg = error instanceof Error ? error.message : 'Failed to generate story'
@@ -123,11 +173,43 @@ export default function Home() {
     }
   }
 
+  const fetchVoiceoverUrl = useCallback(
+    async (sceneId: string, text: string, sid: string): Promise<string> => {
+      const key = `${sid}:${sceneId}`
+      const existing = inflightVoiceover.current.get(key)
+      if (existing) return existing
+
+      const promise = (async () => {
+        const res = await fetch('/api/voiceover', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, sceneId, storyId: sid }),
+        })
+        if (!res.ok) {
+          const t = await res.text()
+          throw new Error(t || 'Failed to generate voiceover')
+        }
+        const data = (await res.json()) as { url: string }
+        return data.url
+      })()
+
+      inflightVoiceover.current.set(key, promise)
+      try {
+        return await promise
+      } finally {
+        inflightVoiceover.current.delete(key)
+      }
+    },
+    []
+  )
+
   const playScene = useCallback(
     async (index: number) => {
-      if (!storyData || index >= storyData.scenes.length) return
+      const data = storyDataRef.current
+      const sid = storyIdRef.current
+      if (!data || !sid || index >= data.scenes.length) return
 
-      const scene = storyData.scenes[index]
+      const scene = data.scenes[index]
 
       if (audioRef.current) {
         audioRef.current.pause()
@@ -137,28 +219,23 @@ export default function Home() {
       setPlayState({ isPlaying: true, currentIndex: index })
 
       try {
-        let audioUrl = audioCache.get(scene.id)
-
-        if (!audioUrl) {
-          const response = await fetch('/api/voiceover', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: scene.voiceover,
-              sceneId: scene.id,
-            }),
-          })
-
-          if (!response.ok) {
-            throw new Error('Failed to generate voiceover')
-          }
-
-          const audioBlob = await response.blob()
-          audioUrl = URL.createObjectURL(audioBlob)
-          audioCache.set(scene.id, audioUrl)
+        let url = scene.voiceoverUrl
+        if (!url) {
+          url = await fetchVoiceoverUrl(scene.id, scene.voiceover, sid)
+          setStoryData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  scenes: prev.scenes.map((s) =>
+                    s.id === scene.id ? { ...s, voiceoverUrl: url } : s
+                  ),
+                }
+              : prev
+          )
+          updateStoryScene(sid, scene.id, { voiceoverUrl: url })
         }
 
-        const audio = new Audio(audioUrl)
+        const audio = new Audio(url)
         audioRef.current = audio
 
         return new Promise<void>((resolve, reject) => {
@@ -179,7 +256,7 @@ export default function Home() {
         setPlayState({ isPlaying: false, currentIndex: -1 })
       }
     },
-    [storyData, audioCache]
+    [fetchVoiceoverUrl]
   )
 
   const playAll = async () => {
@@ -210,6 +287,31 @@ export default function Home() {
     playScene(index)
   }
 
+  const handleSelectRecent = (id: string) => {
+    if (id === storyId) return
+    const s = getStory(id)
+    if (!s) return
+    stopPlayback()
+    setStoryId(s.id)
+    setStoryInput(s.storyInput)
+    setOptions(s.options)
+    setStoryData(s.storyData)
+    setStages(INITIAL_STAGES)
+    setImageProgress(null)
+  }
+
+  const handleDeleteRecent = (id: string) => {
+    deleteStory(id)
+    const next = listStories()
+    setRecent(next)
+    if (id === storyId) {
+      stopPlayback()
+      setStoryId(null)
+      setStoryData(null)
+      setStoryInput('')
+    }
+  }
+
   return (
     <main className="app-container">
       <div className="left-panel">
@@ -224,6 +326,12 @@ export default function Home() {
         {(isGenerating || stages.some((s) => s.status !== 'pending')) && (
           <StageList stages={stages} imageProgress={imageProgress} />
         )}
+        <RecentStories
+          stories={recent}
+          currentStoryId={storyId}
+          onSelect={handleSelectRecent}
+          onDelete={handleDeleteRecent}
+        />
       </div>
 
       <div className="right-panel">
