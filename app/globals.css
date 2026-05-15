@@ -355,26 +355,64 @@ body {
 /* Per-scene animate button */
 .scene-animate-btn {
   font-family: var(--font-body);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 0.3rem 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
   font-size: 0.72rem;
-  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
-  margin: 0.5rem 0.75rem 0.25rem;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  margin: 0.5rem 0.75rem 0.5rem;
   width: calc(100% - 1.5rem);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.scene-card:hover .scene-animate-btn,
+.scene-card:focus-within .scene-animate-btn {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .scene-animate-btn:hover:not(:disabled) {
-  border-color: #a855f7;
-  color: #a855f7;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.55);
+  opacity: 1;
+  transform: translateY(-1px);
 }
 
-.scene-animate-btn:disabled {
-  opacity: 0.5;
+.scene-animate-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.35);
+}
+
+.scene-animate-btn--loading {
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+  opacity: 1 !important;
+  transform: translateY(0) !important;
   cursor: not-allowed;
+}
+
+.scene-animate-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: scene-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes scene-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Export */

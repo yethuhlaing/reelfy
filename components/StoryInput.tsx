@@ -48,9 +48,19 @@ export function StoryInput({
             onChange={(e) => onOptionsChange({ ...options, density: e.target.value as SceneDensity })}
             disabled={isGenerating}
           >
-            <option value="1">Light (8-12 scenes)</option>
-            <option value="2">Medium (10-16 scenes)</option>
-            <option value="3">Dense (14-20 scenes)</option>
+            <option value="8">Quick (8 scenes)</option>
+            <option value="10">Light (10 scenes)</option>
+            <option value="12">Standard (12 scenes)</option>
+            <option value="16">Medium (16 scenes)</option>
+            <option value="20">Dense (20 scenes)</option>
+            <option value="25">Extra Dense (25 scenes)</option>
+            <option value="30">Long (30 scenes)</option>
+            <option value="35">Extended (35 scenes)</option>
+            <option value="40">Full (40 scenes)</option>
+            <option value="45">Epic (45 scenes)</option>
+            <option value="50">Maximum (50 scenes)</option>
+            <option value="55">Ultra (55 scenes)</option>
+            <option value="60">Ultimate (60 scenes)</option>
           </select>
         </div>
 
@@ -80,6 +90,25 @@ export function StoryInput({
             <option value="casual">Casual</option>
             <option value="documentary">Documentary</option>
             <option value="pitch">Pitch</option>
+          </select>
+        </div>
+
+        <div className="option">
+          <label htmlFor="textModel">Script Model</label>
+          <select
+            id="textModel"
+            value={options.textModel}
+            onChange={(e) => onOptionsChange({ ...options, textModel: e.target.value as GenerateOptions['textModel'] })}
+            disabled={isGenerating}
+          >
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (default)</option>
+            <option value="nvidia/nemotron-ultra-253b-v1">NVIDIA Nemotron Ultra 253B — free</option>
+            <option value="nvidia/nemotron-3-nano-30b-a3b">NVIDIA Nemotron Nano 30B — free tier</option>
+            <option value="nvidia/nemotron-nano-9b-v2">NVIDIA Nemotron Nano 9B — $0.04/1M</option>
+            <option value="nvidia/llama-3.3-nemotron-super-49b-v1.5">NVIDIA Llama 3.3 49B — $0.10/1M</option>
+            <option value="nvidia/nemotron-nano-12b-v2">NVIDIA Nemotron Nano 12B — $0.20/1M</option>
+            <option value="nvidia/llama-3.1-nemotron-70b-instruct">NVIDIA Llama 3.1 70B — $0.60/1M</option>
+            <option value="nvidia/mixtral-8x22b-instruct-v0.1">NVIDIA Mixtral 8x22B — $1.20/1M</option>
           </select>
         </div>
 

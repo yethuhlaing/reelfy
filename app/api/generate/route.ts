@@ -1,7 +1,7 @@
-import { planStory } from '@/lib/gemini'
 import { put } from '@vercel/blob'
-import type { SceneDensity, StickStyle, VoiceTone, ImageModel, StreamEvent, Scene } from '@/lib/types'
+import type { SceneDensity, StickStyle, VoiceTone, ImageModel, TextModel, StreamEvent, Scene } from '@/lib/types'
 import { getImageProvider } from '@/lib/providers/image'
+import { getTextProvider } from '@/lib/providers/text'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -11,20 +11,27 @@ export async function POST(request: Request) {
   if (!body) {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 })
   }
-  const { story, density, style, tone, imageModel } = body as {
+  const { story, density, style, tone, imageModel, textModel } = body as {
     story: string
     density: SceneDensity
     style: StickStyle
     tone: VoiceTone
     imageModel?: ImageModel
+    textModel?: TextModel
   }
 
   if (!story || !density || !style || !tone) {
     return new Response(JSON.stringify({ error: 'Missing required fields: story, density, style, tone' }), { status: 400 })
   }
 
-  if (!process.env.GEMINI_API_KEY) {
+  const textProvider = getTextProvider(textModel)
+  const isNvidia = textProvider.id.startsWith('nvidia/')
+
+  if (!isNvidia && !process.env.GEMINI_API_KEY) {
     return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not configured' }), { status: 500 })
+  }
+  if (isNvidia && !process.env.NVIDIA_API_KEY) {
+    return new Response(JSON.stringify({ error: 'NVIDIA_API_KEY is not configured' }), { status: 500 })
   }
 
   const imageProvider = getImageProvider(imageModel)
@@ -47,9 +54,9 @@ export async function POST(request: Request) {
         send({ type: 'stage', id: 'images', status: 'pending' })
 
         send({ type: 'stage', id: 'analyze', status: 'done' })
-        send({ type: 'stage', id: 'plan', status: 'active', detail: 'Planning scenes with Gemini' })
+        send({ type: 'stage', id: 'plan', status: 'active', detail: `Planning scenes with ${textProvider.label}` })
 
-        const plan = await planStory(story, density, style, tone)
+        const plan = await textProvider.planStory(story, density, style, tone)
         send({ type: 'story', title: plan.title, tagline: plan.tagline, protagonist: plan.protagonist })
         send({ type: 'thumbnail-prompt', prompt: plan.thumbnailPrompt })
 

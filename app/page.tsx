@@ -43,11 +43,12 @@ function newStoryId(): string {
 export default function Home() {
   const [storyInput, setStoryInput] = useState('')
   const [options, setOptions] = useState<GenerateOptions>({
-    density: '2',
+    density: '12',
     style: 'expressive',
     tone: 'inspirational',
     imageModel: 'flux-schnell-fal',
     videoModel: 'ltx-video-fal',
+    textModel: 'gemini-2.5-flash',
   })
   const [storyId, setStoryId] = useState<string | null>(null)
   const [storyData, setStoryData] = useState<StoryData | null>(null)
@@ -114,6 +115,8 @@ export default function Home() {
           density: options.density,
           style: options.style,
           tone: options.tone,
+          imageModel: options.imageModel,
+          textModel: options.textModel,
         }),
       })
 

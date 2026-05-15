@@ -77,15 +77,27 @@ export function SceneCard({ scene, index, isPlaying, onClick, onAnimate, isAnima
       </div>
       {onAnimate && scene.imageUrl && scene.motionPrompt && !scene.videoUrl && (
         <button
-          className="scene-animate-btn"
+          className={`scene-animate-btn${isAnimating ? ' scene-animate-btn--loading' : ''}`}
           onClick={(e) => {
             e.stopPropagation()
             onAnimate()
           }}
           disabled={isAnimating}
-          title="Animate this scene"
+          title={scene.motionPrompt ?? 'Animate this scene'}
         >
-          {isAnimating ? '⟳ Animating…' : '✦ Animate'}
+          {isAnimating ? (
+            <>
+              <span className="scene-animate-spinner" />
+              <span>Animating…</span>
+            </>
+          ) : (
+            <>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              <span>Animate</span>
+            </>
+          )}
         </button>
       )}
       {isPlaying && (
