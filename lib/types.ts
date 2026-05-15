@@ -64,5 +64,6 @@ export type StreamEvent =
   | { type: 'scene-image'; sceneId: string; imageUrl: string }
   | { type: 'scene-image-error'; sceneId: string; error: string }
   | { type: 'image-progress'; done: number; total: number }
+  | { type: 'info'; message: string }
   | { type: 'error'; error: string }
   | { type: 'complete' }

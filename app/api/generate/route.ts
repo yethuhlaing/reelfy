@@ -1,6 +1,7 @@
-import { planStory, generateSceneImage } from '@/lib/gemini'
+import { planStory } from '@/lib/gemini'
 import { put } from '@vercel/blob'
 import type { SceneDensity, StickStyle, VoiceTone, StreamEvent, Scene } from '@/lib/types'
+import { getImageProvider } from '@/lib/providers/image'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -23,6 +24,11 @@ export async function POST(request: Request) {
 
   if (!process.env.GEMINI_API_KEY) {
     return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not configured' }), { status: 500 })
+  }
+
+  const imageProvider = getImageProvider()
+  if (!imageProvider.id.startsWith('nano-banana') && !process.env.FAL_KEY) {
+    return new Response(JSON.stringify({ error: 'FAL_KEY is not configured' }), { status: 500 })
   }
 
   const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
@@ -51,11 +57,12 @@ export async function POST(request: Request) {
         }
 
         send({ type: 'stage', id: 'plan', status: 'done', detail: `${plan.scenes.length} scenes` })
+        send({ type: 'info', message: `Using image provider: ${imageProvider.id}` })
         send({
           type: 'stage',
           id: 'images',
           status: 'active',
-          detail: `Generating ${plan.scenes.length} images (Nano Banana)`,
+          detail: `Generating ${plan.scenes.length} images (${imageProvider.id})`,
         })
 
         let done = 0
@@ -65,7 +72,7 @@ export async function POST(request: Request) {
         await Promise.all(
           plan.scenes.map(async (scene) => {
             try {
-              const { mimeType, data } = await generateSceneImage(scene.imagePrompt)
+              const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, { aspectRatio: '16:9' })
               let imageUrl: string
               if (hasBlobToken) {
                 const ext = mimeType.split('/')[1] || 'png'

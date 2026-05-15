@@ -1,10 +1,11 @@
-# PR 2 — Thumbnail Generator
+# PR 3 — Thumbnail Generator
 
 ## Goal
-Lazy "movie-poster" cover frame for each story. Hero stickman pose + baked-in title text + 1 dramatic FX. Same comic style as scenes. Used as cover above scene grid AND as intro card in PR 3 final video.
+Lazy "movie-poster" cover frame for each story. Hero stickman pose + baked-in title text + 1 dramatic FX. Same comic style as scenes. Used as cover above scene grid AND as intro card in PR 5 final video.
 
 ## Depends on
 PR 1 (uses `storyId` + persistence + Blob fallback pattern).
+PR 2 (uses `getImageProvider()` adapter instead of direct Gemini call).
 
 ## User-visible outcomes
 - Empty slot above scene grid says "Generate cover" with a button.
@@ -75,9 +76,10 @@ Do NOT generate thumbnail eagerly. Just expose the prompt. Client decides when.
 
 ### `app/api/thumbnail/route.ts` (NEW)
 Single-shot endpoint. POST `{ storyId, prompt }` → returns `{ url }`.
+Uses the PR 2 image provider adapter so model selection follows the same env-driven flow.
 ```ts
 import { put } from '@vercel/blob'
-import { generateSceneImage } from '@/lib/gemini'
+import { getImageProvider } from '@/lib/providers/image'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -86,7 +88,8 @@ export async function POST(request: Request) {
   const { storyId, prompt } = await request.json()
   if (!storyId || !prompt) return badRequest()
 
-  const { mimeType, data } = await generateSceneImage(prompt)
+  const provider = getImageProvider()
+  const { mimeType, data } = await provider.generate(prompt, { aspectRatio: '16:9' })
   const ext = mimeType.includes('jpeg') ? 'jpg' : 'png'
   const { url } = await put(`thumbnails/${storyId}.${ext}`, data, {
     access: 'public',

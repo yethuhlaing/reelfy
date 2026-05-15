@@ -1,13 +1,16 @@
-# PR 3 — Video Compose Pipeline
+# PR 5 — Video Compose Pipeline (Mixed-Mode)
 
 ## Goal
-"Render Video" button assembles all scenes + voiceovers + thumbnail intro into a single downloadable MP4 with hard-burned karaoke captions.
+"Render Video" button assembles all scenes + voiceovers + thumbnail intro into a single downloadable MP4 with hard-burned karaoke captions. **Mixed-mode**: animated where available (from PR 4 `videoUrl`), static-with-Ken-Burns where not.
 
 ## Depends on
-PR 1 (durable voiceover Blob URLs) + PR 2 (thumbnail URL).
+PR 1 (durable voiceover Blob URLs).
+PR 3 (thumbnail URL for intro).
+PR 4 (optional — provides `videoUrl` per scene; compose falls back to static if absent).
 
 ## User-visible outcomes
 - New "Render Video" button in panel header (next to Play All).
+- Works whether or not scenes have been animated — partial/no-animation produces a valid video.
 - Click → SSE stream → multi-stage StageList (Voiceovers → Alignment → Encoding → Concat → Upload).
 - On finish: inline `<video controls>` player + download button.
 - Final video URL persisted in StoryData (refresh shows the same video).
@@ -15,7 +18,11 @@ PR 1 (durable voiceover Blob URLs) + PR 2 (thumbnail URL).
 ## Output spec
 - 1920×1080, 30fps, H.264 yuv420p, AAC 128k, MP4
 - Hard cuts, no transitions
-- Per scene: Ken Burns slow zoom-in (1.0 → 1.05) over `audioDuration + 0.4s`
+- Per scene duration: `voiceoverDuration + 0.4s`
+- Per scene source:
+  - If `videoUrl` exists: use 5s I2V clip, freeze last frame with `tpad` if voiceover > 5s, trim if voiceover < 5s
+  - Else: static image with Ken Burns slow zoom-in (1.0 → 1.05)
+- Audio: voiceover MP3 muxed as audio track (LTX clips are silent)
 - Intro: 2.5s thumbnail with slight zoom, silent
 - Captions: karaoke ASS, white + black outline, current word in yellow (`#FFD700`), bottom-centered, ~70% width
 
@@ -150,16 +157,33 @@ export async function burnSubtitles(inputPath: string, assPath: string, outputPa
 
 Working dir: `/tmp/compose-<storyId>/` — created fresh per request, cleaned up in `finally`.
 
-ffmpeg command shape for `encodeClip` (with audio):
+ffmpeg per-clip strategy — choose by scene source:
+
+**Static path (no `videoUrl`):**
 ```
 ffmpeg -y -loop 1 -i image.png -i voice.mp3 \
-  -t <durationSec> \
+  -t <D + 0.4> \
   -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,zoompan=z='min(zoom+0.0008,1.05)':d=<frames>:s=1920x1080:fps=30" \
   -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p \
   -c:a aac -b:a 128k -shortest clip_N.mp4
 ```
 
-For intro (no audio):
+**Animated path (`videoUrl` exists, 5s LTX clip):**
+- Compute target duration `T = voiceoverDuration + 0.4s`
+- If T ≤ 5: trim the 5s clip to T
+- If T > 5: freeze last frame for `(T - 5)s` via `tpad=stop_mode=clone:stop_duration=<T-5>`
+- Mux voiceover MP3 as audio track (LTX output is silent — discard its audio stream)
+
+```
+ffmpeg -y -i scene.mp4 -i voice.mp3 \
+  -filter_complex "[0:v]tpad=stop_mode=clone:stop_duration=<max(0,T-5)>,scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080[v]" \
+  -map "[v]" -map 1:a \
+  -t <T> \
+  -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p \
+  -c:a aac -b:a 128k -shortest clip_N.mp4
+```
+
+**Intro (no audio):**
 ```
 ffmpeg -y -loop 1 -i thumb.png -f lavfi -t 2.5 -i anullsrc=cl=stereo:r=48000 \
   -vf "scale=...,zoompan=..." -t 2.5 \
