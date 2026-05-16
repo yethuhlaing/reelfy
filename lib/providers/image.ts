@@ -1,6 +1,7 @@
 export interface ImageOpts {
   aspectRatio: '16:9'
   resolution?: '1024x576' | '1280x720' | '1920x1080'
+  signal?: AbortSignal
 }
 
 export interface ImageProvider {

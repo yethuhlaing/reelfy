@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getStory, updateComposedVideo, updateStoryScene } from '@/lib/storage'
 import type { Scene } from '@/lib/types'
 import type { ComposeResult, Job } from '@/lib/jobs/types'
@@ -56,6 +56,7 @@ function extractStatusCode(message: string): string | null {
 export function ExportButton({ storyId, scenes }: ExportButtonProps) {
   const [state, setState] = useState<ExportState>({ phase: 'idle' })
   const { toast } = useToast()
+  const prepareAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const stored = getStory(storyId)
@@ -101,10 +102,15 @@ export function ExportButton({ storyId, scenes }: ExportButtonProps) {
   useJobPoller({ pending, onCompleted, onFailed })
 
   const handleExport = async () => {
+    prepareAbortRef.current?.abort()
+    const ctrl = new AbortController()
+    prepareAbortRef.current = ctrl
+    const signal = ctrl.signal
     setState({ phase: 'preparing' })
     try {
       const tracks: { sceneId: string; videoUrl: string; voiceoverUrl: string; duration: number }[] = []
       for (const s of composable) {
+        if (signal.aborted) throw new DOMException('aborted', 'AbortError')
         const requestVoiceover = async (): Promise<string> => {
           const voiceRes = await fetch('/api/voiceover', {
             method: 'POST',
@@ -114,6 +120,7 @@ export function ExportButton({ storyId, scenes }: ExportButtonProps) {
               sceneId: s.id,
               storyId,
             }),
+            signal,
           })
           if (!voiceRes.ok) {
             const d = await voiceRes.json().catch(() => ({}))
@@ -161,6 +168,7 @@ export function ExportButton({ storyId, scenes }: ExportButtonProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ storyId, tracks }),
+        signal,
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
@@ -170,7 +178,31 @@ export function ExportButton({ storyId, scenes }: ExportButtonProps) {
       const { jobId } = (await res.json()) as { jobId: string }
       setState({ phase: 'queued', jobId, startedAt: Date.now() })
     } catch (err) {
+      if (
+        signal.aborted ||
+        (err instanceof Error && err.name === 'AbortError')
+      ) {
+        setState({ phase: 'idle' })
+        return
+      }
       showExportError(err instanceof Error ? err.message : 'Export failed')
+    } finally {
+      if (prepareAbortRef.current === ctrl) prepareAbortRef.current = null
+    }
+  }
+
+  const handleCancelExport = async () => {
+    prepareAbortRef.current?.abort()
+    if (state.phase === 'queued') {
+      const jobId = state.jobId
+      setState({ phase: 'idle' })
+      try {
+        await fetch(`/api/jobs/${jobId}/cancel`, { method: 'POST' })
+      } catch {
+        // best-effort
+      }
+    } else if (state.phase === 'preparing') {
+      setState({ phase: 'idle' })
     }
   }
 
@@ -204,6 +236,16 @@ export function ExportButton({ storyId, scenes }: ExportButtonProps) {
               ? '⬇ Export MP4'
               : '⬇ Export MP4'}
       </button>
+      {isWorking && (
+        <button
+          type="button"
+          className="export-cancel-btn"
+          onClick={handleCancelExport}
+          title="Cancel export"
+        >
+          ✕
+        </button>
+      )}
     </div>
   )
 }

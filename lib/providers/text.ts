@@ -11,7 +11,13 @@ export interface PlanResult {
 export interface TextProvider {
   id: TextModel
   label: string
-  planStory(story: string, density: SceneDensity, style: StickStyle, tone: VoiceTone): Promise<PlanResult>
+  planStory(
+    story: string,
+    density: SceneDensity,
+    style: StickStyle,
+    tone: VoiceTone,
+    signal?: AbortSignal,
+  ): Promise<PlanResult>
 }
 
 import { geminiProvider } from './text-gemini'

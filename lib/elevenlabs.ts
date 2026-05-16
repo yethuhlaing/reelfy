@@ -1,6 +1,6 @@
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech'
 
-export async function generateVoiceover(text: string): Promise<ArrayBuffer> {
+export async function generateVoiceover(text: string, signal?: AbortSignal): Promise<ArrayBuffer> {
   const voiceId = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB' // Default to Adam
 
   const response = await fetch(`${ELEVENLABS_API_URL}/${voiceId}`, {
@@ -18,6 +18,7 @@ export async function generateVoiceover(text: string): Promise<ArrayBuffer> {
         style: 0.3,
       },
     }),
+    signal,
   })
 
   if (!response.ok) {

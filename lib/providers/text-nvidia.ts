@@ -1,12 +1,18 @@
 import type { VoiceTone, SceneDensity, StickStyle, TextModel } from '../types'
 import type { TextProvider, PlanResult } from './text'
-import { buildPlanPrompt } from '../plan-prompt'
+import { buildPlanPrompt } from '../prompts/plan'
 
 function makeNvidiaProvider(modelId: TextModel, label: string): TextProvider {
   return {
     id: modelId,
     label,
-    async planStory(story: string, density: SceneDensity, style: StickStyle, tone: VoiceTone): Promise<PlanResult> {
+    async planStory(
+      story: string,
+      density: SceneDensity,
+      style: StickStyle,
+      tone: VoiceTone,
+      signal?: AbortSignal,
+    ): Promise<PlanResult> {
       const systemPrompt = buildPlanPrompt(tone, density, style)
       const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
         method: 'POST',
@@ -24,6 +30,7 @@ function makeNvidiaProvider(modelId: TextModel, label: string): TextProvider {
           temperature: 0.7,
           max_tokens: 8192,
         }),
+        signal,
       })
       if (!res.ok) {
         const err = await res.text()

@@ -40,15 +40,35 @@ export async function POST(request: Request) {
   }
 
   const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
+  const signal = request.signal
 
   const encoder = new TextEncoder()
+  let closed = false
   const stream = new ReadableStream({
     async start(controller) {
       const send = (evt: StreamEvent) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(evt)}\n\n`))
+        if (closed) return
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(evt)}\n\n`))
+        } catch {
+          // controller closed
+        }
       }
+      const isAbort = (err: unknown) =>
+        signal.aborted ||
+        (err instanceof Error && (err.name === 'AbortError' || err.message === 'aborted'))
+
+      const onAbort = () => {
+        send({ type: 'cancelled' })
+        if (!closed) {
+          closed = true
+          try { controller.close() } catch {}
+        }
+      }
+      signal.addEventListener('abort', onAbort, { once: true })
 
       try {
+        if (signal.aborted) throw new DOMException('aborted', 'AbortError')
         send({ type: 'stage', id: 'analyze', status: 'active', detail: 'Reading your story' })
         send({ type: 'stage', id: 'plan', status: 'pending' })
         send({ type: 'stage', id: 'images', status: 'pending' })
@@ -56,7 +76,8 @@ export async function POST(request: Request) {
         send({ type: 'stage', id: 'analyze', status: 'done' })
         send({ type: 'stage', id: 'plan', status: 'active', detail: `Planning scenes with ${textProvider.label}` })
 
-        const plan = await textProvider.planStory(story, density, style, tone)
+        const plan = await textProvider.planStory(story, density, style, tone, signal)
+        if (signal.aborted) throw new DOMException('aborted', 'AbortError')
         send({ type: 'story', title: plan.title, tagline: plan.tagline, protagonist: plan.protagonist })
         send({ type: 'thumbnail-prompt', prompt: plan.thumbnailPrompt })
 
@@ -78,10 +99,12 @@ export async function POST(request: Request) {
         const total = plan.scenes.length
         send({ type: 'image-progress', done, total })
 
-        await Promise.all(
+        await Promise.allSettled(
           plan.scenes.map(async (scene) => {
+            if (signal.aborted) return
             try {
-              const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, { aspectRatio: '16:9' })
+              const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, { aspectRatio: '16:9', signal })
+              if (signal.aborted) return
               let imageUrl: string
               if (hasBlobToken) {
                 const ext = mimeType.split('/')[1] || 'png'
@@ -94,8 +117,10 @@ export async function POST(request: Request) {
               } else {
                 imageUrl = `data:${mimeType};base64,${data.toString('base64')}`
               }
+              if (signal.aborted) return
               send({ type: 'scene-image', sceneId: scene.id, imageUrl })
             } catch (err) {
+              if (isAbort(err)) return
               send({
                 type: 'scene-image-error',
                 sceneId: scene.id,
@@ -103,22 +128,32 @@ export async function POST(request: Request) {
               })
             } finally {
               done += 1
-              send({ type: 'image-progress', done, total })
+              if (!signal.aborted) send({ type: 'image-progress', done, total })
             }
           })
         )
+
+        if (signal.aborted) throw new DOMException('aborted', 'AbortError')
 
         send({ type: 'stage', id: 'images', status: 'done', detail: `${done}/${total} images` })
         send({ type: 'stage', id: 'done', status: 'done' })
         send({ type: 'complete' })
       } catch (err) {
-        console.error('Generate stream error:', err)
-        send({
-          type: 'error',
-          error: err instanceof Error ? err.message : 'Generation failed',
-        })
+        if (isAbort(err)) {
+          send({ type: 'cancelled' })
+        } else {
+          console.error('Generate stream error:', err)
+          send({
+            type: 'error',
+            error: err instanceof Error ? err.message : 'Generation failed',
+          })
+        }
       } finally {
-        controller.close()
+        signal.removeEventListener('abort', onAbort)
+        if (!closed) {
+          closed = true
+          try { controller.close() } catch {}
+        }
       }
     },
   })

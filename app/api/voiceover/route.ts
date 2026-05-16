@@ -25,7 +25,10 @@ export async function POST(request: Request) {
       )
     }
 
-    const audioBuffer = await generateVoiceover(text)
+    const audioBuffer = await generateVoiceover(text, request.signal)
+    if (request.signal.aborted) {
+      return new Response('cancelled', { status: 499 })
+    }
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       const base64 = Buffer.from(audioBuffer).toString('base64')
@@ -43,6 +46,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url, sceneId })
   } catch (error) {
+    if (
+      request.signal.aborted ||
+      (error instanceof Error && error.name === 'AbortError')
+    ) {
+      return new Response('cancelled', { status: 499 })
+    }
     console.error('Voiceover API error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate voiceover' },

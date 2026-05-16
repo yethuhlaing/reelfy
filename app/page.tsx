@@ -69,6 +69,8 @@ export default function Home() {
   const storyIdRef = useRef<string | null>(null)
   const storyDataRef = useRef<StoryData | null>(null)
   const inflightVoiceover = useRef<Map<string, Promise<string>>>(new Map())
+  const generateAbortRef = useRef<AbortController | null>(null)
+  const voiceoverAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     storyIdRef.current = storyId
@@ -166,6 +168,10 @@ export default function Home() {
     setImageProgress(null)
     inflightVoiceover.current.clear()
 
+    generateAbortRef.current?.abort()
+    const ctrl = new AbortController()
+    generateAbortRef.current = ctrl
+
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -178,6 +184,7 @@ export default function Home() {
           imageModel: options.imageModel,
           textModel: options.textModel,
         }),
+        signal: ctrl.signal,
       })
 
       if (!response.ok) {
@@ -228,6 +235,13 @@ export default function Home() {
           case 'image-progress':
             setImageProgress({ done: evt.done, total: evt.total })
             break
+          case 'cancelled':
+            setStages((prev) =>
+              prev.map((s) =>
+                s.status === 'active' ? { ...s, status: 'error', detail: 'Cancelled' } : s,
+              ),
+            )
+            break
           case 'error':
             throw new Error(evt.error)
           case 'complete':
@@ -236,19 +250,58 @@ export default function Home() {
       }
 
       const finalData = storyDataRef.current
-      if (finalData) {
+      if (finalData && !ctrl.signal.aborted) {
         saveStory({ id: newId, storyInput, options, storyData: finalData })
         setRecent(listStories())
       }
     } catch (error) {
-      console.error('Failed to generate:', error)
-      const msg = error instanceof Error ? error.message : 'Failed to generate story'
-      setStages((prev) =>
-        prev.map((s) => (s.status === 'active' ? { ...s, status: 'error', detail: msg } : s))
-      )
-      alert(msg)
+      const aborted =
+        ctrl.signal.aborted ||
+        (error instanceof Error && error.name === 'AbortError')
+      if (aborted) {
+        setStages((prev) =>
+          prev.map((s) =>
+            s.status === 'active' ? { ...s, status: 'error', detail: 'Cancelled' } : s,
+          ),
+        )
+      } else {
+        console.error('Failed to generate:', error)
+        const msg = error instanceof Error ? error.message : 'Failed to generate story'
+        setStages((prev) =>
+          prev.map((s) => (s.status === 'active' ? { ...s, status: 'error', detail: msg } : s))
+        )
+        alert(msg)
+      }
     } finally {
       setIsGenerating(false)
+      if (generateAbortRef.current === ctrl) generateAbortRef.current = null
+    }
+  }
+
+  const handleCancelGenerate = () => {
+    generateAbortRef.current?.abort()
+  }
+
+  const handleCancelVoiceover = () => {
+    voiceoverAbortRef.current?.abort()
+  }
+
+  const handleStopStory = async () => {
+    generateAbortRef.current?.abort()
+    voiceoverAbortRef.current?.abort()
+    const sid = storyIdRef.current
+    const jobIds = (storyDataRef.current?.scenes ?? [])
+      .map((s) => s.pendingJobId)
+      .filter((j): j is string => !!j && j !== 'pending')
+    if (!sid) return
+    try {
+      await fetch(`/api/stories/${sid}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobIds }),
+      })
+    } catch {
+      // best-effort
     }
   }
 
@@ -258,11 +311,17 @@ export default function Home() {
       const existing = inflightVoiceover.current.get(key)
       if (existing) return existing
 
+      if (!voiceoverAbortRef.current || voiceoverAbortRef.current.signal.aborted) {
+        voiceoverAbortRef.current = new AbortController()
+      }
+      const signal = voiceoverAbortRef.current.signal
+
       const promise = (async () => {
         const res = await fetch('/api/voiceover', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, sceneId, storyId: sid }),
+          signal,
         })
         if (!res.ok) {
           const t = await res.text()
@@ -496,7 +555,11 @@ export default function Home() {
           isGenerating={isGenerating}
         />
         {(isGenerating || stages.some((s) => s.status !== 'pending')) && (
-          <StageList stages={stages} imageProgress={imageProgress} />
+          <StageList
+            stages={stages}
+            imageProgress={imageProgress}
+            onCancel={isGenerating ? handleCancelGenerate : undefined}
+          />
         )}
         <RecentStories
           stories={recent}
@@ -550,6 +613,22 @@ export default function Home() {
                 {storyId && (
                   <ExportButton storyId={storyId} scenes={storyData.scenes} />
                 )}
+                {(() => {
+                  const hasInflight =
+                    isGenerating ||
+                    storyData.scenes.some((s) => !!s.pendingJobId)
+                  if (!hasInflight) return null
+                  return (
+                    <button
+                      type="button"
+                      className="stop-story-btn"
+                      onClick={handleStopStory}
+                      title="Cancel all running work for this story"
+                    >
+                      ✕ Stop story
+                    </button>
+                  )
+                })()}
                 {(() => {
                   const total = storyData.scenes.filter((s) => s.imageUrl && s.motionPrompt).length
                   const done = storyData.scenes.filter((s) => !!s.videoUrl).length
@@ -606,7 +685,10 @@ export default function Home() {
         currentIndex={playState.currentIndex}
         totalScenes={storyData?.scenes.length ?? 0}
         isPlaying={playState.isPlaying}
-        onStop={stopPlayback}
+        onStop={() => {
+          handleCancelVoiceover()
+          stopPlayback()
+        }}
       />
     </main>
   )

@@ -37,6 +37,10 @@ export async function POST(
   const job = await getJob<AnimatePayload>(jobId)
   if (!job) return new Response('Unknown job', { status: 404 })
 
+  if (job.status === 'failed' || job.status === 'completed') {
+    return new Response('ok')
+  }
+
   if (body.status === 'ERROR' || body.error) {
     await markFailed(jobId, body.error ?? 'fal.ai reported error')
     return new Response('ok')

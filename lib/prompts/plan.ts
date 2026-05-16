@@ -1,4 +1,4 @@
-import type { VoiceTone, SceneDensity, StickStyle } from './types'
+import type { VoiceTone, SceneDensity, StickStyle } from '../types'
 
 export function buildPlanPrompt(tone: VoiceTone, density: SceneDensity, style: StickStyle): string {
   const styleDescriptions: Record<StickStyle, string> = {

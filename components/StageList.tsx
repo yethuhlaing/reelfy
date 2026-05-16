@@ -5,6 +5,7 @@ import type { Stage } from '@/lib/types'
 interface StageListProps {
   stages: Stage[]
   imageProgress?: { done: number; total: number } | null
+  onCancel?: () => void
 }
 
 const STATUS_ICON: Record<Stage['status'], string> = {
@@ -14,9 +15,19 @@ const STATUS_ICON: Record<Stage['status'], string> = {
   error: '✕',
 }
 
-export function StageList({ stages, imageProgress }: StageListProps) {
+export function StageList({ stages, imageProgress, onCancel }: StageListProps) {
+  const anyActive = stages.some((s) => s.status === 'active')
   return (
     <div className="stage-list">
+      {onCancel && anyActive && (
+        <button
+          type="button"
+          className="stage-cancel-btn"
+          onClick={onCancel}
+        >
+          ✕ Cancel
+        </button>
+      )}
       {stages.map((s) => {
         const showImageBar = s.id === 'images' && s.status === 'active' && imageProgress && imageProgress.total > 0
         const pct = showImageBar
