@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Syne, Azeret_Mono } from 'next/font/google'
 import './globals.css'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from '@/components/ui/sonner'
 
 const syne = Syne({
   subsets: ['latin'],

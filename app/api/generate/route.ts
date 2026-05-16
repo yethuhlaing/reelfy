@@ -118,7 +118,7 @@ export async function POST(request: Request) {
             let imageUrl: string
             if (hasBlobToken) {
               const ext = mimeType.split('/')[1] || 'png'
-              const blob = await put(`scenes/${Date.now()}-${scene.id}.${ext}`, data, {
+              const blob = await put(`scenes/${storyId}/${scene.id}-${Date.now()}.${ext}`, data, {
                 access: 'public',
                 contentType: mimeType,
                 addRandomSuffix: true,

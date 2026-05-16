@@ -9,6 +9,7 @@ import { RecentStories } from '@/components/RecentStories'
 import { ThumbnailSlot } from '@/components/ThumbnailSlot'
 import { ExportButton } from '@/components/ExportButton'
 import { readSSE } from '@/lib/sse'
+import { toast } from 'sonner'
 import {
   deleteStory,
   getStory,
@@ -288,16 +289,24 @@ export default function Home() {
   }
 
   const handleStopStory = async () => {
+    if (!window.confirm('Stop all in-flight work for this story?')) return
     generateAbortRef.current?.abort()
     voiceoverAbortRef.current?.abort()
     const sid = storyIdRef.current
     if (!sid) return
     try {
-      await fetch(`/api/stories/${sid}/cancel`, {
+      const res = await fetch(`/api/stories/${sid}/cancel`, {
         method: 'POST',
       })
+      if (!res.ok) {
+        toast.error('Failed to stop story', {
+          description: 'Some jobs may still be running.',
+        })
+      }
     } catch {
-      // best-effort
+      toast.error('Failed to stop story', {
+        description: 'Some jobs may still be running.',
+      })
     }
   }
 
@@ -527,7 +536,33 @@ export default function Home() {
     setImageProgress(null)
   }
 
-  const handleDeleteRecent = (id: string) => {
+  const handleDeleteRecent = async (id: string) => {
+    const stored = getStory(id)
+    const legacyUrls = stored?.storyData.scenes
+      .map((s) => s.imageUrl)
+      .filter((url): url is string => {
+        return !!url && url.includes('/scenes/') && !url.includes(`/scenes/${id}/`)
+      }) ?? []
+
+    const res = await fetch(`/api/stories/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ legacyUrls }),
+    })
+    if (!res.ok) {
+      toast.error('Delete failed', {
+        description: 'Try again.',
+      })
+      throw new Error('delete failed')
+    }
+
+    const summary = (await res.json()) as { ok: boolean; deleted: number; failed: number }
+    if (summary.failed > 0) {
+      toast.warning('Deleted with warnings', {
+        description: `${summary.failed} file${summary.failed === 1 ? '' : 's'} could not be removed.`,
+      })
+    }
+
     deleteStory(id)
     const next = listStories()
     setRecent(next)

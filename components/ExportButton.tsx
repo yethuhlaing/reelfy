@@ -5,7 +5,7 @@ import { getStory, updateComposedVideo, updateStoryScene } from '@/lib/storage'
 import type { Scene } from '@/lib/types'
 import type { ComposeResult, Job } from '@/lib/jobs/types'
 import { useJobPoller, type PendingJob } from '@/lib/jobs/use-poller'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface ExportButtonProps {
   storyId: string
@@ -55,7 +55,6 @@ function extractStatusCode(message: string): string | null {
 
 export function ExportButton({ storyId, scenes }: ExportButtonProps) {
   const [state, setState] = useState<ExportState>({ phase: 'idle' })
-  const { toast } = useToast()
   const prepareAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -70,12 +69,10 @@ export function ExportButton({ storyId, scenes }: ExportButtonProps) {
   const showExportError = useCallback((message: string) => {
     setState({ phase: 'error', message })
     const code = extractStatusCode(message)
-    toast({
-      variant: 'destructive',
-      title: code ? `Export failed (${code})` : 'Export failed',
+    toast.error(code ? `Export failed (${code})` : 'Export failed', {
       description: message,
     })
-  }, [toast])
+  }, [])
 
   const onCompleted = useCallback(
     (jobId: string, job: Job) => {
