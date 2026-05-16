@@ -45,6 +45,7 @@ export type SceneDensity = '8' | '10' | '12' | '16' | '20' | '25' | '30' | '35' 
 export type StickStyle = 'minimal' | 'expressive' | 'dramatic'
 export type ImageModel = 'flux-schnell-fal' | 'flux-dev-fal' | 'sdxl-lightning-fal'
 export type VideoModel = 'ltx-video-fal' | 'longcat-fal' | 'kling-fal'
+export type VideoQuality = '720p' | '1080p'
 export type TextModel =
   | 'gemini-2.5-flash'
   | 'nvidia/nemotron-ultra-253b-v1'
@@ -61,6 +62,7 @@ export interface GenerateOptions {
   tone: VoiceTone
   imageModel: ImageModel
   videoModel: VideoModel
+  videoQuality: VideoQuality
   textModel: TextModel
 }
 

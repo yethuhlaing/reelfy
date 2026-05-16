@@ -139,6 +139,19 @@ export function StoryInput({
             <option value="kling-fal">Kling v2.6 — quality · $0.05</option>
           </select>
         </div>
+
+        <div className="option">
+          <label htmlFor="videoQuality">Video Quality</label>
+          <select
+            id="videoQuality"
+            value={options.videoQuality}
+            onChange={(e) => onOptionsChange({ ...options, videoQuality: e.target.value as GenerateOptions['videoQuality'] })}
+            disabled={isGenerating}
+          >
+            <option value="720p">720p — cheaper, faster</option>
+            <option value="1080p">1080p — sharper, ~2x cost</option>
+          </select>
+        </div>
       </div>
 
       <button

@@ -2,7 +2,7 @@ import { createJob, markRunning } from '@/lib/jobs/store'
 import { buildWebhookUrl } from '@/lib/jobs/webhook-url'
 import { getVideoProvider } from '@/lib/providers/video'
 import type { AnimatePayload } from '@/lib/jobs/types'
-import type { VideoModel } from '@/lib/types'
+import type { VideoModel, VideoQuality } from '@/lib/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -15,13 +15,18 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return badRequest('Invalid JSON')
 
-  const { storyId, sceneId, imageUrl, motionPrompt, videoModel } = body as {
+  const { storyId, sceneId, imageUrl, motionPrompt, videoModel, videoQuality } = body as {
     storyId?: string
     sceneId?: string
     imageUrl?: string
     motionPrompt?: string
     videoModel?: VideoModel
+    videoQuality?: VideoQuality
   }
+
+  const dims = videoQuality === '1080p'
+    ? { width: 1920, height: 1080 }
+    : { width: 1280, height: 720 }
 
   if (!storyId || !sceneId || !imageUrl || !motionPrompt) {
     return badRequest('Missing required fields: storyId, sceneId, imageUrl, motionPrompt')
@@ -45,7 +50,7 @@ export async function POST(request: Request) {
     const { requestId } = await provider.enqueue(
       imageUrl,
       motionPrompt,
-      { numFrames: 121, fps: 24, width: 1280, height: 720 },
+      { numFrames: 121, fps: 24, ...dims },
       buildWebhookUrl('animate', job.id),
     )
     await markRunning(job.id, requestId, provider.falModel)

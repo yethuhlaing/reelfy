@@ -50,6 +50,7 @@ export default function Home() {
     tone: 'inspirational',
     imageModel: 'flux-schnell-fal',
     videoModel: 'ltx-video-fal',
+    videoQuality: '1080p',
     textModel: 'gemini-2.5-flash',
   })
   const [storyId, setStoryId] = useState<string | null>(null)
@@ -408,6 +409,7 @@ export default function Home() {
           imageUrl: scene.imageUrl,
           motionPrompt: scene.motionPrompt,
           videoModel: options.videoModel,
+          videoQuality: options.videoQuality,
         }),
       })
       if (!res.ok) {
