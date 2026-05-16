@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Syne, Azeret_Mono } from 'next/font/google'
 import './globals.css'
+import { Toaster } from '@/components/ui/toaster'
 
 const syne = Syne({
   subsets: ['latin'],
@@ -30,7 +31,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${syne.variable} ${azeretMono.variable}`}>
-      <body>{children}</body>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try { document.body.removeAttribute('cz-shortcut-listen'); } catch(e) {}`,
+          }}
+        />
+      </head>
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   )
 }

@@ -8,6 +8,7 @@ interface SceneCardProps {
   isPlaying: boolean
   onClick: () => void
   onAnimate?: () => void
+  onCancelAnimate?: () => void
   isAnimating?: boolean
 }
 
@@ -23,7 +24,7 @@ const emotionColors: Record<Emotion, string> = {
   neutral: '#9ca3af',
 }
 
-export function SceneCard({ scene, index, isPlaying, onClick, onAnimate, isAnimating }: SceneCardProps) {
+export function SceneCard({ scene, index, isPlaying, onClick, onAnimate, onCancelAnimate, isAnimating }: SceneCardProps) {
   return (
     <div
       className={`scene-card ${isPlaying ? 'playing' : ''}`}
@@ -51,6 +52,14 @@ export function SceneCard({ scene, index, isPlaying, onClick, onAnimate, isAnima
         ) : scene.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={scene.imageUrl} alt={scene.sentence} className="scene-image" />
+        ) : scene.videoUrl ? (
+          <video
+            src={scene.videoUrl}
+            className="scene-image"
+            muted
+            playsInline
+            preload="metadata"
+          />
         ) : (
           <div className="scene-skeleton">
             <span className="scene-skeleton-spinner" />
@@ -76,29 +85,45 @@ export function SceneCard({ scene, index, isPlaying, onClick, onAnimate, isAnima
         </div>
       </div>
       {onAnimate && scene.imageUrl && scene.motionPrompt && !scene.videoUrl && (
-        <button
-          className={`scene-animate-btn${isAnimating ? ' scene-animate-btn--loading' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation()
-            onAnimate()
-          }}
-          disabled={isAnimating}
-          title={scene.motionPrompt ?? 'Animate this scene'}
-        >
-          {isAnimating ? (
-            <>
-              <span className="scene-animate-spinner" />
-              <span>Animating…</span>
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
-              <span>Animate</span>
-            </>
-          )}
-        </button>
+        isAnimating ? (
+          <button
+            className="scene-animate-btn scene-animate-btn--loading"
+            onClick={(e) => {
+              e.stopPropagation()
+              onCancelAnimate?.()
+            }}
+            title="Stop animation"
+          >
+            <span className="scene-animate-spinner" />
+            <span>Stop</span>
+          </button>
+        ) : (
+          <button
+            className={`scene-animate-btn${scene.lastError ? ' scene-animate-btn--error' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onAnimate()
+            }}
+            title={scene.lastError ?? scene.motionPrompt ?? 'Animate this scene'}
+          >
+            {scene.lastError ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 3-6.7" />
+                  <polyline points="3 4 3 10 9 10" />
+                </svg>
+                <span>Retry</span>
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                <span>Animate</span>
+              </>
+            )}
+          </button>
+        )
       )}
       {isPlaying && (
         <div className="playing-indicator">

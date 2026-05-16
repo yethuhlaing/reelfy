@@ -7,8 +7,15 @@ export interface VideoOpts {
 
 export interface VideoProvider {
   id: string
+  falModel: string
   costEstimateUsd: number
   generate(imageUrl: string, prompt: string, opts: VideoOpts): Promise<string>
+  enqueue(
+    imageUrl: string,
+    prompt: string,
+    opts: VideoOpts,
+    webhookUrl: string,
+  ): Promise<{ requestId: string }>
 }
 
 import { ltxVideoFal } from './video-fal-ltx'

@@ -25,5 +25,9 @@ export async function generateVoiceover(text: string): Promise<ArrayBuffer> {
     throw new Error(`ElevenLabs API error: ${response.status} - ${error}`)
   }
 
-  return response.arrayBuffer()
+  const audio = await response.arrayBuffer()
+  if (audio.byteLength === 0) {
+    throw new Error('ElevenLabs API returned empty audio buffer')
+  }
+  return audio
 }

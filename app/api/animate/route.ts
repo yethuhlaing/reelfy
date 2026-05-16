@@ -1,9 +1,11 @@
-import { put } from '@vercel/blob'
+import { createJob, markRunning } from '@/lib/jobs/store'
+import { buildWebhookUrl } from '@/lib/jobs/webhook-url'
 import { getVideoProvider } from '@/lib/providers/video'
+import type { AnimatePayload } from '@/lib/jobs/types'
 import type { VideoModel } from '@/lib/types'
 
 export const runtime = 'nodejs'
-export const maxDuration = 120
+export const maxDuration = 60
 
 function badRequest(message: string) {
   return new Response(JSON.stringify({ error: message }), { status: 400 })
@@ -25,43 +27,32 @@ export async function POST(request: Request) {
     return badRequest('Missing required fields: storyId, sceneId, imageUrl, motionPrompt')
   }
 
-  if (!process.env.FAL_KEY) {
-    return badRequest('FAL_KEY is not configured')
+  if (!process.env.FAL_KEY) return badRequest('FAL_KEY is not configured')
+  if (!process.env.WEBHOOK_BASE_URL) return badRequest('WEBHOOK_BASE_URL is not configured')
+
+  const payload: AnimatePayload = {
+    storyId,
+    sceneId,
+    imageUrl,
+    motionPrompt,
+    videoModel,
   }
 
-  const provider = getVideoProvider(videoModel)
+  const job = await createJob<AnimatePayload>('animate', payload)
 
   try {
-    const falVideoUrl = await provider.generate(imageUrl, motionPrompt, {
-      numFrames: 121,
-      fps: 24,
-      width: 1280,
-      height: 720,
-    })
-
-    const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
-    let videoUrl: string
-
-    if (hasBlobToken) {
-      const res = await fetch(falVideoUrl)
-      const buf = Buffer.from(await res.arrayBuffer())
-      const blob = await put(`animations/${storyId}-${sceneId}.mp4`, buf, {
-        access: 'public',
-        contentType: 'video/mp4',
-        addRandomSuffix: false,
-        allowOverwrite: true,
-      })
-      videoUrl = blob.url
-    } else {
-      videoUrl = falVideoUrl
-    }
-
-    return Response.json({ videoUrl })
+    const provider = getVideoProvider(videoModel)
+    const { requestId } = await provider.enqueue(
+      imageUrl,
+      motionPrompt,
+      { numFrames: 121, fps: 24, width: 1280, height: 720 },
+      buildWebhookUrl('animate', job.id),
+    )
+    await markRunning(job.id, requestId, provider.falModel)
+    return Response.json({ jobId: job.id })
   } catch (err) {
-    console.error('FAL animate error:', err)
-    const msg = err instanceof Error
-      ? (err.message || err.constructor.name + ': ' + JSON.stringify(err))
-      : JSON.stringify(err)
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('Animate enqueue failed', msg)
     return new Response(JSON.stringify({ error: msg }), { status: 500 })
   }
 }

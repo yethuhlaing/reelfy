@@ -1,0 +1,44 @@
+export type JobStatus = 'pending' | 'running' | 'completed' | 'failed'
+
+export type JobType = 'animate' | 'compose'
+
+export interface Job<P = unknown, R = unknown> {
+  id: string
+  type: JobType
+  status: JobStatus
+  payload: P
+  result?: R
+  error?: string
+  providerRequestId?: string
+  providerEndpoint?: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface AnimatePayload {
+  storyId: string
+  sceneId: string
+  imageUrl: string
+  motionPrompt: string
+  videoModel?: string
+}
+
+export interface AnimateResult {
+  videoUrl: string
+}
+
+export interface ComposeTrackInput {
+  sceneId: string
+  videoUrl: string
+  voiceoverUrl: string
+  duration: number
+}
+
+export interface ComposePayload {
+  storyId: string
+  tracks: ComposeTrackInput[]
+}
+
+export interface ComposeResult {
+  videoUrl: string
+}

@@ -26,6 +26,9 @@ export interface Scene extends ScenePlan {
   imageUrl: string | null
   voiceoverUrl: string | null
   videoUrl?: string | null
+  voiceoverDuration?: number
+  pendingJobId?: string
+  lastError?: string
 }
 
 export interface StoryData {

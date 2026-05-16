@@ -19,6 +19,8 @@ import {
   updateThumbnail,
   type StoredStorySummary,
 } from '@/lib/storage'
+import { useJobPoller, type PendingJob } from '@/lib/jobs/use-poller'
+import type { AnimateResult, Job } from '@/lib/jobs/types'
 import type {
   StoryData,
   SceneDensity,
@@ -60,8 +62,6 @@ export default function Home() {
     isPlaying: boolean
     currentIndex: number
   }>({ isPlaying: false, currentIndex: -1 })
-  const [animateProgress, setAnimateProgress] = useState<{ done: number; total: number } | null>(null)
-  const [animatingSceneIds, setAnimatingSceneIds] = useState<Set<string>>(new Set())
   const [recent, setRecent] = useState<StoredStorySummary[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const isPlayingAllRef = useRef(false)
@@ -93,6 +93,65 @@ export default function Home() {
   const updateStage = (id: StageId, patch: Partial<Stage>) => {
     setStages((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
   }
+
+  const jobStartedAtRef = useRef<Map<string, number>>(new Map())
+  const pendingAnimateJobs: PendingJob[] = (storyData?.scenes ?? [])
+    .filter((s) => s.pendingJobId && s.pendingJobId !== 'pending')
+    .map((s) => {
+      const jobId = s.pendingJobId as string
+      const map = jobStartedAtRef.current
+      if (!map.has(jobId)) map.set(jobId, Date.now())
+      return { jobId, startedAt: map.get(jobId) as number }
+    })
+
+  const sceneByJobId = (jobId: string): string | null => {
+    const scene = storyData?.scenes.find((s) => s.pendingJobId === jobId)
+    return scene?.id ?? null
+  }
+
+  useJobPoller({
+    pending: pendingAnimateJobs,
+    onCompleted: (jobId, job: Job) => {
+      const sid = sceneByJobId(jobId)
+      if (!sid) return
+      const result = job.result as AnimateResult | undefined
+      if (!result?.videoUrl) return
+      const stid = storyIdRef.current
+      setStoryData((prev) =>
+        prev
+          ? {
+              ...prev,
+              scenes: prev.scenes.map((s) =>
+                s.id === sid
+                  ? { ...s, videoUrl: result.videoUrl, pendingJobId: undefined, lastError: undefined }
+                  : s,
+              ),
+            }
+          : prev,
+      )
+      if (stid) updateStoryScene(stid, sid, {
+        videoUrl: result.videoUrl,
+        pendingJobId: undefined,
+        lastError: undefined,
+      })
+    },
+    onFailed: (jobId, error) => {
+      const sid = sceneByJobId(jobId)
+      if (!sid) return
+      const stid = storyIdRef.current
+      setStoryData((prev) =>
+        prev
+          ? {
+              ...prev,
+              scenes: prev.scenes.map((s) =>
+                s.id === sid ? { ...s, pendingJobId: undefined, lastError: error } : s,
+              ),
+            }
+          : prev,
+      )
+      if (stid) updateStoryScene(stid, sid, { pendingJobId: undefined, lastError: error })
+    },
+  })
 
   const handleGenerate = async () => {
     if (!storyInput.trim()) return
@@ -257,6 +316,23 @@ export default function Home() {
         const audio = new Audio(url)
         audioRef.current = audio
 
+        audio.onloadedmetadata = () => {
+          const dur = audio.duration
+          if (Number.isFinite(dur) && dur > 0) {
+            setStoryData((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    scenes: prev.scenes.map((s) =>
+                      s.id === scene.id ? { ...s, voiceoverDuration: dur } : s,
+                    ),
+                  }
+                : prev,
+            )
+            updateStoryScene(sid, scene.id, { voiceoverDuration: dur })
+          }
+        }
+
         return new Promise<void>((resolve, reject) => {
           audio.onended = () => {
             if (!isPlayingAllRef.current) {
@@ -306,56 +382,22 @@ export default function Home() {
     playScene(index)
   }
 
-  const handleAnimateAll = async () => {
-    if (!storyData || !storyId) return
-    const scenes = storyData.scenes.filter((s) => s.imageUrl && s.motionPrompt && !s.videoUrl)
-    if (scenes.length === 0) return
-
-    setAnimateProgress({ done: 0, total: scenes.length })
-
-    await Promise.allSettled(
-      scenes.map(async (scene) => {
-        try {
-          const res = await fetch('/api/animate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              storyId,
-              sceneId: scene.id,
-              imageUrl: scene.imageUrl,
-              motionPrompt: scene.motionPrompt,
-            }),
-          })
-          if (!res.ok) {
-            const d = await res.json()
-            console.error('Animate failed', scene.id, res.status, d)
-            return
-          }
-          const { videoUrl } = (await res.json()) as { videoUrl: string }
-          setStoryData((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  scenes: prev.scenes.map((s) => (s.id === scene.id ? { ...s, videoUrl } : s)),
-                }
-              : prev
-          )
-          updateStoryScene(storyId, scene.id, { videoUrl })
-        } finally {
-          setAnimateProgress((prev) => prev ? { ...prev, done: prev.done + 1 } : prev)
-        }
-      })
+  const patchScene = useCallback((sceneId: string, patch: Partial<typeof storyData extends null ? never : NonNullable<typeof storyData>['scenes'][number]>) => {
+    const sid = storyIdRef.current
+    setStoryData((prev) =>
+      prev
+        ? { ...prev, scenes: prev.scenes.map((s) => (s.id === sceneId ? { ...s, ...patch } : s)) }
+        : prev
     )
+    if (sid) updateStoryScene(sid, sceneId, patch)
+  }, [])
 
-    setAnimateProgress(null)
-  }
-
-  const handleAnimateScene = async (sceneId: string) => {
+  const enqueueAnimate = async (sceneId: string) => {
     if (!storyData || !storyId) return
     const scene = storyData.scenes.find((s) => s.id === sceneId)
-    if (!scene || !scene.imageUrl || !scene.motionPrompt || scene.videoUrl) return
+    if (!scene || !scene.imageUrl || !scene.motionPrompt) return
 
-    setAnimatingSceneIds((prev) => new Set(prev).add(sceneId))
+    patchScene(sceneId, { lastError: undefined, videoUrl: undefined, pendingJobId: 'pending' })
     try {
       const res = await fetch('/api/animate', {
         method: 'POST',
@@ -369,24 +411,43 @@ export default function Home() {
         }),
       })
       if (!res.ok) {
-        const d = await res.json()
-        console.error('Animate failed', scene.id, res.status, d)
+        const d = await res.json().catch(() => ({}))
+        patchScene(sceneId, { pendingJobId: undefined, lastError: d.error ?? `HTTP ${res.status}` })
         return
       }
-      const { videoUrl } = (await res.json()) as { videoUrl: string }
-      setStoryData((prev) =>
-        prev
-          ? { ...prev, scenes: prev.scenes.map((s) => (s.id === sceneId ? { ...s, videoUrl } : s)) }
-          : prev
-      )
-      updateStoryScene(storyId, sceneId, { videoUrl })
-    } finally {
-      setAnimatingSceneIds((prev) => {
-        const next = new Set(prev)
-        next.delete(sceneId)
-        return next
-      })
+      const { jobId } = (await res.json()) as { jobId: string }
+      patchScene(sceneId, { pendingJobId: jobId })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Enqueue failed'
+      patchScene(sceneId, { pendingJobId: undefined, lastError: msg })
     }
+  }
+
+  const handleAnimateScene = (sceneId: string) => {
+    enqueueAnimate(sceneId)
+  }
+
+  const handleCancelAnimate = async (sceneId: string) => {
+    const scene = storyData?.scenes.find((s) => s.id === sceneId)
+    const jobId = scene?.pendingJobId
+    if (!jobId || jobId === 'pending') {
+      patchScene(sceneId, { pendingJobId: undefined })
+      return
+    }
+    patchScene(sceneId, { pendingJobId: undefined, lastError: 'Cancelled' })
+    try {
+      await fetch(`/api/jobs/${jobId}/cancel`, { method: 'POST' })
+    } catch {
+      // best-effort
+    }
+  }
+
+  const handleAnimateAll = async () => {
+    if (!storyData) return
+    const scenes = storyData.scenes.filter(
+      (s) => s.imageUrl && s.motionPrompt && !s.videoUrl && !s.pendingJobId,
+    )
+    await Promise.allSettled(scenes.map((s) => enqueueAnimate(s.id)))
   }
 
   const handleThumbnailGenerated = (url: string) => {
@@ -455,6 +516,8 @@ export default function Home() {
               <ThumbnailSlot
                 storyId={storyId}
                 prompt={storyData.thumbnailPrompt}
+                title={storyData.title}
+                tagline={storyData.tagline}
                 url={storyData.thumbnailUrl}
                 onGenerated={handleThumbnailGenerated}
               />
@@ -485,19 +548,26 @@ export default function Home() {
                 {storyId && (
                   <ExportButton storyId={storyId} scenes={storyData.scenes} />
                 )}
-                <button
-                  className="animate-all-btn"
-                  onClick={handleAnimateAll}
-                  disabled={
-                    !!animateProgress ||
-                    storyData.scenes.every((s) => !s.imageUrl || !s.motionPrompt || !!s.videoUrl)
-                  }
-                  title="Animate all scenes with LTX-Video"
-                >
-                  {animateProgress
-                    ? `Animating ${animateProgress.done}/${animateProgress.total}…`
-                    : '✦ Animate All'}
-                </button>
+                {(() => {
+                  const total = storyData.scenes.filter((s) => s.imageUrl && s.motionPrompt).length
+                  const done = storyData.scenes.filter((s) => !!s.videoUrl).length
+                  const pending = storyData.scenes.filter((s) => !!s.pendingJobId).length
+                  const noneToAnimate = storyData.scenes.every(
+                    (s) => !s.imageUrl || !s.motionPrompt || !!s.videoUrl || !!s.pendingJobId,
+                  )
+                  return (
+                    <button
+                      className="animate-all-btn"
+                      onClick={handleAnimateAll}
+                      disabled={noneToAnimate}
+                      title="Animate all scenes"
+                    >
+                      {pending > 0
+                        ? `Animating ${done}/${total}…`
+                        : '✦ Animate All'}
+                    </button>
+                  )
+                })()}
               </div>
             </div>
 
@@ -507,7 +577,7 @@ export default function Home() {
                 playingIndex={playState.isPlaying ? playState.currentIndex : null}
                 onSceneClick={handleSceneClick}
                 onAnimateScene={handleAnimateScene}
-                animatingSceneIds={animatingSceneIds}
+                onCancelAnimate={handleCancelAnimate}
               />
             ) : (
               <div className="script-view">

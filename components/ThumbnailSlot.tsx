@@ -5,11 +5,13 @@ import { useState } from 'react'
 interface ThumbnailSlotProps {
   storyId: string | null
   prompt: string | null
+  title?: string | null
+  tagline?: string | null
   url: string | null
   onGenerated: (url: string) => void
 }
 
-export function ThumbnailSlot({ storyId, prompt, url, onGenerated }: ThumbnailSlotProps) {
+export function ThumbnailSlot({ storyId, prompt, title, tagline, url, onGenerated }: ThumbnailSlotProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,7 +32,7 @@ export function ThumbnailSlot({ storyId, prompt, url, onGenerated }: ThumbnailSl
       const res = await fetch('/api/thumbnail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storyId, prompt }),
+        body: JSON.stringify({ storyId, prompt, title, tagline }),
       })
 
       if (!res.ok) {
@@ -47,7 +49,7 @@ export function ThumbnailSlot({ storyId, prompt, url, onGenerated }: ThumbnailSl
     }
   }
 
-  if (url) {
+  if (url && !isGenerating) {
     return (
       <div className="thumbnail-slot thumbnail-filled">
         {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -259,6 +259,10 @@ body {
   align-items: flex-start;
   gap: 1rem;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
+  background: var(--bg);
+  padding-bottom: 0.5rem;
 }
 
 .story-title h2 {
@@ -278,6 +282,7 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .tabs {
@@ -400,6 +405,17 @@ body {
   cursor: not-allowed;
 }
 
+.scene-animate-btn--error {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.scene-animate-btn--error:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.6);
+}
+
 .scene-animate-spinner {
   display: inline-block;
   width: 11px;
@@ -511,6 +527,9 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
+  position: relative;
+  z-index: 1;
+  margin-top: 0.25rem;
 }
 
 /* Scene Card */
