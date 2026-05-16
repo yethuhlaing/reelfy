@@ -1,26 +1,19 @@
 import { fal } from '@/lib/providers/fal'
-import { getJob, markFailed } from '@/lib/jobs/store'
+import { setStoryCancelled } from '@/lib/jobs/cancel-flag'
+import { getJob, getJobIdsForStory, markFailed } from '@/lib/jobs/store'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-interface CancelBody {
-  jobIds?: string[]
-}
-
 export async function POST(
-  req: Request,
+  _req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params
   if (!id) return new Response('Missing id', { status: 400 })
 
-  const body = (await req.json().catch(() => ({}))) as CancelBody
-  const jobIds = Array.isArray(body.jobIds) ? body.jobIds : []
-
-  if (!process.env.FAL_KEY && jobIds.length > 0) {
-    return new Response('FAL_KEY missing', { status: 500 })
-  }
+  await setStoryCancelled(id)
+  const jobIds = await getJobIdsForStory(id)
 
   const results = await Promise.allSettled(
     jobIds.map(async (jobId) => {
@@ -29,7 +22,7 @@ export async function POST(
       if (job.status === 'completed' || job.status === 'failed') {
         return { jobId, skipped: 'terminal' }
       }
-      if (job.providerRequestId && job.providerEndpoint) {
+      if (process.env.FAL_KEY && job.providerRequestId && job.providerEndpoint) {
         try {
           await fal.queue.cancel(job.providerEndpoint, {
             requestId: job.providerRequestId,

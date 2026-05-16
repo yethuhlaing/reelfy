@@ -177,6 +177,7 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          storyId: newId,
           story: storyInput,
           density: options.density,
           style: options.style,
@@ -290,15 +291,10 @@ export default function Home() {
     generateAbortRef.current?.abort()
     voiceoverAbortRef.current?.abort()
     const sid = storyIdRef.current
-    const jobIds = (storyDataRef.current?.scenes ?? [])
-      .map((s) => s.pendingJobId)
-      .filter((j): j is string => !!j && j !== 'pending')
     if (!sid) return
     try {
       await fetch(`/api/stories/${sid}/cancel`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobIds }),
       })
     } catch {
       // best-effort

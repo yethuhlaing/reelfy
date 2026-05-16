@@ -1,5 +1,6 @@
 import { put } from '@vercel/blob'
 import type { SceneDensity, StickStyle, VoiceTone, ImageModel, TextModel, StreamEvent, Scene } from '@/lib/types'
+import { clearStoryCancelled, isStoryCancelled } from '@/lib/jobs/cancel-flag'
 import { getImageProvider } from '@/lib/providers/image'
 import { getTextProvider } from '@/lib/providers/text'
 
@@ -11,7 +12,8 @@ export async function POST(request: Request) {
   if (!body) {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 })
   }
-  const { story, density, style, tone, imageModel, textModel } = body as {
+  const { storyId, story, density, style, tone, imageModel, textModel } = body as {
+    storyId: string
     story: string
     density: SceneDensity
     style: StickStyle
@@ -20,8 +22,8 @@ export async function POST(request: Request) {
     textModel?: TextModel
   }
 
-  if (!story || !density || !style || !tone) {
-    return new Response(JSON.stringify({ error: 'Missing required fields: story, density, style, tone' }), { status: 400 })
+  if (!storyId || !story || !density || !style || !tone) {
+    return new Response(JSON.stringify({ error: 'Missing required fields: storyId, story, density, style, tone' }), { status: 400 })
   }
 
   const textProvider = getTextProvider(textModel)
@@ -42,6 +44,8 @@ export async function POST(request: Request) {
   const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
   const signal = request.signal
 
+  await clearStoryCancelled(storyId)
+
   const encoder = new TextEncoder()
   let closed = false
   const stream = new ReadableStream({
@@ -57,6 +61,12 @@ export async function POST(request: Request) {
       const isAbort = (err: unknown) =>
         signal.aborted ||
         (err instanceof Error && (err.name === 'AbortError' || err.message === 'aborted'))
+      const throwIfCancelled = async () => {
+        if (signal.aborted) throw new DOMException('aborted', 'AbortError')
+        if (await isStoryCancelled(storyId)) {
+          throw new DOMException('cancelled', 'AbortError')
+        }
+      }
 
       const onAbort = () => {
         send({ type: 'cancelled' })
@@ -68,7 +78,7 @@ export async function POST(request: Request) {
       signal.addEventListener('abort', onAbort, { once: true })
 
       try {
-        if (signal.aborted) throw new DOMException('aborted', 'AbortError')
+        await throwIfCancelled()
         send({ type: 'stage', id: 'analyze', status: 'active', detail: 'Reading your story' })
         send({ type: 'stage', id: 'plan', status: 'pending' })
         send({ type: 'stage', id: 'images', status: 'pending' })
@@ -77,7 +87,7 @@ export async function POST(request: Request) {
         send({ type: 'stage', id: 'plan', status: 'active', detail: `Planning scenes with ${textProvider.label}` })
 
         const plan = await textProvider.planStory(story, density, style, tone, signal)
-        if (signal.aborted) throw new DOMException('aborted', 'AbortError')
+        await throwIfCancelled()
         send({ type: 'story', title: plan.title, tagline: plan.tagline, protagonist: plan.protagonist })
         send({ type: 'thumbnail-prompt', prompt: plan.thumbnailPrompt })
 
@@ -99,41 +109,39 @@ export async function POST(request: Request) {
         const total = plan.scenes.length
         send({ type: 'image-progress', done, total })
 
-        await Promise.allSettled(
-          plan.scenes.map(async (scene) => {
-            if (signal.aborted) return
-            try {
-              const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, { aspectRatio: '16:9', signal })
-              if (signal.aborted) return
-              let imageUrl: string
-              if (hasBlobToken) {
-                const ext = mimeType.split('/')[1] || 'png'
-                const blob = await put(`scenes/${Date.now()}-${scene.id}.${ext}`, data, {
-                  access: 'public',
-                  contentType: mimeType,
-                  addRandomSuffix: true,
-                })
-                imageUrl = blob.url
-              } else {
-                imageUrl = `data:${mimeType};base64,${data.toString('base64')}`
-              }
-              if (signal.aborted) return
-              send({ type: 'scene-image', sceneId: scene.id, imageUrl })
-            } catch (err) {
-              if (isAbort(err)) return
-              send({
-                type: 'scene-image-error',
-                sceneId: scene.id,
-                error: err instanceof Error ? err.message : 'Image generation failed',
-              })
-            } finally {
-              done += 1
-              if (!signal.aborted) send({ type: 'image-progress', done, total })
-            }
-          })
-        )
+        for (const scene of plan.scenes) {
+          await throwIfCancelled()
+          try {
+            const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, { aspectRatio: '16:9', signal })
+            await throwIfCancelled()
 
-        if (signal.aborted) throw new DOMException('aborted', 'AbortError')
+            let imageUrl: string
+            if (hasBlobToken) {
+              const ext = mimeType.split('/')[1] || 'png'
+              const blob = await put(`scenes/${Date.now()}-${scene.id}.${ext}`, data, {
+                access: 'public',
+                contentType: mimeType,
+                addRandomSuffix: true,
+              })
+              imageUrl = blob.url
+            } else {
+              imageUrl = `data:${mimeType};base64,${data.toString('base64')}`
+            }
+
+            await throwIfCancelled()
+            send({ type: 'scene-image', sceneId: scene.id, imageUrl })
+          } catch (err) {
+            if (isAbort(err)) throw err
+            send({
+              type: 'scene-image-error',
+              sceneId: scene.id,
+              error: err instanceof Error ? err.message : 'Image generation failed',
+            })
+          } finally {
+            done += 1
+            if (!signal.aborted) send({ type: 'image-progress', done, total })
+          }
+        }
 
         send({ type: 'stage', id: 'images', status: 'done', detail: `${done}/${total} images` })
         send({ type: 'stage', id: 'done', status: 'done' })

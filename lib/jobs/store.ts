@@ -1,10 +1,14 @@
-import { put, head } from '@vercel/blob'
+import { redis } from '@/lib/redis'
 import type { Job, JobStatus, JobType } from './types'
 
-const JOBS_PREFIX = 'jobs/'
+const JOB_TTL_SECONDS = 86400
 
 function jobKey(id: string): string {
-  return `${JOBS_PREFIX}${id}.json`
+  return `job:${id}`
+}
+
+function storyJobsKey(storyId: string): string {
+  return `story:${storyId}:jobs`
 }
 
 function newJobId(): string {
@@ -13,18 +17,12 @@ function newJobId(): string {
 }
 
 async function writeJob(job: Job): Promise<void> {
-  await put(jobKey(job.id), JSON.stringify(job), {
-    access: 'public',
-    contentType: 'application/json',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    cacheControlMaxAge: 0,
-  })
+  await redis.set(jobKey(job.id), JSON.stringify(job), { ex: JOB_TTL_SECONDS })
 }
 
 export async function createJob<P>(
   type: JobType,
-  payload: P,
+  payload: P & { storyId?: string },
 ): Promise<Job<P>> {
   const now = Date.now()
   const job: Job<P> = {
@@ -36,6 +34,9 @@ export async function createJob<P>(
     updatedAt: now,
   }
   await writeJob(job as Job)
+  if (payload.storyId) {
+    await redis.sadd(storyJobsKey(payload.storyId), job.id)
+  }
   return job
 }
 
@@ -43,10 +44,10 @@ export async function getJob<P = unknown, R = unknown>(
   id: string,
 ): Promise<Job<P, R> | null> {
   try {
-    const meta = await head(jobKey(id))
-    const res = await fetch(meta.url, { cache: 'no-store' })
-    if (!res.ok) return null
-    return (await res.json()) as Job<P, R>
+    const raw = await redis.get<string | Job<P, R>>(jobKey(id))
+    if (!raw) return null
+    if (typeof raw === 'string') return JSON.parse(raw) as Job<P, R>
+    return raw as Job<P, R>
   } catch {
     return null
   }
@@ -85,4 +86,18 @@ export async function markCompleted<R>(id: string, result: R): Promise<void> {
 
 export async function markFailed(id: string, error: string): Promise<void> {
   await updateJob(id, { status: 'failed' as JobStatus, error })
+}
+
+export async function getJobIdsForStory(storyId: string): Promise<string[]> {
+  const ids = await redis.smembers<string[]>(storyJobsKey(storyId))
+  if (!Array.isArray(ids)) return []
+  return ids.filter((id): id is string => typeof id === 'string' && id.length > 0)
+}
+
+export async function deleteJobsForStory(storyId: string): Promise<void> {
+  const ids = await getJobIdsForStory(storyId)
+  if (ids.length > 0) {
+    await redis.del(...ids.map((id) => jobKey(id)))
+  }
+  await redis.del(storyJobsKey(storyId))
 }
