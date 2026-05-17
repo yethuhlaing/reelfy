@@ -27,6 +27,7 @@ export function deriveWorkspaceActions(
   const done = scenes.filter((s) => !!s.videoUrl).length
   const total = scenes.filter((s) => s.imageUrl && s.motionPrompt).length
   const anyVideoReady = scenes.some((s) => !!s.videoUrl)
+  const anyImageReady = scenes.some((s) => !!s.imageUrl)
   const nothingPlayable = scenes.length === 0
 
   return {
@@ -43,7 +44,7 @@ export function deriveWorkspaceActions(
           : `Animate All (${animatable.length})`,
     },
     export: {
-      visible: anyVideoReady,
+      visible: anyVideoReady || anyImageReady,
       disabled: readOnly || exporting,
     },
     thumbnail: {

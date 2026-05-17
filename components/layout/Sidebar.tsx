@@ -55,16 +55,22 @@ export function Sidebar() {
     })
   }, [])
 
-  const goNew = () => router.push(`/${activeCategory}/new`)
+  const goNew = () => router.push('/new-story')
   const onDashboard = pathname === '/dashboard'
 
   return (
     <aside className="sticky top-0 flex h-screen flex-col gap-2 overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] px-2.5 py-3.5">
       <div className={cn('flex items-center gap-2.5 px-2.5 pb-3.5', collapsed && 'justify-center')}>
-        <div className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--accent)] font-[var(--font-heading)] text-[var(--accent-ink)] font-bold">
-          ◈
-        </div>
-        {!collapsed && <div className="font-[var(--font-heading)] text-[1.05rem] font-bold tracking-[-0.01em]">StickStory</div>}
+        <Link
+          href="/stickman/new"
+          className={cn('inline-flex items-center gap-2.5', collapsed && 'justify-center')}
+          title="Go to Stickman new story"
+        >
+          <div className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--accent)] font-[var(--font-heading)] text-[var(--accent-ink)] font-bold">
+            ◈
+          </div>
+          {!collapsed && <div className="font-[var(--font-heading)] text-[1.05rem] font-bold tracking-[-0.01em]">StickStory</div>}
+        </Link>
         <button
           className={cn(
             'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface2)] text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]',
@@ -138,7 +144,7 @@ export function Sidebar() {
             onClick={() => {
               setActiveCategory(c.id)
               localStorage.setItem(ACTIVE_CAT_KEY, c.id)
-              router.push('/dashboard')
+              router.push(`/${c.id}/new`)
             }}
           >
             <span style={{ width: 16, textAlign: 'center' }}>{c.icon}</span>

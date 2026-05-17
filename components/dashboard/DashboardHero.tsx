@@ -4,15 +4,14 @@ import Link from 'next/link'
 import { Plus, Sparkles, Film, Clock } from 'lucide-react'
 
 interface Props {
-  category: string
   stats: { stories: number; minutes: number }
 }
 
-export function DashboardHero({ category, stats }: Props) {
+export function DashboardHero({ stats }: Props) {
   return (
     <section className="grid grid-cols-2 gap-3.5 lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
       <Link
-        href={`/${category}/new`}
+        href="/new-story"
         className="flex flex-col justify-between gap-[18px] rounded-2xl border-0 bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_60%,#fff))] p-[22px] text-left font-[var(--font-body)] text-[var(--accent-ink)] transition hover:-translate-y-0.5"
       >
         <div>

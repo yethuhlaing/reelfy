@@ -37,7 +37,7 @@ export default function DashboardPage() {
     <>
       <TopBar title="Dashboard" />
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-7 px-7 pb-20 pt-7">
-        <DashboardHero category={category} stats={stats} />
+        <DashboardHero stats={stats} />
 
         {hydrated && stories.length === 0 ? (
           <EmptyDashboard category={category} />

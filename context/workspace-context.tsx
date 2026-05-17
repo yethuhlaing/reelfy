@@ -34,7 +34,6 @@ export interface WorkspaceCtx {
   setActiveSceneId: (id: string | null) => void
   playScene?: (index: number) => Promise<void> | void
   enqueueAnimate?: (sceneId: string) => Promise<void> | void
-  cancelAnimate?: (sceneId: string) => Promise<void> | void
   retryVoice?: (sceneId: string) => Promise<void> | void
   retryImage?: (sceneId: string) => Promise<void> | void
 }
@@ -54,7 +53,6 @@ interface ProviderProps {
   audioRef: React.MutableRefObject<HTMLAudioElement | null>
   playScene?: WorkspaceCtx['playScene']
   enqueueAnimate?: WorkspaceCtx['enqueueAnimate']
-  cancelAnimate?: WorkspaceCtx['cancelAnimate']
   retryVoice?: WorkspaceCtx['retryVoice']
   retryImage?: WorkspaceCtx['retryImage']
   children: ReactNode
@@ -73,7 +71,6 @@ export function WorkspaceProvider({
   audioRef,
   playScene,
   enqueueAnimate,
-  cancelAnimate,
   retryVoice,
   retryImage,
   children,
@@ -113,7 +110,6 @@ export function WorkspaceProvider({
         setActiveSceneId,
         playScene,
         enqueueAnimate,
-        cancelAnimate,
         retryVoice,
         retryImage,
       }}

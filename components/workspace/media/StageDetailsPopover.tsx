@@ -9,10 +9,9 @@ interface Props {
   onClose: () => void
   stages: Stage[]
   imageProgress: { done: number; total: number } | null
-  onCancel?: () => void
 }
 
-export function StageDetailsPopover({ open, onClose, stages, imageProgress, onCancel }: Props) {
+export function StageDetailsPopover({ open, onClose, stages, imageProgress }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -39,7 +38,7 @@ export function StageDetailsPopover({ open, onClose, stages, imageProgress, onCa
         role="dialog"
         aria-label="Generation details"
       >
-        <StageList stages={stages} imageProgress={imageProgress} onCancel={onCancel} />
+        <StageList stages={stages} imageProgress={imageProgress} />
       </div>
     </>
   )

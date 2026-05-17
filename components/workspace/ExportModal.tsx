@@ -21,6 +21,7 @@ export function ExportModal({ open, onClose, storyId, scenes }: Props) {
   const [rangeOn, setRangeOn] = useState(false)
   const [from, setFrom] = useState(1)
   const [to, setTo] = useState(scenes.length)
+  const isStaticMode = scenes.every((s) => !s.videoUrl)
 
   useEffect(() => { setTo(scenes.length) }, [scenes.length])
 
@@ -45,6 +46,11 @@ export function ExportModal({ open, onClose, storyId, scenes }: Props) {
 
         {!showProgress && (
           <>
+            {isStaticMode && (
+              <div className="my-2 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-3 py-2 text-[0.78rem] text-[var(--muted)]">
+                No animations found - exporting as static slideshow.
+              </div>
+            )}
             <div className="my-2 flex items-center gap-2.5">
               <label style={{ width: 110, color: 'var(--muted)' }}>Resolution</label>
               <label><input type="radio" checked={resolution === '720p'} onChange={() => setResolution('720p')} /> 720p</label>
@@ -93,7 +99,11 @@ export function ExportModal({ open, onClose, storyId, scenes }: Props) {
               <div className="flex flex-col items-center gap-2.5">
                 <StickmanScribble variant="small" />
                 <div style={{ fontSize: '0.85rem' }}>
-                  {state.status === 'preparing' ? 'Preparing tracks…' : 'Composing video…'}
+                  {state.status === 'preparing'
+                    ? 'Preparing tracks…'
+                    : isStaticMode
+                      ? 'Rendering slideshow in browser…'
+                      : 'Composing video…'}
                 </div>
                 <div style={{ width: '100%', height: 6, background: 'var(--surface2)', borderRadius: 3 }}>
                   <div style={{ width: `${state.progress}%`, height: '100%', background: 'var(--accent)', borderRadius: 3, transition: 'width 200ms ease' }} />
