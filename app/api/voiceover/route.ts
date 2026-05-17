@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
-import { generateVoiceover } from '@/lib/elevenlabs'
+import { generateVoiceover } from '@/lib/externals/elevenlabs'
 
 export async function POST(request: Request) {
   try {

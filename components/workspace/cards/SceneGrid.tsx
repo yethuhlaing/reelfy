@@ -2,6 +2,7 @@
 
 import type { Scene } from '@/lib/types'
 import { SceneCard } from './SceneCard'
+import { SkeletonSceneCard } from './SkeletonSceneCard'
 import { useEffect, useRef } from 'react'
 
 interface SceneGridProps {
@@ -10,31 +11,38 @@ interface SceneGridProps {
   onSceneClick: (index: number) => void
   onAnimateScene?: (sceneId: string) => void
   onCancelAnimate?: (sceneId: string) => void
+  onPlayScene?: (index: number) => void
+  readOnly?: boolean
+  skeletonCount?: number
+  jobStartedAt?: (sceneId: string) => number | undefined
 }
 
-export function SceneGrid({ scenes, playingIndex, onSceneClick, onAnimateScene, onCancelAnimate }: SceneGridProps) {
+export function SceneGrid({
+  scenes,
+  playingIndex,
+  onSceneClick,
+  onAnimateScene,
+  onCancelAnimate,
+  onPlayScene,
+  readOnly,
+  skeletonCount = 0,
+  jobStartedAt,
+}: SceneGridProps) {
   const gridRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 
-  // Auto-scroll to playing scene
   useEffect(() => {
     if (playingIndex !== null && cardRefs.current.has(playingIndex)) {
-      cardRefs.current.get(playingIndex)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      })
+      cardRefs.current.get(playingIndex)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }, [playingIndex])
+
+  const extra = Math.max(0, skeletonCount - scenes.length)
 
   return (
     <div className="scene-grid" ref={gridRef}>
       {scenes.map((scene, index) => (
-        <div
-          key={scene.id}
-          ref={(el) => {
-            if (el) cardRefs.current.set(index, el)
-          }}
-        >
+        <div key={scene.id} ref={(el) => { if (el) cardRefs.current.set(index, el) }}>
           <SceneCard
             scene={scene}
             index={index}
@@ -42,9 +50,14 @@ export function SceneGrid({ scenes, playingIndex, onSceneClick, onAnimateScene, 
             onClick={() => onSceneClick(index)}
             onAnimate={onAnimateScene ? () => onAnimateScene(scene.id) : undefined}
             onCancelAnimate={onCancelAnimate ? () => onCancelAnimate(scene.id) : undefined}
-            isAnimating={!!scene.pendingJobId}
+            onPlay={onPlayScene ? () => onPlayScene(index) : undefined}
+            readOnly={readOnly}
+            jobStartedAt={jobStartedAt?.(scene.id)}
           />
         </div>
+      ))}
+      {Array.from({ length: extra }).map((_, i) => (
+        <SkeletonSceneCard key={`skel-${i}`} index={scenes.length + i} />
       ))}
     </div>
   )

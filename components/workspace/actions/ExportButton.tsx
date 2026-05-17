@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getStory, updateComposedVideo, updateStoryScene } from '@/lib/storage'
 import type { Scene } from '@/lib/types'
 import type { ComposeResult, Job } from '@/lib/jobs/types'
-import { useJobPoller, type PendingJob } from '@/lib/jobs/use-poller'
+import { useJobPoller, type PendingJob } from '@/hooks/use-poller'
 import { toast } from 'sonner'
 
 interface ExportButtonProps {

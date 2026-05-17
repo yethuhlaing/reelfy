@@ -1,4 +1,4 @@
-import { redis } from '@/lib/redis'
+import { redis } from '@/lib/externals/redis'
 
 function cancelStoryKey(storyId: string): string {
   return `cancel:story:${storyId}`

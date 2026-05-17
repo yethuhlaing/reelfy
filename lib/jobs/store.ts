@@ -1,4 +1,4 @@
-import { redis } from '@/lib/redis'
+import { redis } from '@/lib/externals/redis'
 import type { Job, JobStatus, JobType } from './types'
 
 const JOB_TTL_SECONDS = 86400

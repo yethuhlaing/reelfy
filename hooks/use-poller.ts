@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import type { Job, JobStatus } from './types'
+import type { Job, JobStatus } from '../lib/jobs/types'
 
 const BASE_INTERVAL_MS = 3000
 const MAX_INTERVAL_MS = 15000
