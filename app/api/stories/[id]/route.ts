@@ -41,13 +41,6 @@ export async function DELETE(
 
   const summary: DeleteSummary = { deleted: 0, failed: 0 }
 
-  const cancelUrl = new URL(`/api/stories/${storyId}/cancel`, req.url)
-  try {
-    await fetch(cancelUrl, { method: 'POST' })
-  } catch {
-    // best-effort cancellation; continue cleanup
-  }
-
   const prefixes = [
     `thumbnails/${storyId}`,
     `scenes/${storyId}/`,

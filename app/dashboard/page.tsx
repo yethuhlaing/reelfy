@@ -36,13 +36,13 @@ export default function DashboardPage() {
   return (
     <>
       <TopBar title="Dashboard" />
-      <div className="dashboard">
+      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-7 px-7 pb-20 pt-7">
         <DashboardHero category={category} stats={stats} />
 
         {hydrated && stories.length === 0 ? (
           <EmptyDashboard category={category} />
         ) : (
-          <div className="story-grid">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-[18px]">
             {stories.map((s) => (
               <StoryCard key={s.id} summary={s} onChange={refresh} />
             ))}

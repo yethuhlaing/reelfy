@@ -11,7 +11,6 @@ export interface WorkspaceActions {
   animateAll: ActionState
   export: ActionState
   thumbnail: ActionState
-  stopGeneration: ActionState
   details: ActionState
 }
 
@@ -50,10 +49,6 @@ export function deriveWorkspaceActions(
     thumbnail: {
       visible: true,
       disabled: readOnly || !storyData,
-    },
-    stopGeneration: {
-      visible: isGenerating || pending.length > 0,
-      disabled: readOnly,
     },
     details: {
       visible: isGenerating,

@@ -32,20 +32,20 @@ export function SettingsPanel() {
   const active = useMemo(() => SECTIONS.find((s) => s.id === section) ?? SECTIONS[0], [section])
 
   return (
-    <section className="settings-shell">
-      <div className="settings-head">
-        <h2>Settings</h2>
-        <p>Pick a section from the list.</p>
+    <section className="flex w-full flex-col gap-3.5">
+      <div>
+        <h2 className="font-[var(--font-heading)] text-[1.15rem]">Settings</h2>
+        <p className="mt-0.5 text-[0.85rem] text-[var(--muted)]">Pick a section from the list.</p>
       </div>
 
-      <div className="settings-layout">
-        <aside className="settings-nav">
-          <div className="settings-nav-label">Settings</div>
+      <div className="grid grid-cols-1 gap-3.5 md:grid-cols-[220px_1fr]">
+        <aside className="flex h-fit flex-col gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
+          <div className="px-1.5 pb-2 pt-1 text-[0.72rem] uppercase tracking-[0.08em] text-[var(--muted)]">Settings</div>
           {SECTIONS.map((s) => (
             <button
               key={s.id}
               type="button"
-              className={`settings-nav-item ${section === s.id ? 'active' : ''}`}
+              className={`w-full rounded-lg border border-transparent px-2.5 py-2 text-left text-[0.85rem] text-[var(--text)] transition hover:bg-[var(--surface2)] ${section === s.id ? 'border-[var(--border)] bg-[var(--surface2)] text-[var(--accent)]' : ''}`}
               onClick={() => setSection(s.id)}
             >
               {s.label}
@@ -53,10 +53,10 @@ export function SettingsPanel() {
           ))}
         </aside>
 
-        <div className="settings-card">
-          <h3>{active.label}</h3>
-          <p>{active.description}</p>
-          <div className="settings-placeholder">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+          <h3 className="font-[var(--font-heading)] text-base">{active.label}</h3>
+          <p className="mt-1 text-[0.85rem] text-[var(--muted)]">{active.description}</p>
+          <div className="mt-3 rounded-lg border border-dashed border-[var(--border)] p-3 text-[0.82rem] text-[var(--muted)]">
             {active.label} settings UI will be added in the next pass.
           </div>
         </div>

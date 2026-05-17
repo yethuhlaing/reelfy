@@ -51,7 +51,7 @@ export function GibberishText({ pool, intervalMs = 800 }: Props) {
   }, [pool, intervalMs])
 
   return (
-    <div className="gibberish-text" style={{ opacity: visible ? 1 : 0 }}>
+    <div className="min-h-[1.4em] text-[0.82rem] text-[var(--muted)] transition-opacity duration-200" style={{ opacity: visible ? 1 : 0 }}>
       {pool[idx]}
     </div>
   )

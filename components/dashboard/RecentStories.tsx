@@ -50,19 +50,19 @@ export function RecentStories({ stories, currentStoryId, onSelect, onDelete }: R
   if (stories.length === 0) return null
 
   return (
-    <div className="recent-stories">
-      <h3 className="recent-stories-title">Recent stories</h3>
-      <ul className="recent-stories-list">
+    <div className="mt-6 border-t border-[var(--border)] pt-6">
+      <h3 className="mb-3 font-[var(--font-heading)] text-xs font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">Recent stories</h3>
+      <ul className="flex list-none flex-col gap-2">
         {stories.map((s) => (
           <li
             key={s.id}
-            className={`recent-story-item ${s.id === currentStoryId ? 'active' : ''}`}
+            className={`relative flex cursor-pointer items-start gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 transition hover:border-[var(--accent)] hover:bg-[var(--surface2)] ${s.id === currentStoryId ? 'border-[var(--accent)] bg-[var(--surface2)]' : ''}`}
             onClick={() => onSelect(s.id)}
           >
-            <div className="recent-story-main">
-              <div className="recent-story-title">{s.title || 'Untitled'}</div>
-              <div className="recent-story-tagline">{s.tagline}</div>
-              <div className="recent-story-time">{timeAgo(s.savedAt)}</div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[0.85rem] font-semibold text-[var(--text)]">{s.title || 'Untitled'}</div>
+              <div className="mt-0.5 truncate text-xs text-[var(--muted)]">{s.tagline}</div>
+              <div className="mt-1.5 text-[0.7rem] text-[var(--muted)]">{timeAgo(s.savedAt)}</div>
             </div>
             <AlertDialog
               open={openId === s.id}
@@ -73,7 +73,7 @@ export function RecentStories({ stories, currentStoryId, onSelect, onDelete }: R
             >
               <AlertDialogTrigger asChild>
                 <button
-                  className="recent-story-delete"
+                  className="rounded border-0 bg-transparent px-1.5 py-0.5 text-[1.1rem] leading-none text-[var(--muted)] transition hover:bg-[var(--border)] hover:text-[var(--text)]"
                   aria-label="Delete story"
                   onClick={(e) => {
                     e.stopPropagation()

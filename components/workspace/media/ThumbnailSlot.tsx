@@ -51,11 +51,11 @@ export function ThumbnailSlot({ storyId, prompt, title, tagline, url, onGenerate
 
   if (url && !isGenerating) {
     return (
-      <div className="thumbnail-slot thumbnail-filled">
+      <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface2)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt="Cover" className="thumbnail-image" />
+        <img src={url} alt="Cover" className="block h-full w-full object-cover" />
         <button
-          className="thumbnail-regen-btn"
+          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-black/60 text-[var(--text)] transition hover:bg-black/85"
           onClick={handleGenerate}
           disabled={isGenerating}
           title="Regenerate cover"
@@ -68,24 +68,27 @@ export function ThumbnailSlot({ storyId, prompt, title, tagline, url, onGenerate
 
   if (isGenerating) {
     return (
-      <div className="thumbnail-slot thumbnail-generating">
-        <div className="thumbnail-skeleton">
-          <span className="thumbnail-spinner" />
-          <span className="thumbnail-label">Generating cover…</span>
+      <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface2)]">
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-sm text-[var(--muted)]">
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
+          <span>Generating cover…</span>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="thumbnail-slot thumbnail-empty">
+    <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface2)]">
       {error ? (
-        <div className="thumbnail-error">
+        <div className="mt-2 text-xs text-[#ff6b6b]">
           <span>{error}</span>
           <button onClick={() => setError(null)}>Retry</button>
         </div>
       ) : (
-        <button className="thumbnail-generate-btn" onClick={handleGenerate}>
+        <button
+          className="mx-auto mt-5 rounded-md border-0 bg-[var(--accent)] px-4 py-2.5 font-[var(--font-heading)] text-sm font-semibold text-black transition hover:opacity-85"
+          onClick={handleGenerate}
+        >
           Generate Cover
         </button>
       )}

@@ -30,7 +30,15 @@ export function SceneStateBadge({ scene, jobStartedAt, onClick }: Props) {
           : state === 'stuck'
             ? 'Taking longer than usual'
             : 'Animated',
-    className: `scene-badge scene-badge--${state}${onClick ? ' scene-badge--clickable' : ''}`,
+    className: `absolute right-2 top-2 z-[3] inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.04em] ${
+      state === 'error'
+        ? 'bg-[#b91c1c] text-white'
+        : state === 'stuck'
+          ? 'bg-[#ca8a04] text-[#111]'
+          : state === 'animating'
+            ? 'bg-[rgba(59,130,246,0.85)] text-white'
+            : 'bg-[rgba(34,197,94,0.85)] text-[#052]'
+    } ${onClick ? 'cursor-pointer hover:brightness-110' : ''}`,
   }
 
   if (state === 'error') return <span {...common}><AlertCircle size={11} /></span>

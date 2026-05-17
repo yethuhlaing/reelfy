@@ -17,8 +17,7 @@ export function AvatarMenu() {
       <DropdownMenuTrigger asChild>
         <button
           aria-label="Account"
-          className="icon-btn icon-btn--primary"
-          style={{ borderRadius: '999px', width: 34, padding: 0 }}
+          className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border border-transparent bg-[var(--accent)] p-0 text-[var(--accent-ink)] transition hover:brightness-105"
         >
           Y
         </button>

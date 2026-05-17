@@ -89,5 +89,4 @@ export type StreamEvent =
   | { type: 'thumbnail-image'; url: string }
   | { type: 'thumbnail-error'; error: string }
   | { type: 'error'; error: string }
-  | { type: 'cancelled' }
   | { type: 'complete' }

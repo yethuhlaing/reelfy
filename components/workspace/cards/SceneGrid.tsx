@@ -10,7 +10,6 @@ interface SceneGridProps {
   playingIndex: number | null
   onSceneClick: (index: number) => void
   onAnimateScene?: (sceneId: string) => void
-  onCancelAnimate?: (sceneId: string) => void
   onPlayScene?: (index: number) => void
   readOnly?: boolean
   skeletonCount?: number
@@ -22,7 +21,6 @@ export function SceneGrid({
   playingIndex,
   onSceneClick,
   onAnimateScene,
-  onCancelAnimate,
   onPlayScene,
   readOnly,
   skeletonCount = 0,
@@ -40,7 +38,7 @@ export function SceneGrid({
   const extra = Math.max(0, skeletonCount - scenes.length)
 
   return (
-    <div className="scene-grid" ref={gridRef}>
+    <div className="relative z-0 mt-1 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]" ref={gridRef}>
       {scenes.map((scene, index) => (
         <div key={scene.id} ref={(el) => { if (el) cardRefs.current.set(index, el) }}>
           <SceneCard
@@ -49,7 +47,6 @@ export function SceneGrid({
             isPlaying={playingIndex === index}
             onClick={() => onSceneClick(index)}
             onAnimate={onAnimateScene ? () => onAnimateScene(scene.id) : undefined}
-            onCancelAnimate={onCancelAnimate ? () => onCancelAnimate(scene.id) : undefined}
             onPlay={onPlayScene ? () => onPlayScene(index) : undefined}
             readOnly={readOnly}
             jobStartedAt={jobStartedAt?.(scene.id)}

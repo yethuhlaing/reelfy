@@ -124,16 +124,17 @@ export function StoryForm({ category }: { category: string }) {
   }
 
   return (
-    <div className="form-shell">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-[18px] px-6 pb-20">
       <div>
-        <span className="chip">◈ {category}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-0.5 text-[0.7rem] font-semibold text-[var(--text)]">◈ {category}</span>
         <h1 style={{ marginTop: 10 }}>New story</h1>
       </div>
 
-      <div className="field">
+      <div className="flex flex-col gap-2">
         <label htmlFor="story" style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Your story</label>
         <textarea
           id="story"
+          className="min-h-[260px] resize-y rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 font-[var(--font-body)] text-[0.95rem] text-[var(--text)] outline-none focus:border-transparent focus:outline-2 focus:outline-[var(--accent)] focus:outline-offset-[-1px]"
           placeholder="Drop the story. Founder journey, narrative, anything. The wilder the better."
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -141,7 +142,7 @@ export function StoryForm({ category }: { category: string }) {
         />
       </div>
 
-      <div className="option-pill-bar">
+      <div className="flex flex-wrap gap-2">
         <ConfigPill
           label="Scenes"
           value={`${options.density}`}
@@ -207,19 +208,18 @@ export function StoryForm({ category }: { category: string }) {
       </div>
 
       {error && (
-        <div className="error-banner">
+        <div className="flex items-center gap-2 rounded-[10px] border border-[color-mix(in_srgb,var(--danger)_40%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_18%,var(--surface))] px-3.5 py-2.5 text-[0.85rem] text-[var(--text)]">
           <AlertCircle size={16} />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="cost-preview-slot" />
+      <div className="min-h-6" />
 
       <button
-        className="icon-btn icon-btn--primary"
+        className="inline-flex h-[46px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-2.5 text-[0.95rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
         onClick={submit}
         disabled={submitting || !text.trim()}
-        style={{ height: 46, justifyContent: 'center', fontSize: '0.95rem' }}
       >
         <Sparkles size={16} />
         {submitting ? 'Starting…' : 'Generate Story'}
@@ -256,18 +256,22 @@ function ConfigPill({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className="option-pill" disabled={disabled}>
-          <span className="option-pill-label">{label}</span>
-          <span className="option-pill-value">{value}</span>
+        <button
+          type="button"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-1 font-inherit text-[var(--text)] transition hover:bg-[var(--surface2)] disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={disabled}
+        >
+          <span className="text-[0.68rem] text-[var(--muted)]">{label}</span>
+          <span className="text-[0.72rem]">{value}</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="option-pill-popover">
-        <div className="option-pill-options">
+      <PopoverContent align="start" className="w-[220px] p-1.5">
+        <div className="flex max-h-[190px] flex-col gap-px overflow-auto">
           {options.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              className={`option-pill-option ${current === opt.value ? 'active' : ''}`}
+              className={`w-full cursor-pointer rounded-[5px] border border-transparent bg-transparent px-[7px] py-[5px] text-left font-inherit text-[0.74rem] leading-[1.2] text-[var(--text)] hover:bg-[var(--surface2)] ${current === opt.value ? 'border-[color-mix(in_srgb,var(--accent)_35%,var(--border))] bg-[color-mix(in_srgb,var(--surface2)_75%,var(--accent)_25%)]' : ''}`}
               onClick={() => {
                 onChange(opt.value)
                 setOpen(false)

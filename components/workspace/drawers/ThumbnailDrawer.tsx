@@ -55,32 +55,34 @@ export function ThumbnailDrawer({ open, onClose }: Props) {
     <Drawer open={open} onClose={onClose} title="Thumbnail" placement="top-right">
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="Thumbnail" style={{ width: '100%', borderRadius: 10, marginBottom: 12 }} />
+        <img src={url} alt="Thumbnail" className="mb-3 block w-full rounded-[10px]" />
       ) : (
-        <div style={{ aspectRatio: '16/9', borderRadius: 10, background: 'var(--surface2)', display: 'grid', placeItems: 'center', color: 'var(--muted)', marginBottom: 12 }}>
+        <div className="mb-3 grid aspect-video place-items-center rounded-[10px] bg-[var(--surface2)] text-[var(--muted)]">
           No thumbnail yet
         </div>
       )}
 
       {prompt && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="mb-3">
+          <div className="mb-1 flex items-center gap-1.5 text-[0.72rem] text-[var(--muted)]">
             <span>Prompt</span>
-            <button className="icon-btn" style={{ height: 22, padding: '0 6px', fontSize: '0.7rem' }} onClick={copy}>
+            <button
+              className="inline-flex h-[22px] min-w-[22px] items-center justify-center gap-1 rounded-md border border-[var(--border)] bg-[var(--surface2)] px-1.5 text-[0.7rem] text-[var(--text)]"
+              onClick={copy}
+            >
               <Copy size={11} />
             </button>
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text)', background: 'var(--surface2)', padding: 10, borderRadius: 8 }}>
+          <div className="rounded-lg bg-[var(--surface2)] p-2.5 text-[0.8rem] text-[var(--text)]">
             {prompt}
           </div>
         </div>
       )}
 
       <button
-        className="icon-btn icon-btn--primary"
+        className="inline-flex h-[38px] w-full items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-2.5 font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
         onClick={generate}
         disabled={busy || readOnly || !prompt}
-        style={{ width: '100%', justifyContent: 'center', height: 38 }}
       >
         {busy ? <RefreshCw size={14} className="animate-spin" /> : url ? <RefreshCw size={14} /> : <Sparkles size={14} />}
         {busy ? 'Generating…' : url ? 'Regenerate' : 'Generate'}

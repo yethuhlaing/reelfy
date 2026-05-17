@@ -191,13 +191,7 @@ export function ExportButton({ storyId, scenes }: ExportButtonProps) {
   const handleCancelExport = async () => {
     prepareAbortRef.current?.abort()
     if (state.phase === 'queued') {
-      const jobId = state.jobId
       setState({ phase: 'idle' })
-      try {
-        await fetch(`/api/jobs/${jobId}/cancel`, { method: 'POST' })
-      } catch {
-        // best-effort
-      }
     } else if (state.phase === 'preparing') {
       setState({ phase: 'idle' })
     }

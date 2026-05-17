@@ -91,21 +91,31 @@ export function StoryCard({ summary, onChange }: Props) {
 
   return (
     <>
-      <article className="story-card" onClick={open}>
-        <div className="story-card-thumb">
+      <article
+        className="group relative flex cursor-pointer flex-col overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--surface)] transition hover:-translate-y-[3px] hover:border-[color-mix(in_srgb,var(--accent)_35%,var(--border))]"
+        onClick={open}
+      >
+        <div className="relative grid aspect-video place-items-center overflow-hidden bg-[var(--surface2)]">
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={thumb} alt={summary.title} />
           ) : (
-            <div className="story-card-thumb-fallback">◈</div>
+            <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_30%,color-mix(in_srgb,var(--accent)_30%,transparent),transparent_60%),linear-gradient(135deg,var(--surface2),var(--surface))] text-3xl text-[var(--muted)]">
+              ◈
+            </div>
           )}
-          <div className="story-card-status">
-            <span className="chip" data-status={status}>{STATUS_LABEL[status]}</span>
+          <div className="absolute left-2.5 top-2.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-0.5 text-[0.7rem] font-semibold text-[var(--text)]">
+              {STATUS_LABEL[status]}
+            </span>
           </div>
-          <div className="story-card-menu" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="icon-btn" aria-label="More" style={{ height: 28, width: 28, padding: 0 }}>
+                <button
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface2)] p-0 text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
+                  aria-label="More"
+                >
                   <MoreHorizontal size={14} />
                 </button>
               </DropdownMenuTrigger>
@@ -127,11 +137,11 @@ export function StoryCard({ summary, onChange }: Props) {
             </DropdownMenu>
           </div>
         </div>
-        <div className="story-card-body">
+        <div className="flex flex-col gap-1.5 px-4 pb-4 pt-3.5">
           {renaming ? (
             <input
               autoFocus
-              className="story-card-title"
+              className="truncate bg-transparent font-[var(--font-heading)] text-[0.95rem] font-semibold leading-[1.3] outline-none"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleRenameCommit}
@@ -143,9 +153,9 @@ export function StoryCard({ summary, onChange }: Props) {
               style={{ background: 'transparent', border: 'none', color: 'inherit', font: 'inherit', outline: 'none' }}
             />
           ) : (
-            <div className="story-card-title">{summary.title}</div>
+            <div className="truncate font-[var(--font-heading)] text-[0.95rem] font-semibold leading-[1.3]">{summary.title}</div>
           )}
-          <div className="story-card-meta">
+          <div className="flex gap-2.5 text-[0.72rem] text-[var(--muted)]">
             <span>{total} scenes</span>
             <span>·</span>
             <span>{animated} animated</span>

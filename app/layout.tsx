@@ -34,17 +34,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${syne.variable} ${azeretMono.variable}`}>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try { document.body.removeAttribute('cz-shortcut-listen'); } catch(e) {}`,
-          }}
-        />
       </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <div className="shell" data-collapsed="false">
+          <div className="grid min-h-screen [grid-template-columns:var(--sidebar-w,240px)_1fr] transition-[grid-template-columns] duration-200 ease-out" data-collapsed="false">
             <Sidebar />
-            <div className="shell-main">{children}</div>
+            <div className="flex min-h-screen min-w-0 flex-col">{children}</div>
           </div>
           <Toaster />
         </ThemeProvider>

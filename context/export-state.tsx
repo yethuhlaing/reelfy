@@ -127,14 +127,8 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const cancelExport: Ctx['cancelExport'] = useCallback(async () => {
-    const jobId = state.jobId
     setState(initial)
-    if (jobId) {
-      try {
-        await fetch(`/api/jobs/${jobId}/cancel`, { method: 'POST' })
-      } catch { /* best-effort */ }
-    }
-  }, [state.jobId])
+  }, [])
 
   const reset = useCallback(() => setState(initial), [])
 

@@ -19,7 +19,10 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="icon-btn" aria-label="Theme">
+        <button
+          className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-2.5 text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
+          aria-label="Theme"
+        >
           {current === 'light' ? <Sun size={14} /> : current === 'dark' ? <Moon size={14} /> : <Monitor size={14} />}
         </button>
       </DropdownMenuTrigger>

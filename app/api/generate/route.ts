@@ -1,6 +1,5 @@
 import { put } from '@vercel/blob'
 import type { SceneDensity, StickStyle, VoiceTone, ImageModel, TextModel, StreamEvent, Scene } from '@/lib/types'
-import { clearStoryCancelled, isStoryCancelled } from '@/lib/jobs/cancel-flag'
 import { getImageProvider } from '@/lib/providers/image'
 import { getTextProvider } from '@/lib/providers/text'
 
@@ -48,8 +47,6 @@ export async function POST(request: Request) {
   const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
   const signal = request.signal
 
-  await clearStoryCancelled(storyId)
-
   const encoder = new TextEncoder()
   let closed = false
   const stream = new ReadableStream({
@@ -65,15 +62,11 @@ export async function POST(request: Request) {
       const isAbort = (err: unknown) =>
         signal.aborted ||
         (err instanceof Error && (err.name === 'AbortError' || err.message === 'aborted'))
-      const throwIfCancelled = async () => {
+      const throwIfAborted = async () => {
         if (signal.aborted) throw new DOMException('aborted', 'AbortError')
-        if (await isStoryCancelled(storyId)) {
-          throw new DOMException('cancelled', 'AbortError')
-        }
       }
 
       const onAbort = () => {
-        send({ type: 'cancelled' })
         if (!closed) {
           closed = true
           try { controller.close() } catch {}
@@ -82,7 +75,7 @@ export async function POST(request: Request) {
       signal.addEventListener('abort', onAbort, { once: true })
 
       try {
-        await throwIfCancelled()
+        await throwIfAborted()
         send({ type: 'stage', id: 'analyze', status: 'active', detail: 'Reading your story' })
         send({ type: 'stage', id: 'plan', status: 'pending' })
         send({ type: 'stage', id: 'images', status: 'pending' })
@@ -91,7 +84,7 @@ export async function POST(request: Request) {
         send({ type: 'stage', id: 'plan', status: 'active', detail: `Planning scenes with ${textProvider.label}` })
 
         const plan = await textProvider.planStory(story, density, style, tone, signal)
-        await throwIfCancelled()
+        await throwIfAborted()
         send({ type: 'story', title: plan.title, tagline: plan.tagline, protagonist: plan.protagonist })
         send({ type: 'thumbnail-prompt', prompt: plan.thumbnailPrompt })
 
@@ -114,10 +107,10 @@ export async function POST(request: Request) {
         send({ type: 'image-progress', done, total })
 
         for (const scene of plan.scenes) {
-          await throwIfCancelled()
+          await throwIfAborted()
           try {
             const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, { aspectRatio: '16:9', signal })
-            await throwIfCancelled()
+            await throwIfAborted()
 
             let imageUrl: string
             if (hasBlobToken) {
@@ -132,7 +125,7 @@ export async function POST(request: Request) {
               imageUrl = `data:${mimeType};base64,${data.toString('base64')}`
             }
 
-            await throwIfCancelled()
+            await throwIfAborted()
             send({ type: 'scene-image', sceneId: scene.id, imageUrl })
           } catch (err) {
             if (isAbort(err)) throw err
@@ -151,9 +144,7 @@ export async function POST(request: Request) {
         send({ type: 'stage', id: 'done', status: 'done' })
         send({ type: 'complete' })
       } catch (err) {
-        if (isAbort(err)) {
-          send({ type: 'cancelled' })
-        } else {
+        if (!isAbort(err)) {
           console.error('Generate stream error:', err)
           send({
             type: 'error',

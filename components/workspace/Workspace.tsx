@@ -265,11 +265,6 @@ export function Workspace({ storyId, category }: Props) {
           case 'image-progress':
             setImageProgress({ done: evt.done, total: evt.total })
             break
-          case 'cancelled':
-            setStages((prev) =>
-              prev.map((s) => (s.status === 'active' ? { ...s, status: 'error', detail: 'Cancelled' } : s)),
-            )
-            break
           case 'error':
             throw new Error(evt.error)
           case 'complete':
@@ -317,17 +312,6 @@ export function Workspace({ storyId, category }: Props) {
     } finally {
       setIsGenerating(false)
       if (generateAbortRef.current === ctrl) generateAbortRef.current = null
-    }
-  }
-
-  const handleStop = async () => {
-    generateAbortRef.current?.abort()
-    voiceoverAbortRef.current?.abort()
-    try {
-      await fetch(`/api/stories/${storyId}/cancel`, { method: 'POST' })
-      toast.success('Stopped')
-    } catch {
-      toast.error('Failed to stop fully')
     }
   }
 
@@ -452,14 +436,6 @@ export function Workspace({ storyId, category }: Props) {
     if (!readOnly) updateStoryScene(storyId, sceneId, patch)
   }
 
-  const cancelAnimate = async (sceneId: string) => {
-    const scene = storyData?.scenes.find((s) => s.id === sceneId)
-    const jobId = scene?.pendingJobId
-    if (!jobId || jobId === 'pending') { patchScene(sceneId, { pendingJobId: undefined }); return }
-    patchScene(sceneId, { pendingJobId: undefined, lastError: 'Cancelled' })
-    try { await fetch(`/api/jobs/${jobId}/cancel`, { method: 'POST' }) } catch { /* best-effort */ }
-  }
-
   const retryVoice = async (sceneId: string) => {
     if (readOnly) return
     const scene = storyData?.scenes.find((s) => s.id === sceneId)
@@ -534,7 +510,6 @@ export function Workspace({ storyId, category }: Props) {
       audioRef={audioRef}
       playScene={playScene}
       enqueueAnimate={enqueueAnimate}
-      cancelAnimate={cancelAnimate}
       retryVoice={retryVoice}
       retryImage={retryImage}
     >
@@ -544,30 +519,21 @@ export function Workspace({ storyId, category }: Props) {
         category={category}
         onPlayAll={playAll}
         onAnimateAll={animateAll}
-        onStop={handleStop}
         onToggleThumbnail={() => setThumbOpen((v) => !v)}
         onToggleDetails={() => setDetailsOpen((v) => !v)}
         onRenamed={(t) => setStoryData((prev) => (prev ? { ...prev, title: t } : prev))}
         thumbnailOpen={thumbOpen}
       />
 
-      <div style={{ borderBottom: '1px solid var(--border)', padding: '0 20px' }}>
-        <div style={{ display: 'inline-flex', gap: 18 }}>
+      <div className="border-b border-[var(--border)] px-5">
+        <div className="inline-flex gap-[18px]">
           {(['scenes', 'script'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              style={{
-                padding: '10px 0',
-                background: 'transparent',
-                border: 'none',
-                color: activeTab === t ? 'var(--text)' : 'var(--muted)',
-                borderBottom: activeTab === t ? '2px solid var(--accent)' : '2px solid transparent',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-heading)',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-              }}
+              className={`cursor-pointer border-b-2 bg-transparent py-2.5 font-[var(--font-heading)] text-[0.85rem] font-semibold ${
+                activeTab === t ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--muted)]'
+              }`}
             >
               {t === 'scenes' ? 'Scenes' : 'Script'}
             </button>
@@ -580,15 +546,14 @@ export function Workspace({ storyId, category }: Props) {
         onClose={() => setDetailsOpen(false)}
         stages={stages}
         imageProgress={imageProgress}
-        onCancel={isGenerating ? handleStop : undefined}
       />
 
-      <main style={{ padding: 20, paddingBottom: 120, flex: 1 }}>
+      <main className="flex-1 px-5 pb-[120px] pt-5">
         {isGenerating && (
-          <div className="workspace-loading">
+          <div className="flex flex-col items-center gap-3.5 px-4 pb-2 pt-7">
             <StickmanScribble variant="large" />
             <GibberishText pool={STICKMAN_GIBBERISH} />
-            <div className="stage-summary">{summarizeStages(stages, imageProgress)}</div>
+            <div className="text-[0.72rem] uppercase tracking-[0.04em] text-[var(--muted)]">{summarizeStages(stages, imageProgress)}</div>
           </div>
         )}
         {storyData ? (
@@ -598,7 +563,6 @@ export function Workspace({ storyId, category }: Props) {
               playingIndex={playState.isPlaying ? playState.currentIndex : null}
               onSceneClick={openScene}
               onAnimateScene={readOnly ? undefined : enqueueAnimate}
-              onCancelAnimate={readOnly ? undefined : cancelAnimate}
               onPlayScene={playScene}
               readOnly={readOnly}
               skeletonCount={
@@ -611,19 +575,19 @@ export function Workspace({ storyId, category }: Props) {
               }}
             />
           ) : (
-            <div style={{ maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="flex max-w-[760px] flex-col gap-3.5">
               {storyData.scenes.map((scene, i) => (
-                <div key={scene.id} style={{ display: 'flex', gap: 14 }}>
-                  <span style={{ color: 'var(--muted)', minWidth: 28, fontFamily: 'var(--font-heading)' }}>{i + 1}</span>
-                  <p style={{ fontSize: '0.95rem' }}>{scene.voiceover}</p>
+                <div key={scene.id} className="flex gap-3.5">
+                  <span className="min-w-7 font-[var(--font-heading)] text-[var(--muted)]">{i + 1}</span>
+                  <p className="text-[0.95rem]">{scene.voiceover}</p>
                 </div>
               ))}
             </div>
           )
         ) : isGenerating ? null : (
-          <div className="empty-dash">
-            <h3>Loading…</h3>
-            <p>If this stays empty, the story may have been deleted.</p>
+          <div className="flex flex-col items-center gap-[18px] rounded-[18px] border border-dashed border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_80%,transparent)] px-5 py-[60px] text-center">
+            <h3 className="font-[var(--font-heading)] text-2xl">Loading…</h3>
+            <p className="max-w-[420px] text-[var(--muted)]">If this stays empty, the story may have been deleted.</p>
           </div>
         )}
       </main>
@@ -641,7 +605,6 @@ export function Workspace({ storyId, category }: Props) {
         open={sceneDrawerOpen}
         onClose={() => setSceneDrawerOpen(false)}
         onAnimate={enqueueAnimate}
-        onCancelAnimate={cancelAnimate}
         onPlay={(i) => { setSceneDrawerOpen(false); playScene(i) }}
       />
       {/* expose active id to provider via effect */}

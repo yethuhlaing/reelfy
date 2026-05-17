@@ -10,15 +10,18 @@ interface Props {
 
 export function DashboardHero({ category, stats }: Props) {
   return (
-    <section className="dash-hero">
-      <Link href={`/${category}/new`} className="dash-hero-cta">
+    <section className="grid grid-cols-2 gap-3.5 lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
+      <Link
+        href={`/${category}/new`}
+        className="flex flex-col justify-between gap-[18px] rounded-2xl border-0 bg-[linear-gradient(135deg,var(--accent),color-mix(in_srgb,var(--accent)_60%,#fff))] p-[22px] text-left font-[var(--font-body)] text-[var(--accent-ink)] transition hover:-translate-y-0.5"
+      >
         <div>
-          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.7 }}>
+          <div className="text-xs uppercase tracking-[0.08em] opacity-70">
             Make
           </div>
-          <h2>Start a new story</h2>
+          <h2 className="font-[var(--font-heading)] text-[1.6rem] leading-[1.1]">Start a new story</h2>
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
+        <div className="inline-flex items-center gap-2 font-semibold">
           <Plus size={18} /> New Story
         </div>
       </Link>
@@ -32,11 +35,11 @@ export function DashboardHero({ category, stats }: Props) {
 
 function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
   return (
-    <div className="dash-stat">
-      <div className="dash-stat-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <div className="flex flex-col gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-[18px]">
+      <div className="inline-flex items-center gap-1.5 text-[0.72rem] uppercase tracking-[0.06em] text-[var(--muted)]">
         {icon} {label}
       </div>
-      <div className="dash-stat-value">{value}</div>
+      <div className="font-[var(--font-heading)] text-[1.8rem] font-bold">{value}</div>
     </div>
   )
 }
