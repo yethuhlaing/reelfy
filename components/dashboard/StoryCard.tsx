@@ -156,14 +156,31 @@ export function StoryCard({ summary, onChange }: Props) {
       </article>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete "{summary.title}"?</AlertDialogTitle>
-            <AlertDialogDescription>This removes the story and its generated assets. Can't be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+        <AlertDialogContent className="gap-0 border-[var(--border)] bg-[var(--surface)] p-0 shadow-2xl sm:max-w-md">
+          <div className="space-y-4 px-6 pt-6 pb-5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                <Trash2 size={18} />
+              </div>
+              <AlertDialogHeader className="gap-1 text-left">
+                <AlertDialogTitle className="text-base">Delete "{summary.title}"?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove the story, scenes, and generated assets.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+            </div>
+            <div className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-muted-foreground">
+              This action cannot be undone.
+            </div>
+          </div>
+          <AlertDialogFooter className="border-t border-[var(--border)] px-6 py-4">
+            <AlertDialogCancel>Keep story</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500"
+            >
+              Delete story
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -37,14 +37,10 @@ export function AdvancedConfig({ value, onChange, disabled }: Props) {
       </Field>
       <Field label="Script model" hint="LLM for script + scene plan">
         <select value={value.textModel} onChange={(e) => set('textModel', e.target.value as GenerateOptions['textModel'])} disabled={disabled}>
-          <option value="gemini-2.5-flash">Gemini 2.5 Flash (default)</option>
-          <option value="nvidia/nemotron-ultra-253b-v1">Nemotron Ultra 253B — free</option>
-          <option value="nvidia/nemotron-3-nano-30b-a3b">Nemotron Nano 30B — free</option>
-          <option value="nvidia/nemotron-nano-9b-v2">Nemotron Nano 9B</option>
-          <option value="nvidia/llama-3.3-nemotron-super-49b-v1.5">Llama 3.3 49B</option>
-          <option value="nvidia/nemotron-nano-12b-v2">Nemotron Nano 12B</option>
-          <option value="nvidia/llama-3.1-nemotron-70b-instruct">Llama 3.1 70B</option>
-          <option value="nvidia/mixtral-8x22b-instruct-v0.1">Mixtral 8x22B</option>
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash — default (Google)</option>
+          <option value="groq/llama-3.3-70b-versatile">Llama 3.3 70B — free (Groq)</option>
+          <option value="groq/deepseek-r1-distill-llama-70b">DeepSeek R1 70B — free (Groq)</option>
+          <option value="nvidia/nemotron-ultra-253b-v1">Nemotron Ultra 253B — free (NVIDIA)</option>
         </select>
       </Field>
       <Field label="Image model" hint="Per-scene image">

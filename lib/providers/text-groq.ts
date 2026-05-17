@@ -2,7 +2,7 @@ import type { VoiceTone, SceneDensity, StickStyle, TextModel } from '../types'
 import type { TextProvider, PlanResult } from './text'
 import { buildPlanPrompt } from '../prompts/plan'
 
-function makeNvidiaProvider(modelId: TextModel, label: string): TextProvider {
+function makeGroqProvider(modelId: TextModel, label: string): TextProvider {
   return {
     id: modelId,
     label,
@@ -14,14 +14,14 @@ function makeNvidiaProvider(modelId: TextModel, label: string): TextProvider {
       signal?: AbortSignal,
     ): Promise<PlanResult> {
       const systemPrompt = buildPlanPrompt(tone, density, style)
-      const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.NVIDIA_API_KEY}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: modelId,
+          model: modelId.replace('groq/', ''),
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `FOUNDER STORY:\n${story}` },
@@ -34,16 +34,13 @@ function makeNvidiaProvider(modelId: TextModel, label: string): TextProvider {
       })
       if (!res.ok) {
         const err = await res.text()
-        throw new Error(`NVIDIA API error (${res.status}): ${err}`)
+        throw new Error(`Groq API error (${res.status}): ${err}`)
       }
       const data = (await res.json()) as { choices: { message: { content: string } }[] }
-      let content = data.choices[0].message.content
-      // strip markdown fences if model wraps output despite json_object mode
-      const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-      if (fenceMatch) content = fenceMatch[1]
-      return JSON.parse(content)
+      return JSON.parse(data.choices[0].message.content)
     },
   }
 }
 
-export const nvidiaNemotronUltra = makeNvidiaProvider('nvidia/nemotron-ultra-253b-v1', 'Nemotron Ultra 253B — free (NVIDIA)')
+export const groqLlama70b = makeGroqProvider('groq/llama-3.3-70b-versatile', 'Llama 3.3 70B — free (Groq)')
+export const groqDeepSeekR1 = makeGroqProvider('groq/deepseek-r1-distill-llama-70b', 'DeepSeek R1 70B — free (Groq)')

@@ -49,12 +49,8 @@ export type VideoQuality = '720p' | '1080p'
 export type TextModel =
   | 'gemini-2.5-flash'
   | 'nvidia/nemotron-ultra-253b-v1'
-  | 'nvidia/nemotron-3-nano-30b-a3b'
-  | 'nvidia/nemotron-nano-9b-v2'
-  | 'nvidia/llama-3.3-nemotron-super-49b-v1.5'
-  | 'nvidia/nemotron-nano-12b-v2'
-  | 'nvidia/llama-3.1-nemotron-70b-instruct'
-  | 'nvidia/mixtral-8x22b-instruct-v0.1'
+  | 'groq/llama-3.3-70b-versatile'
+  | 'groq/deepseek-r1-distill-llama-70b'
 
 export interface GenerateOptions {
   density: SceneDensity

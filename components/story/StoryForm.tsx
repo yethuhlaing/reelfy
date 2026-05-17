@@ -55,13 +55,9 @@ const VIDEO_QUALITY_OPTIONS: OptionItem<GenerateOptions['videoQuality']>[] = [
 
 const TEXT_MODEL_OPTIONS: OptionItem<GenerateOptions['textModel']>[] = [
   { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { value: 'groq/llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Groq)' },
+  { value: 'groq/deepseek-r1-distill-llama-70b', label: 'DeepSeek R1 70B (Groq)' },
   { value: 'nvidia/nemotron-ultra-253b-v1', label: 'Nemotron Ultra 253B' },
-  { value: 'nvidia/nemotron-3-nano-30b-a3b', label: 'Nemotron Nano 30B' },
-  { value: 'nvidia/nemotron-nano-9b-v2', label: 'Nemotron Nano 9B' },
-  { value: 'nvidia/llama-3.3-nemotron-super-49b-v1.5', label: 'Llama 3.3 49B' },
-  { value: 'nvidia/nemotron-nano-12b-v2', label: 'Nemotron Nano 12B' },
-  { value: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'Llama 3.1 70B' },
-  { value: 'nvidia/mixtral-8x22b-instruct-v0.1', label: 'Mixtral 8x22B' },
 ] as const
 
 const IMAGE_MODEL_OPTIONS: OptionItem<GenerateOptions['imageModel']>[] = [

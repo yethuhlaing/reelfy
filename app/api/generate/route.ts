@@ -28,12 +28,16 @@ export async function POST(request: Request) {
 
   const textProvider = getTextProvider(textModel)
   const isNvidia = textProvider.id.startsWith('nvidia/')
+  const isGroq = textProvider.id.startsWith('groq/')
 
-  if (!isNvidia && !process.env.GEMINI_API_KEY) {
+  if (!isNvidia && !isGroq && !process.env.GEMINI_API_KEY) {
     return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not configured' }), { status: 500 })
   }
   if (isNvidia && !process.env.NVIDIA_API_KEY) {
     return new Response(JSON.stringify({ error: 'NVIDIA_API_KEY is not configured' }), { status: 500 })
+  }
+  if (isGroq && !process.env.GROQ_API_KEY) {
+    return new Response(JSON.stringify({ error: 'GROQ_API_KEY is not configured' }), { status: 500 })
   }
 
   const imageProvider = getImageProvider(imageModel)
