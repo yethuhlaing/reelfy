@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
-import { PanelLeftClose, PanelLeftOpen, Plus, Settings, LayoutDashboard, Sparkles } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Plus, Settings, LayoutDashboard } from 'lucide-react'
 
 const ACTIVE_CAT_KEY = 'category:active'
 const COLLAPSED_KEY = 'sidebar:collapsed'
@@ -114,13 +114,6 @@ export function Sidebar() {
         <Settings size={16} />
         <span className="sidebar-collapsible">Settings</span>
       </Link>
-
-      <div className="sidebar-footer">
-        <div className="sidebar-nav-item" title="Credits — coming soon">
-          <Sparkles size={16} />
-          <span className="sidebar-collapsible">— credits</span>
-        </div>
-      </div>
     </aside>
   )
 }
