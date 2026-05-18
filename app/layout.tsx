@@ -3,7 +3,7 @@ import { Syne, Azeret_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/providers/theme-provider'
-import { Sidebar } from '@/components/layout/Sidebar'
+import { AppShell } from '@/components/layout/app-shell'
 
 const syne = Syne({
   subsets: ['latin'],
@@ -37,10 +37,7 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <div className="grid min-h-screen [grid-template-columns:var(--sidebar-w,240px)_1fr] transition-[grid-template-columns] duration-200 ease-out" data-collapsed="false">
-            <Sidebar />
-            <div className="flex min-h-screen min-w-0 flex-col">{children}</div>
-          </div>
+          <AppShell>{children}</AppShell>
           <Toaster />
         </ThemeProvider>
       </body>
