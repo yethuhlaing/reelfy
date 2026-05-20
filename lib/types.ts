@@ -88,5 +88,6 @@ export type StreamEvent =
   | { type: 'thumbnail-prompt'; prompt: string }
   | { type: 'thumbnail-image'; url: string }
   | { type: 'thumbnail-error'; error: string }
+  | { type: 'insufficient_credits'; required: number; balance: number }
   | { type: 'error'; error: string }
   | { type: 'complete' }

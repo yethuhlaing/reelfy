@@ -1,28 +1,51 @@
 import { put } from '@vercel/blob'
-import type { SceneDensity, StickStyle, VoiceTone, ImageModel, TextModel, StreamEvent, Scene } from '@/lib/types'
+import type { SceneDensity, StickStyle, VoiceTone, ImageModel, TextModel, StreamEvent, Scene, StoryData, VideoModel, VideoQuality } from '@/lib/types'
 import { getImageProvider } from '@/lib/providers/image'
 import { getTextProvider } from '@/lib/providers/text'
+import { auth } from '@/lib/externals/betterauth'
+import { getCredits, deductCredits } from '@/lib/db/credits'
+import { upsertStoryWithScenes } from '@/lib/db/stories'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
+const IMAGE_MODEL_CREDITS: Record<ImageModel, number> = {
+  'flux-schnell-fal': 1,
+  'flux-dev-fal': 2,
+  'sdxl-lightning-fal': 1,
+}
+
 export async function POST(request: Request) {
+  const session = await auth.api.getSession({ headers: request.headers })
+  if (!session?.user?.id) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  }
+  const userId = session.user.id
+
   const body = await request.json().catch(() => null)
   if (!body) {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 })
   }
-  const { storyId, story, density, style, tone, imageModel, textModel } = body as {
+  const { storyId, story, density, style, tone, imageModel, videoModel, videoQuality, textModel, category } = body as {
     storyId: string
     story: string
     density: SceneDensity
     style: StickStyle
     tone: VoiceTone
     imageModel?: ImageModel
+    videoModel?: VideoModel
+    videoQuality?: VideoQuality
     textModel?: TextModel
+    category?: string
   }
 
   if (!storyId || !story || !density || !style || !tone) {
     return new Response(JSON.stringify({ error: 'Missing required fields: storyId, story, density, style, tone' }), { status: 400 })
+  }
+
+  const balance = await getCredits(userId)
+  if (balance < 1) {
+    return new Response(JSON.stringify({ error: 'insufficient_credits', balance, required: 1 }), { status: 402 })
   }
 
   const textProvider = getTextProvider(textModel)
@@ -44,6 +67,7 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'FAL_KEY is not configured' }), { status: 500 })
   }
 
+  const creditsPerScene = IMAGE_MODEL_CREDITS[imageModel ?? 'flux-schnell-fal'] ?? 1
   const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
   const signal = request.signal
 
@@ -88,8 +112,10 @@ export async function POST(request: Request) {
         send({ type: 'story', title: plan.title, tagline: plan.tagline, protagonist: plan.protagonist })
         send({ type: 'thumbnail-prompt', prompt: plan.thumbnailPrompt })
 
+        const finalScenes: Scene[] = []
         for (const p of plan.scenes) {
           const scene: Scene = { ...p, imageUrl: null, voiceoverUrl: null }
+          finalScenes.push(scene)
           send({ type: 'scene-planned', scene })
         }
 
@@ -112,6 +138,12 @@ export async function POST(request: Request) {
             const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, { aspectRatio: '16:9', signal })
             await throwIfAborted()
 
+            const deduction = await deductCredits(userId, creditsPerScene)
+            if (!deduction.ok) {
+              send({ type: 'insufficient_credits', required: creditsPerScene, balance: deduction.balance })
+              break
+            }
+
             let imageUrl: string
             if (hasBlobToken) {
               const ext = mimeType.split('/')[1] || 'png'
@@ -126,6 +158,8 @@ export async function POST(request: Request) {
             }
 
             await throwIfAborted()
+            const idx = finalScenes.findIndex((s) => s.id === scene.id)
+            if (idx >= 0) finalScenes[idx] = { ...finalScenes[idx], imageUrl }
             send({ type: 'scene-image', sceneId: scene.id, imageUrl })
           } catch (err) {
             if (isAbort(err)) throw err
@@ -141,6 +175,37 @@ export async function POST(request: Request) {
         }
 
         send({ type: 'stage', id: 'images', status: 'done', detail: `${done}/${total} images` })
+
+        try {
+          const storyData: StoryData = {
+            title: plan.title,
+            tagline: plan.tagline,
+            protagonist: plan.protagonist,
+            thumbnailPrompt: plan.thumbnailPrompt,
+            thumbnailUrl: null,
+            scenes: finalScenes,
+          }
+          await upsertStoryWithScenes({
+            storyId,
+            userId,
+            category: category ?? 'stickman',
+            storyInput: story,
+            options: {
+              density,
+              style,
+              tone,
+              imageModel: imageModel ?? 'flux-schnell-fal',
+              videoModel: videoModel ?? 'ltx-video-fal',
+              videoQuality: videoQuality ?? '720p',
+              textModel: textModel ?? 'gemini-2.5-flash',
+            },
+            storyData,
+            status: 'ready',
+          })
+        } catch (persistErr) {
+          console.error('Failed to persist story', persistErr)
+        }
+
         send({ type: 'stage', id: 'done', status: 'done' })
         send({ type: 'complete' })
       } catch (err) {

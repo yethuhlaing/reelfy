@@ -10,6 +10,8 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
+export type StoryStatus = 'draft' | 'generating' | 'ready' | 'rendered' | 'failed'
+
 const createdAt = timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 const updatedAt = timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 
@@ -106,7 +108,13 @@ export const stories = pgTable('stories', {
   tagline: text('tagline').notNull(),
   protagonist: text('protagonist').notNull(),
   thumbnailUrl: text('thumbnail_url'),
+  thumbnailPrompt: text('thumbnail_prompt'),
   sceneCount: integer('scene_count').notNull().default(0),
+  storyInput: text('story_input').notNull().default(''),
+  options: text('options').notNull().default('{}'),
+  composedVideoUrl: text('composed_video_url'),
+  category: text('category').notNull().default('stickman'),
+  status: text('status').notNull().default('draft'),
   createdAt,
   updatedAt,
 })
@@ -125,6 +133,11 @@ export const scenes = pgTable('scenes', {
   action: text('action').notNull(),
   setting: text('setting').notNull(),
   emotion: text('emotion').notNull(),
+  imagePrompt: text('image_prompt').notNull().default(''),
+  motionPrompt: text('motion_prompt'),
+  characters: integer('characters').notNull().default(1),
+  props: text('props').notNull().default('[]'),
+  voiceoverDuration: numeric('voiceover_duration', { precision: 8, scale: 3 }),
   imageModel: text('image_model'),
   videoModel: text('video_model'),
   creditsCharged: integer('credits_charged').notNull().default(0),

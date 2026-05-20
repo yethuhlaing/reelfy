@@ -15,6 +15,25 @@ export default function DashboardPage() {
 
   const refresh = useCallback(() => {
     setStories(listStories(category))
+    fetch(`/api/stories?category=${encodeURIComponent(category)}`)
+      .then(async (res) => {
+        if (!res.ok) return null
+        return res.json() as Promise<{ stories: StoredStorySummary[] }>
+      })
+      .then((data) => {
+        if (!data?.stories) return
+        const localList = listStories(category)
+        const byId = new Map<string, StoredStorySummary>()
+        for (const s of data.stories) byId.set(s.id, s)
+        for (const s of localList) {
+          if (!byId.has(s.id)) byId.set(s.id, s)
+        }
+        const merged = Array.from(byId.values()).sort(
+          (a, b) => (b.lastUpdated ?? b.savedAt) - (a.lastUpdated ?? a.savedAt),
+        )
+        setStories(merged)
+      })
+      .catch(() => {})
   }, [category])
 
   useEffect(() => {

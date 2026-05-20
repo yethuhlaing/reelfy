@@ -180,50 +180,76 @@ function bumpSummary(id: string, patch: Partial<StoredStorySummary>): void {
 
 export function updateStoryScene(id: string, sceneId: string, patch: Partial<Scene>): void {
   const stored = getStory(id)
-  if (!stored) return
-  stored.storyData = {
-    ...stored.storyData,
-    scenes: stored.storyData.scenes.map((s) => (s.id === sceneId ? { ...s, ...patch } : s)),
+  if (stored) {
+    stored.storyData = {
+      ...stored.storyData,
+      scenes: stored.storyData.scenes.map((s) => (s.id === sceneId ? { ...s, ...patch } : s)),
+    }
+    stored.lastUpdated = Date.now()
+    writeJSON(STORY_PREFIX + id, stored)
+    bumpSummary(id, {
+      status: deriveStatus(stored.storyData, !!stored.composedVideoUrl),
+      lastUpdated: stored.lastUpdated,
+    })
   }
-  stored.lastUpdated = Date.now()
-  writeJSON(STORY_PREFIX + id, stored)
-  bumpSummary(id, {
-    status: deriveStatus(stored.storyData, !!stored.composedVideoUrl),
-    lastUpdated: stored.lastUpdated,
-  })
+  const dbPatch: Record<string, unknown> = {}
+  if ('imageUrl' in patch) dbPatch.imageUrl = patch.imageUrl ?? null
+  if ('voiceoverUrl' in patch) dbPatch.voiceoverUrl = patch.voiceoverUrl ?? null
+  if ('videoUrl' in patch) dbPatch.videoUrl = patch.videoUrl ?? null
+  if ('voiceoverDuration' in patch) dbPatch.voiceoverDuration = patch.voiceoverDuration ?? null
+  if (Object.keys(dbPatch).length > 0 && isBrowser()) {
+    fetch(`/api/stories/${id}/scenes/${sceneId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dbPatch),
+    }).catch(() => {})
+  }
+}
+
+function patchStoryRemote(id: string, body: Record<string, unknown>): void {
+  if (!isBrowser()) return
+  fetch(`/api/stories/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).catch(() => {})
 }
 
 export function updateThumbnail(id: string, url: string): void {
+  const cleaned = stripDataUrl(url)
   const stored = getStory(id)
-  if (!stored) return
-  stored.storyData = {
-    ...stored.storyData,
-    thumbnailUrl: stripDataUrl(url),
+  if (stored) {
+    stored.storyData = { ...stored.storyData, thumbnailUrl: cleaned }
+    stored.lastUpdated = Date.now()
+    writeJSON(STORY_PREFIX + id, stored)
+    bumpSummary(id, { lastUpdated: stored.lastUpdated })
   }
-  stored.lastUpdated = Date.now()
-  writeJSON(STORY_PREFIX + id, stored)
-  bumpSummary(id, { lastUpdated: stored.lastUpdated })
+  patchStoryRemote(id, { thumbnailUrl: cleaned })
 }
 
 export function updateComposedVideo(id: string, url: string): void {
   const stored = getStory(id)
-  if (!stored) return
-  stored.composedVideoUrl = url
-  stored.lastUpdated = Date.now()
-  writeJSON(STORY_PREFIX + id, stored)
-  bumpSummary(id, {
-    status: deriveStatus(stored.storyData, true),
-    lastUpdated: stored.lastUpdated,
-  })
+  if (stored) {
+    stored.composedVideoUrl = url
+    stored.lastUpdated = Date.now()
+    writeJSON(STORY_PREFIX + id, stored)
+    bumpSummary(id, {
+      status: deriveStatus(stored.storyData, true),
+      lastUpdated: stored.lastUpdated,
+    })
+  }
+  patchStoryRemote(id, { composedVideoUrl: url, status: 'rendered' })
 }
 
 export function renameStory(id: string, title: string): void {
   const stored = getStory(id)
-  if (!stored) return
-  stored.storyData = { ...stored.storyData, title }
-  stored.lastUpdated = Date.now()
-  writeJSON(STORY_PREFIX + id, stored)
-  bumpSummary(id, { title, lastUpdated: stored.lastUpdated })
+  if (stored) {
+    stored.storyData = { ...stored.storyData, title }
+    stored.lastUpdated = Date.now()
+    writeJSON(STORY_PREFIX + id, stored)
+    bumpSummary(id, { title, lastUpdated: stored.lastUpdated })
+  }
+  patchStoryRemote(id, { title })
 }
 
 export function duplicateStory(id: string): string | null {

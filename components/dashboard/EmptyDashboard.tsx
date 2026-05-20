@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Sparkles } from 'lucide-react'
-import { SAMPLE_STORY_ID } from '@/data/sample-story'
+import { Sparkles } from 'lucide-react'
 
 export function EmptyDashboard({ category }: { category: string }) {
   return (
@@ -16,12 +15,6 @@ export function EmptyDashboard({ category }: { category: string }) {
           className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-ink)] transition hover:brightness-105"
         >
           <Sparkles size={14} /> Create your first story
-        </Link>
-        <Link
-          href={`/${category}/story/${SAMPLE_STORY_ID}`}
-          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
-        >
-          Explore sample <ArrowRight size={14} />
         </Link>
       </div>
     </div>

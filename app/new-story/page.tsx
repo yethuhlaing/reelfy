@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, Clapperboard, Palette, Sparkles } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
-import { SAMPLE_STORY_ID } from '@/data/sample-story'
 
 const CATEGORIES = [
   {
@@ -62,7 +61,7 @@ export default function NewStoryGuidePage() {
           </div>
           <h1 className="mt-2 font-[var(--font-heading)] text-3xl">Build a stronger story brief</h1>
           <p className="mt-2 max-w-3xl text-[var(--muted)]">
-            Use this page to pick your category, review sample directions, and align your brand voice before opening the editor.
+            Use this page to pick your category, review direction ideas, and align your brand voice before opening the editor.
           </p>
           <div className="mt-5 flex flex-wrap gap-2.5">
             <Link
@@ -70,12 +69,6 @@ export default function NewStoryGuidePage() {
               className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-ink)] transition hover:brightness-105"
             >
               Start in Stickman <ArrowRight size={14} />
-            </Link>
-            <Link
-              href={`/stickman/story/${SAMPLE_STORY_ID}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 py-2 text-sm text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
-            >
-              Explore sample story
             </Link>
           </div>
         </section>

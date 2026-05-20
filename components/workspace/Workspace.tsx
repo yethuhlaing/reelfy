@@ -23,7 +23,6 @@ import {
   saveStory,
   updateStoryScene,
 } from '@/lib/storage'
-import { SAMPLE_STORY, SAMPLE_STORY_ID } from '@/data/sample-story'
 import { notifications } from '@/lib/notifications'
 import { shouldShowToastFor } from '@/lib/utils'
 import { usePathname } from 'next/navigation'
@@ -48,8 +47,6 @@ export function Workspace({ storyId, category }: Props) {
   const search = useSearchParams()
   const startingFlag = search?.get('starting') === '1'
   const thumbFlag = search?.get('thumb') === '1'
-
-  const readOnly = storyId === SAMPLE_STORY_ID
 
   const [storyData, _setStoryData] = useState<StoryData | null>(null)
   const [storyInput, setStoryInput] = useState('')
@@ -81,12 +78,6 @@ export function Workspace({ storyId, category }: Props) {
   }
 
   useEffect(() => {
-    if (readOnly) {
-      setStoryData(SAMPLE_STORY.storyData)
-      setOptions(SAMPLE_STORY.options)
-      setStoryInput(SAMPLE_STORY.storyInput)
-      return
-    }
     const existing = getStory(storyId)
     if (existing) {
       setStoryData(existing.storyData)
@@ -98,12 +89,41 @@ export function Workspace({ storyId, category }: Props) {
         setOptions(pending.options)
         setStoryInput(pending.storyInput)
       }
+    } else {
+      let cancelled = false
+      fetch(`/api/stories/${storyId}`)
+        .then(async (res) => {
+          if (!res.ok) return null
+          return res.json() as Promise<{
+            storyInput: string
+            options: GenerateOptions | null
+            storyData: StoryData
+            category: string
+          }>
+        })
+        .then((data) => {
+          if (cancelled || !data) return
+          setStoryData(data.storyData)
+          if (data.options) setOptions(data.options)
+          setStoryInput(data.storyInput ?? '')
+          saveStory({
+            id: storyId,
+            storyInput: data.storyInput ?? '',
+            options: data.options ?? ({} as GenerateOptions),
+            storyData: data.storyData,
+            category: data.category ?? category,
+          })
+        })
+        .catch(() => {})
+      return () => {
+        cancelled = true
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storyId])
 
   useEffect(() => {
-    if (readOnly || !startingFlag || startedRef.current) return
+    if (!startingFlag || startedRef.current) return
     const pending = getPendingStory(storyId)
     if (!pending) return
     startedRef.current = true
@@ -111,7 +131,7 @@ export function Workspace({ storyId, category }: Props) {
     clearPendingStory(storyId)
     router.replace(`/${category}/story/${storyId}`)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startingFlag, readOnly, storyId])
+  }, [startingFlag, storyId])
 
   const updateStage = (id: StageId, patch: Partial<Stage>) => {
     setStages((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
@@ -151,22 +171,20 @@ export function Workspace({ storyId, category }: Props) {
             }
           : prev,
       )
-      if (!readOnly) updateStoryScene(storyId, sid, {
+      updateStoryScene(storyId, sid, {
         videoUrl: result.videoUrl, pendingJobId: undefined, lastError: undefined,
       })
-      if (!readOnly) {
-        const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
-        const link = `/${category}/story/${storyId}`
-        notifications.add({
-          type: 'scene-animated',
-          storyId,
-          sceneId: sid,
-          message: `Scene ${idx + 1} animated`,
-          link,
-        })
-        if (shouldShowToastFor(storyId, pathname, !document.hidden)) {
-          toast.success(`Scene ${idx + 1} animated`, { action: { label: 'Open', onClick: () => router.push(link) } })
-        }
+      const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
+      const link = `/${category}/story/${storyId}`
+      notifications.add({
+        type: 'scene-animated',
+        storyId,
+        sceneId: sid,
+        message: `Scene ${idx + 1} animated`,
+        link,
+      })
+      if (shouldShowToastFor(storyId, pathname, !document.hidden)) {
+        toast.success(`Scene ${idx + 1} animated`, { action: { label: 'Open', onClick: () => router.push(link) } })
       }
     },
     onFailed: (jobId, error) => {
@@ -182,20 +200,18 @@ export function Workspace({ storyId, category }: Props) {
             }
           : prev,
       )
-      if (!readOnly) updateStoryScene(storyId, sid, { pendingJobId: undefined, lastError: error })
-      if (!readOnly) {
-        const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
-        const link = `/${category}/story/${storyId}`
-        notifications.add({
-          type: 'scene-failed',
-          storyId,
-          sceneId: sid,
-          message: `Scene ${idx + 1} failed: ${error.slice(0, 80)}`,
-          link,
-        })
-        if (shouldShowToastFor(storyId, pathname, !document.hidden)) {
-          toast.error(`Scene ${idx + 1} failed`, { description: error })
-        }
+      updateStoryScene(storyId, sid, { pendingJobId: undefined, lastError: error })
+      const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
+      const link = `/${category}/story/${storyId}`
+      notifications.add({
+        type: 'scene-failed',
+        storyId,
+        sceneId: sid,
+        message: `Scene ${idx + 1} failed: ${error.slice(0, 80)}`,
+        link,
+      })
+      if (shouldShowToastFor(storyId, pathname, !document.hidden)) {
+        toast.error(`Scene ${idx + 1} failed`, { description: error })
       }
     },
   })
@@ -217,17 +233,29 @@ export function Workspace({ storyId, category }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           storyId,
+          category,
           story: input,
           density: opts.density,
           style: opts.style,
           tone: opts.tone,
           imageModel: opts.imageModel,
+          videoModel: opts.videoModel,
+          videoQuality: opts.videoQuality,
           textModel: opts.textModel,
         }),
         signal: ctrl.signal,
       })
 
-      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`)
+      if (!res.ok) {
+        if (res.status === 402) {
+          const body = await res.json().catch(() => null)
+          const balance = body?.balance ?? 0
+          toast.error('Not enough credits', { description: `You have ${balance} credits. Purchase more to generate stories.` })
+          throw new Error('Insufficient credits')
+        }
+        if (res.status === 401) throw new Error('Please sign in to generate stories')
+        throw new Error((await res.text()) || `HTTP ${res.status}`)
+      }
 
       for await (const evt of readSSE(res)) {
         switch (evt.type) {
@@ -265,6 +293,11 @@ export function Workspace({ storyId, category }: Props) {
           case 'image-progress':
             setImageProgress({ done: evt.done, total: evt.total })
             break
+          case 'insufficient_credits':
+            toast.error('Not enough credits', {
+              description: `Need ${evt.required} credit${evt.required !== 1 ? 's' : ''}, you have ${evt.balance}.`,
+            })
+            throw new Error(`Insufficient credits (need ${evt.required}, have ${evt.balance})`)
           case 'error':
             throw new Error(evt.error)
           case 'complete':
@@ -275,17 +308,15 @@ export function Workspace({ storyId, category }: Props) {
       const finalData = storyDataRef.current
       if (finalData && !ctrl.signal.aborted) {
         saveStory({ id: storyId, storyInput: input, options: opts, storyData: finalData, category })
-        if (!readOnly) {
-          const link = `/${category}/story/${storyId}`
-          notifications.add({
-            type: 'generation-complete',
-            storyId,
-            message: `Story "${finalData.title}" ready`,
-            link,
-          })
-          if (shouldShowToastFor(storyId, pathname, !document.hidden)) {
-            toast.success('Story ready', { action: { label: 'Open', onClick: () => router.push(link) } })
-          }
+        const link = `/${category}/story/${storyId}`
+        notifications.add({
+          type: 'generation-complete',
+          storyId,
+          message: `Story "${finalData.title}" ready`,
+          link,
+        })
+        if (shouldShowToastFor(storyId, pathname, !document.hidden)) {
+          toast.success('Story ready', { action: { label: 'Open', onClick: () => router.push(link) } })
         }
       }
     } catch (err) {
@@ -300,14 +331,12 @@ export function Workspace({ storyId, category }: Props) {
           prev.map((s) => (s.status === 'active' ? { ...s, status: 'error', detail: msg } : s)),
         )
         toast.error('Generation failed', { description: msg })
-        if (!readOnly) {
-          notifications.add({
-            type: 'generation-failed',
-            storyId,
-            message: `Generation failed: ${msg.slice(0, 80)}`,
-            link: `/${category}/story/${storyId}`,
-          })
-        }
+        notifications.add({
+          type: 'generation-failed',
+          storyId,
+          message: `Generation failed: ${msg.slice(0, 80)}`,
+          link: `/${category}/story/${storyId}`,
+        })
       }
     } finally {
       setIsGenerating(false)
@@ -350,7 +379,7 @@ export function Workspace({ storyId, category }: Props) {
       setPlayState({ isPlaying: true, currentIndex: index })
       try {
         let url = scene.voiceoverUrl
-        if (!url && !readOnly) {
+        if (!url) {
           url = await fetchVoiceoverUrl(scene.id, scene.voiceover)
           setStoryData((prev) =>
             prev
@@ -364,7 +393,7 @@ export function Workspace({ storyId, category }: Props) {
         audioRef.current = audio
         audio.onloadedmetadata = () => {
           const dur = audio.duration
-          if (Number.isFinite(dur) && dur > 0 && !readOnly) {
+          if (Number.isFinite(dur) && dur > 0) {
             updateStoryScene(storyId, scene.id, { voiceoverDuration: dur })
           }
         }
@@ -381,7 +410,7 @@ export function Workspace({ storyId, category }: Props) {
         setPlayState({ isPlaying: false, currentIndex: -1 })
       }
     },
-    [fetchVoiceoverUrl, readOnly, storyId],
+    [fetchVoiceoverUrl, storyId],
   )
 
   const playAll = async () => {
@@ -402,7 +431,7 @@ export function Workspace({ storyId, category }: Props) {
   }
 
   const enqueueAnimate = async (sceneId: string) => {
-    if (!storyData || !options || readOnly) return
+    if (!storyData || !options) return
     const scene = storyData.scenes.find((s) => s.id === sceneId)
     if (!scene || !scene.imageUrl || !scene.motionPrompt) return
     patchScene(sceneId, { lastError: undefined, videoUrl: undefined, pendingJobId: 'pending' })
@@ -433,11 +462,10 @@ export function Workspace({ storyId, category }: Props) {
         ? { ...prev, scenes: prev.scenes.map((s) => (s.id === sceneId ? { ...s, ...patch } : s)) }
         : prev,
     )
-    if (!readOnly) updateStoryScene(storyId, sceneId, patch)
+    updateStoryScene(storyId, sceneId, patch)
   }
 
   const retryVoice = async (sceneId: string) => {
-    if (readOnly) return
     const scene = storyData?.scenes.find((s) => s.id === sceneId)
     if (!scene) return
     patchScene(sceneId, { voiceoverUrl: null, voiceoverDuration: undefined })
@@ -451,7 +479,6 @@ export function Workspace({ storyId, category }: Props) {
   }
 
   const retryImage = async (sceneId: string) => {
-    if (readOnly) return
     try {
       const res = await fetch('/api/scene/regen-image', {
         method: 'POST',
@@ -504,7 +531,7 @@ export function Workspace({ storyId, category }: Props) {
       options={options}
       isGenerating={isGenerating}
       setIsGenerating={setIsGenerating}
-      readOnly={readOnly}
+      readOnly={false}
       playState={playState}
       setPlayState={setPlayState}
       audioRef={audioRef}
@@ -562,9 +589,9 @@ export function Workspace({ storyId, category }: Props) {
               scenes={storyData.scenes}
               playingIndex={playState.isPlaying ? playState.currentIndex : null}
               onSceneClick={openScene}
-              onAnimateScene={readOnly ? undefined : enqueueAnimate}
+              onAnimateScene={enqueueAnimate}
               onPlayScene={playScene}
-              readOnly={readOnly}
+              readOnly={false}
               skeletonCount={
                 isGenerating && options ? Number.parseInt(options.density, 10) || 0 : 0
               }
