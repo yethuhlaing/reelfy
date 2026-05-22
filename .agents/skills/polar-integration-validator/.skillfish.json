@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "polar-integration-validator",
+  "owner": "hirefrank",
+  "repo": "hirefrank-marketplace",
+  "path": "plugins/edge-stack/skills/polar-integration-validator",
+  "branch": "main",
+  "sha": "f052310b9abb16ba82eb249ff6704637dec80965",
+  "source": "manual"
+}

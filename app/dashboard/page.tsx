@@ -6,50 +6,54 @@ import { DashboardHero } from '@/components/dashboard/DashboardHero'
 import { StoryCard } from '@/components/dashboard/StoryCard'
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard'
 import { useActiveCategory } from '@/components/layout/Sidebar'
-import { listStories, getStory, type StoredStorySummary } from '@/lib/storage'
+import type { DashboardStory } from '@/lib/types/dashboard'
 
 export default function DashboardPage() {
   const category = useActiveCategory()
-  const [stories, setStories] = useState<StoredStorySummary[]>([])
-  const [hydrated, setHydrated] = useState(false)
+  const [stories, setStories] = useState<DashboardStory[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   const refresh = useCallback(() => {
-    setStories(listStories(category))
-    fetch(`/api/stories?category=${encodeURIComponent(category)}`)
+    setIsLoading(true)
+    fetch(`/api/stories?category=${encodeURIComponent(category)}`, { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) return null
-        return res.json() as Promise<{ stories: StoredStorySummary[] }>
+        return res.json() as Promise<{ stories: DashboardStory[] }>
       })
       .then((data) => {
-        if (!data?.stories) return
-        const localList = listStories(category)
-        const byId = new Map<string, StoredStorySummary>()
-        for (const s of data.stories) byId.set(s.id, s)
-        for (const s of localList) {
-          if (!byId.has(s.id)) byId.set(s.id, s)
+        if (!data?.stories) {
+          setStories([])
+          return
         }
-        const merged = Array.from(byId.values()).sort(
-          (a, b) => (b.lastUpdated ?? b.savedAt) - (a.lastUpdated ?? a.savedAt),
-        )
-        setStories(merged)
+        setStories(data.stories)
       })
       .catch(() => {})
+      .finally(() => setIsLoading(false))
   }, [category])
 
+  const handleDelete = useCallback(async (storyId: string) => {
+    let snapshot: DashboardStory[] | null = null
+    setStories((current) => {
+      snapshot = current
+      return current.filter((s) => s.id !== storyId)
+    })
+
+    try {
+      const res = await fetch(`/api/stories/${storyId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
+    } catch (err) {
+      if (snapshot) setStories(snapshot)
+      throw err
+    }
+  }, [])
+
   useEffect(() => {
-    setHydrated(true)
     refresh()
   }, [refresh])
 
   const stats = {
     stories: stories.length,
-    minutes: Math.round(
-      stories.reduce((acc, s) => {
-        const data = getStory(s.id)
-        if (!data) return acc
-        return acc + data.storyData.scenes.reduce((a, sc) => a + (sc.voiceoverDuration ?? 0), 0)
-      }, 0) / 60,
-    ),
+    minutes: Math.round(stories.reduce((acc, s) => acc + s.totalVoiceoverSeconds, 0) / 60),
   }
 
   return (
@@ -58,12 +62,12 @@ export default function DashboardPage() {
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-7 px-7 pb-20 pt-7">
         <DashboardHero stats={stats} />
 
-        {hydrated && stories.length === 0 ? (
+        {!isLoading && stories.length === 0 ? (
           <EmptyDashboard category={category} />
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-[18px]">
             {stories.map((s) => (
-              <StoryCard key={s.id} summary={s} onChange={refresh} />
+              <StoryCard key={s.id} summary={s} onChange={refresh} onDelete={handleDelete} />
             ))}
           </div>
         )}

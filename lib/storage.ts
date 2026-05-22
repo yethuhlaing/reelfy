@@ -12,6 +12,8 @@ export interface StoredStorySummary {
   id: string
   title: string
   tagline: string
+  thumbnailUrl?: string | null
+  sceneCount?: number
   savedAt: number
   category: string
   status?: StoryStatus

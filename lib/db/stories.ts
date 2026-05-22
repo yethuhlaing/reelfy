@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from './index'
 import { scenes, stories } from './schema'
 import type { GenerateOptions, Scene, StoryData } from '@/lib/types'
@@ -42,11 +42,76 @@ export interface StoredSceneRow {
   videoModel: string | null
 }
 
+export interface DashboardStoryRow {
+  id: string
+  title: string
+  tagline: string
+  category: string
+  status: string
+  thumbnailUrl: string | null
+  sceneCount: number
+  animatedCount: number
+  totalVoiceoverSeconds: number
+  createdAt: Date
+  updatedAt: Date
+}
+
 export async function listUserStories(userId: string, category?: string) {
   const where = category
     ? and(eq(stories.userId, userId), eq(stories.category, category))
     : eq(stories.userId, userId)
-  return db.select().from(stories).where(where).orderBy(desc(stories.updatedAt))
+  const storyRows = await db.select().from(stories).where(where).orderBy(desc(stories.updatedAt))
+  if (storyRows.length === 0) return [] as DashboardStoryRow[]
+
+  const storyIds = storyRows.map((s) => s.id)
+  const sceneRows = await db
+    .select({
+      storyId: scenes.storyId,
+      orderIndex: scenes.orderIndex,
+      imageUrl: scenes.imageUrl,
+      videoUrl: scenes.videoUrl,
+      voiceoverDuration: scenes.voiceoverDuration,
+    })
+    .from(scenes)
+    .where(inArray(scenes.storyId, storyIds))
+    .orderBy(asc(scenes.storyId), asc(scenes.orderIndex))
+
+  const sceneCountByStory = new Map<string, number>()
+  const animatedCountByStory = new Map<string, number>()
+  const totalVoiceoverSecondsByStory = new Map<string, number>()
+  const firstSceneImageByStory = new Map<string, string>()
+  for (const row of sceneRows) {
+    sceneCountByStory.set(row.storyId, (sceneCountByStory.get(row.storyId) ?? 0) + 1)
+    if (row.videoUrl) {
+      animatedCountByStory.set(row.storyId, (animatedCountByStory.get(row.storyId) ?? 0) + 1)
+    }
+    if (row.voiceoverDuration != null) {
+      totalVoiceoverSecondsByStory.set(
+        row.storyId,
+        (totalVoiceoverSecondsByStory.get(row.storyId) ?? 0) + Number(row.voiceoverDuration),
+      )
+    }
+    if (row.imageUrl && !firstSceneImageByStory.has(row.storyId)) {
+      firstSceneImageByStory.set(row.storyId, row.imageUrl)
+    }
+  }
+
+  return storyRows.map((story): DashboardStoryRow => {
+    const sceneCount = sceneCountByStory.get(story.id) ?? 0
+    return {
+      id: story.id,
+      title: story.title,
+      tagline: story.tagline,
+      category: story.category,
+      status: story.status,
+      thumbnailUrl: story.thumbnailUrl ?? firstSceneImageByStory.get(story.id) ?? null,
+      sceneCount,
+      animatedCount: animatedCountByStory.get(story.id) ?? 0,
+      totalVoiceoverSeconds: totalVoiceoverSecondsByStory.get(story.id) ?? 0,
+      createdAt: story.createdAt,
+      updatedAt: story.updatedAt,
+    }
+  })
 }
 
 export async function getStoryForUser(storyId: string, userId: string) {

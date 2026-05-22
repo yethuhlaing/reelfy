@@ -4,6 +4,7 @@ import { nextCookies } from 'better-auth/next-js'
 import { waitUntil } from '@vercel/functions'
 import { db } from '@/lib/db'
 import { account, rateLimit, session, user, verification } from '@/lib/db/schema'
+import { polarPlugins } from '@/lib/billing/polar-plugin'
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
@@ -74,7 +75,18 @@ export const auth = betterAuth({
         defaultValue: false,
         input: false,
       },
+      polarCustomerId: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
+      planTier: {
+        type: 'string',
+        required: false,
+        defaultValue: 'free',
+        input: false,
+      },
     },
   },
-  plugins: [nextCookies()],
+  plugins: [...polarPlugins, nextCookies()],
 })

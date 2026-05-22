@@ -5,6 +5,7 @@ import { getTextProvider } from '@/lib/providers/text'
 import { auth } from '@/lib/externals/betterauth'
 import { getCredits, deductCredits } from '@/lib/db/credits'
 import { upsertStoryWithScenes } from '@/lib/db/stories'
+import { fireAndForgetUsage } from '@/lib/billing/usage'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -161,6 +162,13 @@ export async function POST(request: Request) {
             const idx = finalScenes.findIndex((s) => s.id === scene.id)
             if (idx >= 0) finalScenes[idx] = { ...finalScenes[idx], imageUrl }
             send({ type: 'scene-image', sceneId: scene.id, imageUrl })
+            fireAndForgetUsage({
+              userId,
+              meter: 'image_gen',
+              route: '/api/generate',
+              quantity: creditsPerScene,
+              metadata: { provider: imageProvider.id, sceneId: scene.id },
+            })
           } catch (err) {
             if (isAbort(err)) throw err
             send({
@@ -206,6 +214,13 @@ export async function POST(request: Request) {
           console.error('Failed to persist story', persistErr)
         }
 
+        fireAndForgetUsage({
+          userId,
+          meter: 'story_gen',
+          route: '/api/generate',
+          quantity: 1,
+          metadata: { storyId, sceneCount: finalScenes.length, textModel: textProvider.id },
+        })
         send({ type: 'stage', id: 'done', status: 'done' })
         send({ type: 'complete' })
       } catch (err) {

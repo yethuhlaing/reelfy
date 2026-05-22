@@ -22,16 +22,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
-  deleteStory,
   duplicateStory,
   renameStory,
-  getStory,
-  getStorySummary,
-  type StoredStorySummary,
-  type StoryStatus,
 } from '@/lib/storage'
+import type { DashboardStory, DashboardStoryStatus } from '@/lib/types/dashboard'
 
-const STATUS_LABEL: Record<StoryStatus, string> = {
+const STATUS_LABEL: Record<DashboardStoryStatus, string> = {
   draft: 'Draft',
   generating: 'Generating',
   ready: 'Ready',
@@ -40,23 +36,23 @@ const STATUS_LABEL: Record<StoryStatus, string> = {
 }
 
 interface Props {
-  summary: StoredStorySummary
+  summary: DashboardStory
   onChange: () => void
+  onDelete: (storyId: string) => Promise<void>
 }
 
-export function StoryCard({ summary, onChange }: Props) {
+export function StoryCard({ summary, onChange, onDelete }: Props) {
   const router = useRouter()
   const [renaming, setRenaming] = useState(false)
   const [title, setTitle] = useState(summary.title)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
-  const story = getStory(summary.id)
-  const det = getStorySummary(summary.id)
-  const thumb = story?.storyData.thumbnailUrl ?? story?.storyData.scenes.find((s) => s.imageUrl)?.imageUrl ?? null
-  const status: StoryStatus = summary.status ?? det?.status ?? 'draft'
-  const animated = det?.animatedCount ?? 0
-  const total = det?.sceneCount ?? 0
-  const updated = relativeTime(summary.lastUpdated ?? summary.savedAt)
+  const thumb = summary.thumbnailUrl
+  const status = summary.status
+  const animated = summary.animatedCount
+  const total = summary.sceneCount
+  const updated = relativeTime(summary.lastUpdated)
 
   const open = () => router.push(`/${summary.category}/story/${summary.id}`)
 
@@ -79,14 +75,16 @@ export function StoryCard({ summary, onChange }: Props) {
   }
 
   const handleDelete = async () => {
+    setDeleting(true)
     try {
-      await fetch(`/api/stories/${summary.id}`, { method: 'DELETE' })
+      await onDelete(summary.id)
+      setConfirmDelete(false)
+      toast.success('Story deleted')
     } catch {
-      /* best-effort cleanup */
+      toast.error('Delete failed', { description: 'Could not delete story. Try again.' })
+    } finally {
+      setDeleting(false)
     }
-    deleteStory(summary.id)
-    toast.success('Story deleted')
-    onChange()
   }
 
   return (
@@ -187,9 +185,10 @@ export function StoryCard({ summary, onChange }: Props) {
             <AlertDialogCancel>Keep story</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              disabled={deleting}
               className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500"
             >
-              Delete story
+              {deleting ? 'Deleting...' : 'Delete story'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

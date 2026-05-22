@@ -32,11 +32,14 @@ export const user = pgTable(
     role: text('role').notNull().default('user'),
     credits: integer('credits').notNull().default(0),
     freeCreditsActivated: boolean('free_credits_activated').notNull().default(false),
+    polarCustomerId: text('polar_customer_id'),
+    planTier: text('plan_tier').notNull().default('free'),
     createdAt,
     updatedAt,
   },
   (table) => ({
     emailIdx: uniqueIndex('user_email_unique').on(table.email),
+    polarCustomerIdx: uniqueIndex('user_polar_customer_unique').on(table.polarCustomerId),
   }),
 )
 
@@ -152,16 +155,53 @@ export const payments = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    stripePaymentId: text('stripe_payment_id').notNull(),
+    polarOrderId: text('polar_order_id').notNull(),
     creditsPurchased: integer('credits_purchased').notNull(),
     amountUsd: numeric('amount_usd', { precision: 10, scale: 2 }).notNull(),
     packType: text('pack_type').notNull(),
     createdAt,
   },
   (table) => ({
-    stripePaymentIdIdx: uniqueIndex('payments_stripe_payment_id_unique').on(table.stripePaymentId),
+    polarOrderIdIdx: uniqueIndex('payments_polar_order_id_unique').on(table.polarOrderId),
   }),
 )
+
+export const subscriptions = pgTable(
+  'subscriptions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    polarSubscriptionId: text('polar_subscription_id').notNull(),
+    polarProductId: text('polar_product_id').notNull(),
+    planTier: text('plan_tier').notNull(),
+    status: text('status').notNull(),
+    currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
+    currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+    cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
+    createdAt,
+    updatedAt,
+  },
+  (table) => ({
+    polarSubIdx: uniqueIndex('subscriptions_polar_sub_unique').on(table.polarSubscriptionId),
+    userIdx: uniqueIndex('subscriptions_user_unique').on(table.userId),
+  }),
+)
+
+export const apiUsageEvents = pgTable('api_usage_events', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  meter: text('meter').notNull(),
+  quantity: integer('quantity').notNull().default(1),
+  route: text('route').notNull(),
+  metadata: text('metadata').notNull().default('{}'),
+  polarEventId: text('polar_event_id'),
+  ingestedAt: timestamp('ingested_at', { withTimezone: true }),
+  createdAt,
+})
 
 export const apiCostLogs = pgTable('api_cost_logs', {
   id: text('id').primaryKey(),
@@ -190,6 +230,8 @@ export const schema = {
   stories,
   scenes,
   payments,
+  subscriptions,
+  apiUsageEvents,
   apiCostLogs,
   appConfig,
 }
