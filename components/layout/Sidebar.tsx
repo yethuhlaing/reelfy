@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
-import { PanelLeftClose, PanelLeftOpen, Plus, Settings, LayoutDashboard } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Plus, Settings, LayoutDashboard, ChartNoAxesCombined } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ACTIVE_CAT_KEY = 'category:active'
@@ -106,6 +106,18 @@ export function Sidebar() {
       >
         <LayoutDashboard size={16} />
         {!collapsed && <span>Dashboard</span>}
+      </Link>
+
+      <Link
+        href="/usage"
+        className={cn(
+          'inline-flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--text)] transition hover:bg-[var(--surface2)]',
+          pathname === '/usage' && 'bg-[var(--surface2)] text-[var(--accent)]',
+          collapsed && 'justify-center px-2',
+        )}
+      >
+        <ChartNoAxesCombined size={16} />
+        {!collapsed && <span>Usage & Billing</span>}
       </Link>
 
       {!collapsed && (
