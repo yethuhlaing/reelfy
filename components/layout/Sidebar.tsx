@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
-import { PanelLeftClose, PanelLeftOpen, Plus, Settings, LayoutDashboard, ChartNoAxesCombined } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Plus, Settings, LayoutDashboard, ChartNoAxesCombined, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useSession } from '@/lib/auth-client'
+import { getSessionUser } from '@/lib/auth-session'
 
 const ACTIVE_CAT_KEY = 'category:active'
 const COLLAPSED_KEY = 'sidebar:collapsed'
@@ -24,6 +26,9 @@ export function Sidebar() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
   const [activeCategory, setActiveCategory] = useState(DEFAULT_CATEGORY)
+  const { data: sessionData } = useSession()
+  const user = getSessionUser(sessionData)
+  const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
     setCollapsed(localStorage.getItem(COLLAPSED_KEY) === '1')
@@ -119,6 +124,20 @@ export function Sidebar() {
         <ChartNoAxesCombined size={16} />
         {!collapsed && <span>Usage & Billing</span>}
       </Link>
+
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          className={cn(
+            'inline-flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--text)] transition hover:bg-[var(--surface2)]',
+            pathname.startsWith('/admin') && 'bg-[var(--surface2)] text-[var(--accent)]',
+            collapsed && 'justify-center px-2',
+          )}
+        >
+          <Shield size={16} />
+          {!collapsed && <span>Admin</span>}
+        </Link>
+      ) : null}
 
       {!collapsed && (
         <div className="px-3 pb-1 pt-3.5 text-[0.68rem] uppercase tracking-[0.08em] text-[var(--muted)]">Categories</div>
