@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Sparkles } from "lucide-react";
 import { signIn, useSession } from "@/lib/auth-client";
@@ -136,6 +136,7 @@ const Pupil = ({ size = 12, maxDistance = 5, pupilColor = "black" }: PupilProps)
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: sessionData } = useSession();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -147,6 +148,11 @@ export default function LoginForm() {
   const blackRef = useRef<HTMLDivElement>(null);
   const yellowRef = useRef<HTMLDivElement>(null);
   const orangeRef = useRef<HTMLDivElement>(null);
+  const redirectTarget = (() => {
+    const value = searchParams.get("redirect");
+    if (value && value.startsWith("/")) return value;
+    return "/dashboard";
+  })();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -184,9 +190,9 @@ export default function LoginForm() {
   useEffect(() => {
     const user = getSessionUser(sessionData);
     if (user?.id || user?.email) {
-      router.replace("/dashboard");
+      router.replace(redirectTarget);
     }
-  }, [router, sessionData]);
+  }, [redirectTarget, router, sessionData]);
 
   const calculatePosition = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (!ref.current) return { faceX: 0, faceY: 0, bodySkew: 0 };
@@ -211,7 +217,7 @@ export default function LoginForm() {
     setError("");
     setIsLoading(true);
     try {
-      await signIn.social({ provider: "google", callbackURL: "/dashboard" });
+      await signIn.social({ provider: "google", callbackURL: redirectTarget });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in with Google.");
       setIsLoading(false);

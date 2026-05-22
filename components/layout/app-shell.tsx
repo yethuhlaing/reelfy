@@ -18,6 +18,7 @@ export function AppShell({ children, currentUser }: AppShellProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const isAuthRoute = pathname?.startsWith('/auth/')
+  const isPublicHomeRoute = pathname === '/'
 
   const resolveTopBar = () => {
     if (!pathname) return null
@@ -81,7 +82,7 @@ export function AppShell({ children, currentUser }: AppShellProps) {
 
   const topBar = resolveTopBar()
 
-  if (isAuthRoute) {
+  if (isAuthRoute || isPublicHomeRoute) {
     return <div className="flex min-h-screen min-w-0 flex-col">{children}</div>
   }
 
