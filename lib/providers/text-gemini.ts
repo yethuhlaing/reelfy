@@ -3,6 +3,8 @@ import type { VoiceTone, SceneDensity, StickStyle } from '../types'
 import type { TextProvider, PlanResult } from './text'
 import { buildPlanPrompt } from '../prompts/plan'
 import { withAbort } from './fal'
+import type { ApiCostContext } from '@/lib/db/cost-logger'
+import { logApiCost } from '@/lib/db/cost-logger'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
@@ -15,6 +17,7 @@ export const geminiProvider: TextProvider = {
     style: StickStyle,
     tone: VoiceTone,
     signal?: AbortSignal,
+    costContext?: ApiCostContext,
   ): Promise<PlanResult> {
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
@@ -27,6 +30,33 @@ export const geminiProvider: TextProvider = {
       }),
       signal,
     )
+    const usage = result.response.usageMetadata
+    const inputTokens = usage?.promptTokenCount ?? 0
+    const outputTokens = usage?.candidatesTokenCount ?? 0
+
+    await Promise.all([
+      logApiCost({
+        userId: costContext?.userId,
+        storyId: costContext?.storyId,
+        sceneId: costContext?.sceneId,
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        operation: costContext?.operation ? `${costContext.operation}_input` : 'text_plan_input',
+        costUsd: (inputTokens / 1000) * 0.00015,
+        creditsCharged: costContext?.creditsCharged ?? 0,
+      }),
+      logApiCost({
+        userId: costContext?.userId,
+        storyId: costContext?.storyId,
+        sceneId: costContext?.sceneId,
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        operation: costContext?.operation ? `${costContext.operation}_output` : 'text_plan_output',
+        costUsd: (outputTokens / 1000) * 0.0006,
+        creditsCharged: costContext?.creditsCharged ?? 0,
+      }),
+    ])
+
     return JSON.parse(result.response.text())
   },
 }

@@ -1,6 +1,13 @@
+import type { ApiCostContext } from '@/lib/db/cost-logger'
+import { logApiCost } from '@/lib/db/cost-logger'
+
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech'
 
-export async function generateVoiceover(text: string, signal?: AbortSignal): Promise<ArrayBuffer> {
+export async function generateVoiceover(
+  text: string,
+  signal?: AbortSignal,
+  costContext?: ApiCostContext,
+): Promise<ArrayBuffer> {
   const voiceId = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB' // Default to Adam
 
   const response = await fetch(`${ELEVENLABS_API_URL}/${voiceId}`, {
@@ -30,5 +37,15 @@ export async function generateVoiceover(text: string, signal?: AbortSignal): Pro
   if (audio.byteLength === 0) {
     throw new Error('ElevenLabs API returned empty audio buffer')
   }
+  await logApiCost({
+    userId: costContext?.userId,
+    storyId: costContext?.storyId,
+    sceneId: costContext?.sceneId,
+    provider: 'elevenlabs',
+    model: 'eleven_flash_v2_5',
+    operation: costContext?.operation ?? 'voiceover_tts',
+    costUsd: text.length * 0.0003,
+    creditsCharged: costContext?.creditsCharged ?? 0,
+  })
   return audio
 }

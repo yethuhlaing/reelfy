@@ -1,6 +1,8 @@
 import type { VoiceTone, SceneDensity, StickStyle, TextModel } from '../types'
 import type { TextProvider, PlanResult } from './text'
 import { buildPlanPrompt } from '../prompts/plan'
+import type { ApiCostContext } from '@/lib/db/cost-logger'
+import { logApiCost } from '@/lib/db/cost-logger'
 
 function makeGroqProvider(modelId: TextModel, label: string): TextProvider {
   return {
@@ -12,6 +14,7 @@ function makeGroqProvider(modelId: TextModel, label: string): TextProvider {
       style: StickStyle,
       tone: VoiceTone,
       signal?: AbortSignal,
+      costContext?: ApiCostContext,
     ): Promise<PlanResult> {
       const systemPrompt = buildPlanPrompt(tone, density, style)
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -36,7 +39,21 @@ function makeGroqProvider(modelId: TextModel, label: string): TextProvider {
         const err = await res.text()
         throw new Error(`Groq API error (${res.status}): ${err}`)
       }
-      const data = (await res.json()) as { choices: { message: { content: string } }[] }
+      const data = (await res.json()) as {
+        choices: { message: { content: string } }[]
+        usage?: { total_tokens?: number }
+      }
+      const totalTokens = data.usage?.total_tokens ?? 0
+      await logApiCost({
+        userId: costContext?.userId,
+        storyId: costContext?.storyId,
+        sceneId: costContext?.sceneId,
+        provider: 'groq',
+        model: modelId.replace('groq/', ''),
+        operation: costContext?.operation ?? 'text_plan',
+        costUsd: (totalTokens / 1000) * 0.00059,
+        creditsCharged: costContext?.creditsCharged ?? 0,
+      })
       return JSON.parse(data.choices[0].message.content)
     },
   }

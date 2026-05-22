@@ -1,8 +1,11 @@
+import type { ApiCostContext } from '@/lib/db/cost-logger'
+
 export interface VideoOpts {
   numFrames?: number
   fps?: number
   width?: number
   height?: number
+  costContext?: ApiCostContext
 }
 
 export interface VideoProvider {

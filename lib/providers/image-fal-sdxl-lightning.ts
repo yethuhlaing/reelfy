@@ -1,11 +1,12 @@
 import { fal, withAbort } from './fal'
 import type { ImageProvider, ImageOpts } from './image'
+import { logApiCost } from '@/lib/db/cost-logger'
 
 export const sdxlLightningFal: ImageProvider = {
   id: 'sdxl-lightning-fal',
-  costEstimateUsd: 0.002,
+  costEstimateUsd: 0.004,
   async generate(prompt: string, opts: ImageOpts) {
-    const { signal } = opts
+    const { signal, costContext } = opts
     const result = await withAbort(
       fal.subscribe('fal-ai/fast-lightning-sdxl', {
         input: {
@@ -22,6 +23,16 @@ export const sdxlLightningFal: ImageProvider = {
     const res = await fetch(url, { signal })
     const buf = Buffer.from(await res.arrayBuffer())
     const mimeType = res.headers.get('content-type') ?? 'image/png'
+    await logApiCost({
+      userId: costContext?.userId,
+      storyId: costContext?.storyId,
+      sceneId: costContext?.sceneId,
+      provider: 'fal',
+      model: 'sdxl-lightning',
+      operation: costContext?.operation ?? 'image_generation',
+      costUsd: 0.004,
+      creditsCharged: costContext?.creditsCharged ?? 0,
+    })
     return { mimeType, data: buf }
   },
 }

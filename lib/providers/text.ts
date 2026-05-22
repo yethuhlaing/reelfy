@@ -1,4 +1,5 @@
 import type { VoiceTone, SceneDensity, StickStyle, ScenePlan, TextModel } from '../types'
+import type { ApiCostContext } from '@/lib/db/cost-logger'
 
 export interface PlanResult {
   title: string
@@ -17,6 +18,7 @@ export interface TextProvider {
     style: StickStyle,
     tone: VoiceTone,
     signal?: AbortSignal,
+    costContext?: ApiCostContext,
   ): Promise<PlanResult>
 }
 

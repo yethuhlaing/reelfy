@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Check, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,9 +24,19 @@ export function PricingClient({ subscriptions, packs, currentTier }: Props) {
     setActiveSlug(slug)
     startTransition(async () => {
       try {
-        await authClient.checkout({ slug })
+        const result = await authClient.checkout({ slug })
+        const error = (result as { error?: { message?: string } | null } | null)?.error
+        if (error) {
+          toast.error('Checkout failed', {
+            description: error.message ?? 'Could not start checkout. Please verify Polar configuration.',
+          })
+        }
       } catch (err) {
         console.error('Checkout failed', err)
+        toast.error('Checkout failed', {
+          description: err instanceof Error ? err.message : 'Unexpected error while starting checkout.',
+        })
+      } finally {
         setActiveSlug(null)
       }
     })
@@ -34,9 +45,18 @@ export function PricingClient({ subscriptions, packs, currentTier }: Props) {
   const openPortal = () => {
     startTransition(async () => {
       try {
-        await authClient.customer.portal()
+        const result = await authClient.customer.portal()
+        const error = (result as { error?: { message?: string } | null } | null)?.error
+        if (error) {
+          toast.error('Portal failed', {
+            description: error.message ?? 'Could not open billing portal.',
+          })
+        }
       } catch (err) {
         console.error('Portal failed', err)
+        toast.error('Portal failed', {
+          description: err instanceof Error ? err.message : 'Unexpected error while opening portal.',
+        })
       }
     })
   }

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { generateVoiceover } from '@/lib/externals/elevenlabs'
+import { auth } from '@/lib/externals/betterauth'
 
 export async function POST(request: Request) {
   try {
+    const session = await auth.api.getSession({ headers: request.headers })
+    const userId = session?.user?.id
+
     const body = await request.json()
     const { text, sceneId, storyId } = body as {
       text: string
@@ -25,7 +29,12 @@ export async function POST(request: Request) {
       )
     }
 
-    const audioBuffer = await generateVoiceover(text, request.signal)
+    const audioBuffer = await generateVoiceover(text, request.signal, {
+      userId,
+      storyId,
+      sceneId,
+      operation: 'scene_voiceover',
+    })
     if (request.signal.aborted) {
       return new Response('cancelled', { status: 499 })
     }

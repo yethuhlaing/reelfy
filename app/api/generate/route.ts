@@ -108,7 +108,11 @@ export async function POST(request: Request) {
         send({ type: 'stage', id: 'analyze', status: 'done' })
         send({ type: 'stage', id: 'plan', status: 'active', detail: `Planning scenes with ${textProvider.label}` })
 
-        const plan = await textProvider.planStory(story, density, style, tone, signal)
+        const plan = await textProvider.planStory(story, density, style, tone, signal, {
+          userId,
+          storyId,
+          operation: 'text_plan',
+        })
         await throwIfAborted()
         send({ type: 'story', title: plan.title, tagline: plan.tagline, protagonist: plan.protagonist })
         send({ type: 'thumbnail-prompt', prompt: plan.thumbnailPrompt })
@@ -136,7 +140,17 @@ export async function POST(request: Request) {
         for (const scene of plan.scenes) {
           await throwIfAborted()
           try {
-            const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, { aspectRatio: '16:9', signal })
+            const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, {
+              aspectRatio: '16:9',
+              signal,
+              costContext: {
+                userId,
+                storyId,
+                sceneId: scene.id,
+                creditsCharged: creditsPerScene,
+                operation: 'scene_image',
+              },
+            })
             await throwIfAborted()
 
             const deduction = await deductCredits(userId, creditsPerScene)

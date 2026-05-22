@@ -3,6 +3,7 @@ import { buildWebhookUrl } from '@/lib/jobs/webhook-url'
 import { getVideoProvider } from '@/lib/providers/video'
 import type { AnimatePayload } from '@/lib/jobs/types'
 import type { VideoModel, VideoQuality } from '@/lib/types'
+import { auth } from '@/lib/externals/betterauth'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -12,6 +13,9 @@ function badRequest(message: string) {
 }
 
 export async function POST(request: Request) {
+  const session = await auth.api.getSession({ headers: request.headers })
+  const userId = session?.user?.id
+
   const body = await request.json().catch(() => null)
   if (!body) return badRequest('Invalid JSON')
 
@@ -50,7 +54,17 @@ export async function POST(request: Request) {
     const { requestId } = await provider.enqueue(
       imageUrl,
       motionPrompt,
-      { numFrames: 121, fps: 24, ...dims },
+      {
+        numFrames: 121,
+        fps: 24,
+        ...dims,
+        costContext: {
+          userId,
+          storyId,
+          sceneId,
+          operation: 'scene_video',
+        },
+      },
       buildWebhookUrl('animate', job.id),
     )
     await markRunning(job.id, requestId, provider.falModel)
