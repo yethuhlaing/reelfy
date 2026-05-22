@@ -1,10 +1,3 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { TopBar } from '@/components/layout/TopBar'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -13,36 +6,24 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { UserSpendTable } from '@/components/admin/UserSpendTable'
-import type { AdminUsersResponse } from '@/lib/types/admin'
+import { getAdminUsers } from '@/lib/db/admin'
+import { getUserSession } from '@/lib/db/user'
 
-export default function AdminUsersPage() {
-  const searchParams = useSearchParams()
-  const state = searchParams.get('state')
-  const [data, setData] = useState<AdminUsersResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export const dynamic = 'force-dynamic'
 
-  useEffect(() => {
-    let cancelled = false
-    const query = state === 'unprofitable' ? '?state=unprofitable' : ''
-    fetch(`/api/admin/users${query}`, { cache: 'no-store' })
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Failed to load admin users')
-        return (await res.json()) as AdminUsersResponse
-      })
-      .then((json) => {
-        if (!cancelled) setData(json)
-      })
-      .catch(() => {
-        if (!cancelled) setData(null)
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [state])
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ state?: string }>
+}) {
+  const { state } = await searchParams
+  const session = await getUserSession('/admin/users')
+  if (!session) return null
+  const role = (session?.user as { role?: string } | undefined)?.role
+  if (!session?.user?.id || role !== 'admin') {
+    return null
+  }
+  const data = await getAdminUsers(state)
 
   const title = state === 'unprofitable' ? 'Unprofitable Users' : 'User Spend'
   const description =
@@ -51,30 +32,16 @@ export default function AdminUsersPage() {
       : 'Per-user profitability across revenue, API costs, and credits.'
 
   return (
-    <>
-      <TopBar
-        title={title}
-        right={
-          <Button asChild size="sm" variant="outline">
-            <Link href="/admin">Back to admin</Link>
-          </Button>
-        }
-      />
-      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-7 pb-20 pt-7">
-        <Card className="gap-4 py-5">
-          <CardHeader className="px-5">
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </CardHeader>
-          <CardContent className="px-5">
-            {isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading users...</p>
-            ) : (
-              <UserSpendTable rows={data?.users ?? []} />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </>
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-7 pb-20 pt-7">
+      <Card className="gap-4 py-5">
+        <CardHeader className="px-5">
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="px-5">
+          <UserSpendTable rows={data.users} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

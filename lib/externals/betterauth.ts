@@ -52,7 +52,7 @@ export const auth = betterAuth({
   advanced: {
     useSecureCookies: true,
     backgroundTasks: {
-      handler: (promise) => waitUntil(promise),
+      handler: (promise: Promise<void>) => waitUntil(promise),
     },
   },
   user: {

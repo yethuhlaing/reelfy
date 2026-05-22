@@ -1,19 +1,23 @@
 import type { Metadata, Viewport } from 'next'
-import { Syne, Azeret_Mono } from 'next/font/google'
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { AppShell } from '@/components/layout/app-shell'
+import { getSessionUser } from '@/lib/auth-session'
+import { getUserSession } from '@/lib/db/user'
 
-const syne = Syne({
+const jakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  variable: '--font-syne',
+  variable: '--font-jakarta',
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
 })
 
-const azeretMono = Azeret_Mono({
+const jbMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-azeret',
+  variable: '--font-jb-mono',
+  weight: ['400', '500', '600'],
   display: 'swap',
 })
 
@@ -26,18 +30,21 @@ export const viewport: Viewport = {
   themeColor: '#0a0a0a',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const session = await getUserSession()
+  const currentUser = getSessionUser(session)
+
   return (
-    <html lang="en" suppressHydrationWarning className={`${syne.variable} ${azeretMono.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${jakartaSans.variable} ${jbMono.variable}`}>
       <head>
       </head>
       <body suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AppShell>{children}</AppShell>
+          <AppShell currentUser={currentUser}>{children}</AppShell>
           <Toaster />
         </ThemeProvider>
       </body>

@@ -74,7 +74,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
       <div className="mt-3.5 flex flex-wrap gap-2">
         {onPlay && idx >= 0 && (
           <button
-            className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-2.5 text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)] disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-2.5 font-semibold text-[var(--accent-ink)] shadow-[0_0_0_1px_var(--accent),0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] hover:shadow-[0_0_0_1px_var(--accent-hover),0_12px_32px_-8px_var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => onPlay(idx)}
             disabled={readOnly}
           >

@@ -1,16 +1,12 @@
-import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
-import { auth } from '@/lib/externals/betterauth'
 import { SUBSCRIPTION_PLANS, CREDIT_PACKS } from '@/lib/billing/plans'
+import { getUserSession } from '@/lib/db/user'
 import { PricingClient } from './pricing-client'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PricingPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user?.id) {
-    redirect('/auth/login?redirect=/pricing')
-  }
+  const session = await getUserSession('/pricing')
+  if (!session) return null
 
   const currentTier = (session.user as { planTier?: string } | undefined)?.planTier ?? 'free'
 

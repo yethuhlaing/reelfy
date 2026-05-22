@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
@@ -115,7 +115,7 @@ interface PlanCardProps {
 function PlanCard({ plan, current, disabled, loading, onSelect }: PlanCardProps) {
   const isFree = plan.priceUsd === 0
   return (
-    <Card className={cn('flex flex-col', plan.highlight && 'border-primary shadow-md')}>
+    <Card className={cn('flex flex-col', plan.highlight && 'card-gradient-border shadow-[0_24px_64px_-24px_var(--accent-glow)]')}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{plan.name}</CardTitle>
@@ -123,7 +123,7 @@ function PlanCard({ plan, current, disabled, loading, onSelect }: PlanCardProps)
           {plan.highlight && !current && <Badge>Popular</Badge>}
         </div>
         <CardDescription>
-          <span className="text-3xl font-bold text-foreground">
+          <span className="font-[var(--font-mono)] text-3xl font-bold tabular-nums">
             ${plan.priceUsd}
           </span>
           {plan.interval === 'month' ? '/mo' : ' once'}
@@ -133,7 +133,11 @@ function PlanCard({ plan, current, disabled, loading, onSelect }: PlanCardProps)
         <ul className="space-y-2 text-sm">
           {plan.features.map((f) => (
             <li key={f} className="flex items-start gap-2">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/10">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
               <span>{f}</span>
             </li>
           ))}

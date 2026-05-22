@@ -1,4 +1,3 @@
-import { TopBar } from '@/components/layout/TopBar'
 import { StoryForm } from '@/components/story/StoryForm'
 
 export default async function NewStoryPage({
@@ -8,13 +7,10 @@ export default async function NewStoryPage({
 }) {
   const { category } = await params
   return (
-    <>
-      <TopBar title="New story" />
-      <div className="flex flex-1 items-center justify-center px-6 py-8">
-        <div className="w-full max-w-6xl">
-          <StoryForm category={category} />
-        </div>
+    <div className="flex flex-1 items-center justify-center px-6 py-8">
+      <div className="w-full max-w-6xl">
+        <StoryForm category={category} />
       </div>
-    </>
+    </div>
   )
 }

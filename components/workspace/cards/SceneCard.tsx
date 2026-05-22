@@ -39,7 +39,7 @@ export function SceneCard({
 }: SceneCardProps) {
   return (
     <div
-      className={`group relative cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] transition hover:-translate-y-0.5 hover:border-[var(--muted)] ${isPlaying ? 'outline outline-2 outline-[var(--accent)]' : ''}`}
+      className={`group relative cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] backdrop-blur-md shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.25)] transition-all duration-200 hover:border-[var(--border-strong)] hover:shadow-[0_1px_2px_rgba(0,0,0,0.06),0_12px_32px_-12px_rgba(0,0,0,0.35)] ${isPlaying ? 'outline outline-2 outline-[var(--accent)]' : ''}`}
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -72,10 +72,8 @@ export function SceneCard({
       <div className="flex flex-col gap-3 p-4">
         <p className="text-sm leading-relaxed text-[var(--text)]">{scene.sentence}</p>
         <div className="flex items-center gap-3">
-          <span
-            className="rounded px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.05em] text-white"
-            style={{ backgroundColor: emotionColors[scene.emotion] }}
-          >
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface2)] px-2 py-0.5 text-[11px] font-medium text-[var(--muted)] capitalize">
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: emotionColors[scene.emotion] }} />
             {scene.emotion}
           </span>
           <span className="text-xs text-[var(--muted)]">

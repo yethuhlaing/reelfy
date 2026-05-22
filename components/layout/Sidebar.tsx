@@ -1,105 +1,73 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams, usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
-import { PanelLeftClose, PanelLeftOpen, Plus, Settings, LayoutDashboard, ChartNoAxesCombined, Shield } from 'lucide-react'
+import { useState } from 'react'
+import { Settings, LayoutDashboard, ChartNoAxesCombined, Shield, Clapperboard, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useSession } from '@/lib/auth-client'
-import { getSessionUser } from '@/lib/auth-session'
+import { signOut } from '@/lib/auth-client'
+import type { SessionUser } from '@/lib/auth-session'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useSidebar } from '@/components/layout/sidebar-context'
+import { usePathname } from 'next/navigation'
 
-const ACTIVE_CAT_KEY = 'category:active'
-const COLLAPSED_KEY = 'sidebar:collapsed'
-const DEFAULT_CATEGORY = 'stickman'
+interface SidebarProps {
+  currentUser: SessionUser | null
+}
 
-interface Category { id: string; label: string; icon: string; soon?: boolean }
-const CATEGORIES: Category[] = [
-  { id: 'stickman', label: 'Stickman', icon: '◈' },
-  { id: 'whiteboard', label: 'Whiteboard', icon: '▱', soon: true },
-  { id: 'comic', label: 'Comic', icon: '▢', soon: true },
-  { id: 'doodle', label: 'Doodle', icon: '✎', soon: true },
-]
-
-export function Sidebar() {
-  const params = useParams<{ category?: string }>()
+export function Sidebar({ currentUser }: SidebarProps) {
+  const { collapsed } = useSidebar()
   const pathname = usePathname()
-  const router = useRouter()
-  const [collapsed, setCollapsed] = useState(false)
-  const [activeCategory, setActiveCategory] = useState(DEFAULT_CATEGORY)
-  const { data: sessionData } = useSession()
-  const user = getSessionUser(sessionData)
+  const user = currentUser
   const isAdmin = user?.role === 'admin'
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
-  useEffect(() => {
-    setCollapsed(localStorage.getItem(COLLAPSED_KEY) === '1')
-    const stored = localStorage.getItem(ACTIVE_CAT_KEY)
-    if (stored) setActiveCategory(stored)
-  }, [])
+  const name = user?.name || user?.email || 'Account'
+  const initials = name.slice(0, 1).toUpperCase()
 
-  useEffect(() => {
-    if (params?.category && typeof params.category === 'string') {
-      setActiveCategory(params.category)
-      localStorage.setItem(ACTIVE_CAT_KEY, params.category)
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    try {
+      await signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            window.location.href = '/auth/login'
+          },
+        },
+      })
+    } finally {
+      setIsSigningOut(false)
     }
-  }, [params?.category])
+  }
 
-  useEffect(() => {
-    document.documentElement.dataset.sidebarCollapsed = collapsed ? '1' : '0'
-    const shell = document.querySelector('[data-collapsed]') as HTMLElement | null
-    if (shell) {
-      shell.dataset.collapsed = collapsed ? 'true' : 'false'
-      shell.style.setProperty('--sidebar-w', collapsed ? '64px' : '240px')
-    }
-  }, [collapsed])
-
-  const toggle = useCallback(() => {
-    setCollapsed((c) => {
-      const next = !c
-      localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0')
-      return next
-    })
-  }, [])
-
-  const goNew = () => router.push('/new-story')
   const onDashboard = pathname === '/dashboard'
+  const onContent = pathname === '/content-generation'
 
   return (
     <aside className="sticky top-0 flex h-screen flex-col gap-2 overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] px-2.5 py-3.5">
       <div className={cn('flex items-center gap-2.5 px-2.5 pb-3.5', collapsed && 'justify-center')}>
         <Link
-          href="/stickman/new"
+          href="/dashboard"
           className={cn('inline-flex items-center gap-2.5', collapsed && 'justify-center')}
-          title="Go to Stickman new story"
+          title="Go to Dashboard"
         >
           <div className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--accent)] font-[var(--font-heading)] text-[var(--accent-ink)] font-bold">
             ◈
           </div>
           {!collapsed && <div className="font-[var(--font-heading)] text-[1.05rem] font-bold tracking-[-0.01em]">StickStory</div>}
         </Link>
-        <button
-          className={cn(
-            'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface2)] text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]',
-            collapsed ? '' : 'ml-auto',
-          )}
-          onClick={toggle}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={collapsed ? 'Expand' : 'Collapse'}
-        >
-          {collapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
-        </button>
       </div>
 
-      <button
+      <Link
+        href="/content-generation"
         className={cn(
-          'inline-flex items-center gap-2 rounded-[10px] bg-[var(--accent)] px-3 py-2.5 text-left text-sm font-semibold text-[var(--accent-ink)] transition active:translate-y-px hover:brightness-105',
-          collapsed && 'justify-center px-2.5',
+          'inline-flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--text)] transition hover:bg-[var(--surface2)]',
+          onContent && 'bg-[var(--surface2)] text-[var(--accent)]',
+          collapsed && 'justify-center px-2',
         )}
-        onClick={goNew}
-        title="New story"
       >
-        <Plus size={16} />
-        {!collapsed && <span>New Story</span>}
-      </button>
+        <Clapperboard size={16} />
+        {!collapsed && <span>Content Generation</span>}
+      </Link>
 
       <Link
         href="/dashboard"
@@ -139,51 +107,6 @@ export function Sidebar() {
         </Link>
       ) : null}
 
-      {!collapsed && (
-        <div className="px-3 pb-1 pt-3.5 text-[0.68rem] uppercase tracking-[0.08em] text-[var(--muted)]">Categories</div>
-      )}
-      {CATEGORIES.map((c) => {
-        const isActive = !c.soon && c.id === activeCategory && !onDashboard
-        if (c.soon) {
-          return (
-            <div
-              key={c.id}
-              className={cn(
-                'inline-flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[var(--muted)]',
-                collapsed && 'justify-center px-2',
-              )}
-              title="Coming soon"
-            >
-              <span style={{ width: 16, textAlign: 'center' }}>{c.icon}</span>
-              {!collapsed && <span>{c.label}</span>}
-              {!collapsed && (
-                <span className="ml-auto rounded-full border border-[var(--border)] px-1.5 py-px text-[0.62rem] text-[var(--muted)]">
-                  soon
-                </span>
-              )}
-            </div>
-          )
-        }
-        return (
-          <button
-            key={c.id}
-            className={cn(
-              'inline-flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--text)] transition hover:bg-[var(--surface2)]',
-              isActive && 'bg-[var(--surface2)] text-[var(--accent)]',
-              collapsed && 'justify-center px-2',
-            )}
-            onClick={() => {
-              setActiveCategory(c.id)
-              localStorage.setItem(ACTIVE_CAT_KEY, c.id)
-              router.push(`/${c.id}/new`)
-            }}
-          >
-            <span style={{ width: 16, textAlign: 'center' }}>{c.icon}</span>
-            {!collapsed && <span>{c.label}</span>}
-          </button>
-        )
-      })}
-
       <Link
         href="/settings"
         className={cn(
@@ -195,20 +118,42 @@ export function Sidebar() {
         <Settings size={16} />
         {!collapsed && <span>Settings</span>}
       </Link>
+
+      {/* Spacer to push avatar to bottom */}
+      <div className="flex-1" />
+
+      {/* Avatar section at bottom right */}
+      {user ? (
+        <div className={cn('flex items-center gap-2.5 rounded-lg px-3 py-2', collapsed && 'justify-center')}>
+          <button
+            aria-label="Account"
+            className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-transparent bg-[var(--accent)] p-0 text-[var(--accent-ink)] transition hover:brightness-105"
+            onClick={() => {}}
+          >
+            <Avatar className="size-[34px]">
+              <AvatarImage src={user.image ?? undefined} alt={name} />
+              <AvatarFallback className="bg-[var(--accent)] text-[var(--accent-ink)]">{initials}</AvatarFallback>
+            </Avatar>
+          </button>
+          {!collapsed && (
+            <>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-[var(--text)]">{name}</div>
+                <div className="truncate text-xs text-[var(--muted)]">{user.email}</div>
+              </div>
+              <button
+                onClick={() => void handleSignOut()}
+                disabled={isSigningOut}
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--muted)] transition hover:text-[var(--danger)] hover:bg-[var(--surface2)]"
+                title="Sign out"
+              >
+                <LogOut size={14} />
+              </button>
+            </>
+          )}
+        </div>
+      ) : null}
     </aside>
   )
 }
 
-export function useActiveCategory(): string {
-  const params = useParams<{ category?: string }>()
-  const [cat, setCat] = useState(DEFAULT_CATEGORY)
-  useEffect(() => {
-    if (params?.category && typeof params.category === 'string') {
-      setCat(params.category)
-      return
-    }
-    const stored = typeof window !== 'undefined' ? localStorage.getItem(ACTIVE_CAT_KEY) : null
-    if (stored) setCat(stored)
-  }, [params?.category])
-  return cat
-}

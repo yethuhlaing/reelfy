@@ -35,6 +35,14 @@ const STATUS_LABEL: Record<DashboardStoryStatus, string> = {
   failed: 'Failed',
 }
 
+const STATUS_COLOR: Record<DashboardStoryStatus, string> = {
+  draft: 'var(--muted)',
+  generating: 'var(--accent)',
+  ready: 'var(--success)',
+  rendered: 'var(--success)',
+  failed: 'var(--danger)',
+}
+
 interface Props {
   summary: DashboardStory
   onChange: () => void
@@ -90,10 +98,10 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
   return (
     <>
       <article
-        className="group relative flex cursor-pointer flex-col overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--surface)] transition hover:-translate-y-[3px] hover:border-[color-mix(in_srgb,var(--accent)_35%,var(--border))]"
+        className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] backdrop-blur-md shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.25)] transition-all duration-200 hover:border-[var(--border-strong)] hover:shadow-[0_1px_2px_rgba(0,0,0,0.06),0_12px_32px_-12px_rgba(0,0,0,0.35)]"
         onClick={open}
       >
-        <div className="relative grid aspect-video place-items-center overflow-hidden bg-[var(--surface2)]">
+        <div className="relative grid aspect-video place-items-center overflow-hidden rounded-lg bg-[var(--surface2)] ring-1 ring-inset ring-[var(--border)]">
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={thumb} alt={summary.title} />
@@ -103,7 +111,8 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
             </div>
           )}
           <div className="absolute left-2.5 top-2.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-0.5 text-[0.7rem] font-semibold text-[var(--text)]">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface2)] px-2 py-0.5 text-[11px] font-medium text-[var(--muted)]">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: STATUS_COLOR[status] }} />
               {STATUS_LABEL[status]}
             </span>
           </div>
@@ -164,7 +173,7 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
       </article>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent className="gap-0 border-[var(--border)] bg-[var(--surface)] p-0 shadow-2xl sm:max-w-md">
+        <AlertDialogContent className="gap-0 border-[var(--border)] bg-[var(--surface-solid)] p-0 shadow-2xl sm:max-w-md">
           <div className="space-y-4 px-6 pt-6 pb-5">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500">

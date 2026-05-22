@@ -38,7 +38,7 @@ export function WorkspaceTopBar({
   const hasThumb = !!storyData?.thumbnailUrl
 
   return (
-    <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_90%,transparent)] px-5 py-3 backdrop-blur-md max-md:flex-wrap max-md:gap-1.5">
+    <div className="sticky top-0 z-30 flex items-center gap-3 bg-[color-mix(in_srgb,var(--bg)_90%,transparent)] px-5 py-3 backdrop-blur-md max-md:flex-wrap max-md:gap-1.5">
       <div className="min-w-0 flex-1">
         <h1 className="truncate whitespace-nowrap font-[var(--font-heading)] text-base font-semibold">{storyData?.title ?? 'Untitled story'}</h1>
         <p className="truncate whitespace-nowrap text-xs text-[var(--muted)] max-md:hidden">{storyData?.tagline ?? ' '}</p>
