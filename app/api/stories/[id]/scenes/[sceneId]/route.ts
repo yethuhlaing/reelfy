@@ -1,4 +1,4 @@
-import { auth } from '@/lib/externals/betterauth'
+import { requireUserSession, isAuthError } from '@/lib/db/user'
 import { updateSceneForUser } from '@/lib/db/stories'
 
 export const runtime = 'nodejs'
@@ -7,10 +7,8 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ id: string; sceneId: string }> },
 ) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const session = await requireUserSession(request)
+  if (isAuthError(session)) return session
   const { id: storyId, sceneId } = await ctx.params
   if (!storyId || !sceneId) {
     return Response.json({ error: 'Missing ids' }, { status: 400 })
@@ -21,9 +19,26 @@ export async function PATCH(
     voiceoverUrl?: string | null
     videoUrl?: string | null
     voiceoverDuration?: number | null
+    lastError?: string | null
+    pendingJobId?: string | null
   }
 
-  const ok = await updateSceneForUser(storyId, sceneId, session.user.id, body)
+  const dbPatch: {
+    imageUrl?: string | null
+    voiceoverUrl?: string | null
+    videoUrl?: string | null
+    voiceoverDuration?: number | null
+  } = {}
+  if ('imageUrl' in body) dbPatch.imageUrl = body.imageUrl ?? null
+  if ('voiceoverUrl' in body) dbPatch.voiceoverUrl = body.voiceoverUrl ?? null
+  if ('videoUrl' in body) dbPatch.videoUrl = body.videoUrl ?? null
+  if ('voiceoverDuration' in body) dbPatch.voiceoverDuration = body.voiceoverDuration ?? null
+
+  if (Object.keys(dbPatch).length === 0) {
+    return Response.json({ ok: true })
+  }
+
+  const ok = await updateSceneForUser(storyId, sceneId, session.user.id, dbPatch)
   if (!ok) {
     return Response.json({ error: 'Not found' }, { status: 404 })
   }

@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
-import { UsageStats } from '@/components/billing/UsageStats'
-import { UsageDetails } from '@/components/billing/UsageDetails'
-import { UsageDetailsSkeleton, UsageStatsSkeleton } from '@/components/billing/UsageSkeleton'
+import { UsageStats } from '@/features/billing/UsageStats'
+import { UsageDetails } from '@/features/billing/UsageDetails'
+import { UsageDetailsSkeleton, UsageStatsSkeleton } from '@/features/billing/UsageSkeleton'
 import { getUserSession } from '@/lib/db/user'
 
 export const dynamic = 'force-dynamic'

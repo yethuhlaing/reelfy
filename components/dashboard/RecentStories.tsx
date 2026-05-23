@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { StoredStorySummary } from '@/lib/storage'
+import type { DashboardStory } from '@/lib/types/dashboard'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 interface RecentStoriesProps {
-  stories: StoredStorySummary[]
+  stories: DashboardStory[]
   currentStoryId: string | null
   onSelect: (id: string) => void
   onDelete: (id: string) => Promise<void>

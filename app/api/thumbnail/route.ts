@@ -1,8 +1,9 @@
-import { put } from '@vercel/blob'
 import { getImageProvider } from '@/lib/providers/image'
 import { buildThumbnailPrompt } from '@/lib/prompts/thumbnail'
 import type { ImageModel } from '@/lib/types'
-import { auth } from '@/lib/externals/betterauth'
+import { requireUserSession, isAuthError } from '@/lib/db/user'
+import { getStoryForUser } from '@/lib/db/stories'
+import { completeThumbnail } from '@/lib/story-assets'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -12,8 +13,9 @@ function badRequest(message: string) {
 }
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  const userId = session?.user?.id
+  const session = await requireUserSession(request)
+  if (isAuthError(session)) return session
+  const userId = session.user.id
 
   const body = await request.json().catch(() => null)
   if (!body) {
@@ -32,9 +34,17 @@ export async function POST(request: Request) {
     return badRequest('Missing required fields: storyId, prompt')
   }
 
+  const story = await getStoryForUser(storyId, userId)
+  if (!story) {
+    return new Response(JSON.stringify({ error: 'Story not found' }), { status: 404 })
+  }
+
   const imageProvider = getImageProvider(imageModel)
   if (!process.env.FAL_KEY) {
     return badRequest('FAL_KEY is not configured')
+  }
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return badRequest('BLOB_READ_WRITE_TOKEN is not configured')
   }
 
   try {
@@ -47,27 +57,19 @@ export async function POST(request: Request) {
         operation: 'thumbnail_image',
       },
     })
-    const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
 
-    let url: string
-    if (hasBlobToken) {
-      const ext = mimeType.includes('jpeg') ? 'jpg' : 'png'
-      const blob = await put(`thumbnails/${storyId}.${ext}`, data, {
-        access: 'public',
-        contentType: mimeType,
-        addRandomSuffix: false,
-        allowOverwrite: true,
-      })
-      url = `${blob.url}?v=${Date.now()}`
-    } else {
-      url = `data:${mimeType};base64,${data.toString('base64')}`
-    }
+    const url = await completeThumbnail({
+      storyId,
+      userId,
+      data,
+      mimeType,
+    })
 
     return Response.json({ url })
   } catch (err) {
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Thumbnail generation failed' }),
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

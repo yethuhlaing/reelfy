@@ -21,6 +21,7 @@ export interface AnimatePayload {
   imageUrl: string
   motionPrompt: string
   videoModel?: string
+  userId: string
 }
 
 export interface AnimateResult {
@@ -37,6 +38,7 @@ export interface ComposeTrackInput {
 export interface ComposePayload {
   storyId: string
   tracks: ComposeTrackInput[]
+  userId: string
 }
 
 export interface ComposeResult {

@@ -1,14 +1,12 @@
-import { auth } from '@/lib/externals/betterauth'
+import { requireUserSession, isAuthError } from '@/lib/db/user'
 import { listUserStories } from '@/lib/db/stories'
 import type { DashboardStory } from '@/lib/types/dashboard'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const session = await requireUserSession(request)
+  if (isAuthError(session)) return session
   const url = new URL(request.url)
   const category = url.searchParams.get('category') ?? undefined
   const rows = await listUserStories(session.user.id, category)

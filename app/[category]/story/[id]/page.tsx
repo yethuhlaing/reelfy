@@ -1,4 +1,4 @@
-import { Workspace } from '@/components/workspace/Workspace'
+import { Workspace } from '@/features/workspace/Workspace'
 
 export default async function StoryPage({
   params,

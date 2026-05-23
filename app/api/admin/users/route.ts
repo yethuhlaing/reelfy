@@ -1,14 +1,11 @@
-import { auth } from '@/lib/externals/betterauth'
+import { requireAdminSession, isAuthError } from '@/lib/db/user'
 import { getAdminUsers } from '@/lib/db/admin'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  const role = (session?.user as { role?: string } | undefined)?.role
-  if (!session?.user?.id || role !== 'admin') {
-    return Response.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const session = await requireAdminSession(request)
+  if (isAuthError(session)) return session
 
   const url = new URL(request.url)
   const state = url.searchParams.get('state')

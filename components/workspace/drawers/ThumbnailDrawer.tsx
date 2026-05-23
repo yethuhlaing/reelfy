@@ -5,7 +5,6 @@ import { Sparkles, RefreshCw, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { Drawer } from '../drawers/Drawer'
 import { useWorkspace } from '@/context/workspace-context'
-import { updateThumbnail } from '@/lib/storage'
 
 interface Props {
   open: boolean
@@ -36,7 +35,6 @@ export function ThumbnailDrawer({ open, onClose }: Props) {
       if (!res.ok) throw new Error(await res.text())
       const data = (await res.json()) as { url: string }
       setStoryData((prev) => (prev ? { ...prev, thumbnailUrl: data.url } : prev))
-      updateThumbnail(storyId, data.url)
       toast.success('Thumbnail ready')
     } catch (err) {
       toast.error('Thumbnail failed', { description: err instanceof Error ? err.message : 'Try again' })

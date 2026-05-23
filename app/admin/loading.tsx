@@ -1,4 +1,4 @@
-import { AdminSkeleton } from '@/components/admin/AdminSkeleton'
+import { AdminSkeleton } from '@/features/admin/AdminSkeleton'
 
 export default function LoadingAdminPage() {
   return (

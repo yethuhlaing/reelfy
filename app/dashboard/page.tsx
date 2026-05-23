@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
-import { DashboardContent } from '@/components/dashboard/DashboardContent'
-import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
-import { CategoryFilter } from '@/components/dashboard/CategoryFilter'
+import { DashboardContent } from '@/features/dashboard/DashboardContent'
+import { DashboardSkeleton } from '@/features/dashboard/DashboardSkeleton'
+import { CategoryFilter } from '@/features/dashboard/CategoryFilter'
 import { getUserSession } from '@/lib/db/user'
 
 export const dynamic = 'force-dynamic'

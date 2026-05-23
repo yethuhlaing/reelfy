@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import type { Scene } from '../lib/types'
 import type { ComposeResult, Job } from '../lib/jobs/types'
 import { useJobPoller, type PendingJob } from '../hooks/use-poller'
-import { updateComposedVideo, updateStoryScene } from '../lib/storage'
+import { patchSceneFields } from '../lib/api/stories-client'
 
 export type ExportPhase = 'idle' | 'preparing' | 'rendering' | 'done' | 'failed'
 
@@ -107,7 +107,6 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
       }
       setState((s) => {
         if (s.jobId !== jobId) return s
-        if (s.storyId) updateComposedVideo(s.storyId, result.videoUrl)
         return { ...s, status: 'done', progress: 100, downloadUrl: result.videoUrl, jobId }
       })
     },
@@ -157,12 +156,11 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
           })
           if (!res.ok) throw new Error(`Voiceover failed (scene ${s.id})`)
           voiceoverUrl = ((await res.json()) as { url: string }).url
-          updateStoryScene(storyId, s.id, { voiceoverUrl })
         }
         let duration = s.voiceoverDuration
         if (!duration) {
           duration = await probeAudioDuration(voiceoverUrl)
-          updateStoryScene(storyId, s.id, { voiceoverDuration: duration })
+          void patchSceneFields(storyId, s.id, { voiceoverDuration: duration })
         }
         tracks.push({
           sceneId: s.id,

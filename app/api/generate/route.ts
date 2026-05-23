@@ -1,11 +1,11 @@
-import { put } from '@vercel/blob'
 import type { SceneDensity, StickStyle, VoiceTone, ImageModel, TextModel, StreamEvent, Scene, StoryData, VideoModel, VideoQuality } from '@/lib/types'
 import { getImageProvider } from '@/lib/providers/image'
 import { getTextProvider } from '@/lib/providers/text'
-import { auth } from '@/lib/externals/betterauth'
+import { requireUserSession, isAuthError } from '@/lib/db/user'
 import { getCredits, deductCredits } from '@/lib/db/credits'
 import { upsertStoryWithScenes } from '@/lib/db/stories'
 import { fireAndForgetUsage } from '@/lib/billing/usage'
+import { clearStoryAssetsBeforeRegenerate, completeSceneImage } from '@/lib/story-assets'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -17,10 +17,8 @@ const IMAGE_MODEL_CREDITS: Record<ImageModel, number> = {
 }
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
-  }
+  const session = await requireUserSession(request)
+  if (isAuthError(session)) return session
   const userId = session.user.id
 
   const body = await request.json().catch(() => null)
@@ -119,13 +117,44 @@ export async function POST(request: Request) {
 
         const finalScenes: Scene[] = []
         for (const p of plan.scenes) {
-          const scene: Scene = { ...p, imageUrl: null, voiceoverUrl: null }
+          const scene: Scene = { ...p, imageUrl: null, voiceoverUrl: null, videoUrl: null }
           finalScenes.push(scene)
           send({ type: 'scene-planned', scene })
         }
 
         send({ type: 'stage', id: 'plan', status: 'done', detail: `${plan.scenes.length} scenes` })
         send({ type: 'info', message: `Using image provider: ${imageProvider.id}` })
+
+        try {
+          await clearStoryAssetsBeforeRegenerate(storyId, userId)
+          await upsertStoryWithScenes({
+            storyId,
+            userId,
+            category: category ?? 'stickman',
+            storyInput: story,
+            options: {
+              density,
+              style,
+              tone,
+              imageModel: imageModel ?? 'flux-schnell-fal',
+              videoModel: videoModel ?? 'ltx-video-fal',
+              videoQuality: videoQuality ?? '720p',
+              textModel: textModel ?? 'gemini-2.5-flash',
+            },
+            storyData: {
+              title: plan.title,
+              tagline: plan.tagline,
+              protagonist: plan.protagonist,
+              thumbnailPrompt: plan.thumbnailPrompt,
+              thumbnailUrl: null,
+              scenes: finalScenes,
+            },
+            status: 'generating',
+          })
+        } catch (persistErr) {
+          console.error('Failed to persist story scaffold', persistErr)
+        }
+
         send({
           type: 'stage',
           id: 'images',
@@ -161,13 +190,13 @@ export async function POST(request: Request) {
 
             let imageUrl: string
             if (hasBlobToken) {
-              const ext = mimeType.split('/')[1] || 'png'
-              const blob = await put(`scenes/${storyId}/${scene.id}-${Date.now()}.${ext}`, data, {
-                access: 'public',
-                contentType: mimeType,
-                addRandomSuffix: true,
+              imageUrl = await completeSceneImage({
+                storyId,
+                sceneId: scene.id,
+                userId,
+                data,
+                mimeType,
               })
-              imageUrl = blob.url
             } else {
               imageUrl = `data:${mimeType};base64,${data.toString('base64')}`
             }

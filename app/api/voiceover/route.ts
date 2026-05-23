@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
-import { put } from '@vercel/blob'
 import { generateVoiceover } from '@/lib/externals/elevenlabs'
-import { auth } from '@/lib/externals/betterauth'
+import { requireUserSession, isAuthError } from '@/lib/db/user'
+import { getStoryForUser } from '@/lib/db/stories'
+import { completeSceneVoiceover } from '@/lib/story-assets'
 
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers })
-    const userId = session?.user?.id
+    const session = await requireUserSession(request)
+    if (isAuthError(session)) return session
+    const userId = session.user.id
 
     const body = await request.json()
     const { text, sceneId, storyId } = body as {
@@ -18,14 +20,26 @@ export async function POST(request: Request) {
     if (!text || !sceneId || !storyId) {
       return NextResponse.json(
         { error: 'Missing required fields: text, sceneId, storyId' },
-        { status: 400 }
+        { status: 400 },
       )
+    }
+
+    const story = await getStoryForUser(storyId, userId)
+    if (!story) {
+      return NextResponse.json({ error: 'Story not found' }, { status: 404 })
     }
 
     if (!process.env.ELEVENLABS_API_KEY) {
       return NextResponse.json(
         { error: 'ELEVENLABS_API_KEY is not configured' },
-        { status: 500 }
+        { status: 500 },
+      )
+    }
+
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json(
+        { error: 'BLOB_READ_WRITE_TOKEN is not configured' },
+        { status: 500 },
       )
     }
 
@@ -39,18 +53,11 @@ export async function POST(request: Request) {
       return new Response('cancelled', { status: 499 })
     }
 
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      const base64 = Buffer.from(audioBuffer).toString('base64')
-      const url = `data:audio/mpeg;base64,${base64}`
-      return NextResponse.json({ url, sceneId, fallback: 'data-url' })
-    }
-
-    const path = `voiceovers/${storyId}/${sceneId}.mp3`
-    const { url } = await put(path, Buffer.from(audioBuffer), {
-      access: 'public',
-      contentType: 'audio/mpeg',
-      addRandomSuffix: false,
-      allowOverwrite: true,
+    const url = await completeSceneVoiceover({
+      storyId,
+      sceneId,
+      userId,
+      data: Buffer.from(audioBuffer),
     })
 
     return NextResponse.json({ url, sceneId })
@@ -64,7 +71,7 @@ export async function POST(request: Request) {
     console.error('Voiceover API error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate voiceover' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

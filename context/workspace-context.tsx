@@ -3,13 +3,11 @@
 import {
   createContext,
   useContext,
-  useRef,
   useState,
   useCallback,
   type ReactNode,
 } from 'react'
 import type { StoryData, Scene, GenerateOptions } from '../lib/types'
-import { updateStoryScene } from '../lib/storage'
 
 export interface PlayState {
   isPlaying: boolean
@@ -87,9 +85,8 @@ export function WorkspaceProvider({
             }
           : prev,
       )
-      if (storyId && !readOnly) updateStoryScene(storyId, sceneId, patch)
     },
-    [storyId, setStoryData, readOnly],
+    [setStoryData],
   )
 
   return (

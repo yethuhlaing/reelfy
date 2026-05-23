@@ -1,6 +1,6 @@
-import { put } from '@vercel/blob'
 import { getJob, markCompleted, markFailed } from '@/lib/jobs/store'
 import { readFalHeaders, verifyFalWebhook } from '@/lib/jobs/verify-fal'
+import { completeSceneVideo } from '@/lib/story-assets'
 import type { AnimatePayload, AnimateResult } from '@/lib/jobs/types'
 
 export const runtime = 'nodejs'
@@ -52,28 +52,34 @@ export async function POST(
     return new Response('ok')
   }
 
-  let videoUrl = falVideoUrl
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    try {
-      const res = await fetch(falVideoUrl)
-      const buf = Buffer.from(await res.arrayBuffer())
-      const blob = await put(
-        `animations/${job.payload.storyId}-${job.payload.sceneId}.mp4`,
-        buf,
-        {
-          access: 'public',
-          contentType: 'video/mp4',
-          addRandomSuffix: false,
-          allowOverwrite: true,
-        },
-      )
-      videoUrl = `${blob.url}?v=${Date.now()}`
-    } catch (err) {
-      console.error('Blob copy failed, falling back to fal url', err)
-    }
+  if (!job.payload.userId) {
+    await markFailed(jobId, 'Job missing userId')
+    return new Response('ok')
   }
 
-  const result: AnimateResult = { videoUrl }
-  await markCompleted(jobId, result)
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    await markFailed(jobId, 'BLOB_READ_WRITE_TOKEN is not configured')
+    return new Response('ok')
+  }
+
+  try {
+    const res = await fetch(falVideoUrl)
+    if (!res.ok) {
+      throw new Error(`fal video download failed: HTTP ${res.status}`)
+    }
+    const buf = Buffer.from(await res.arrayBuffer())
+    const videoUrl = await completeSceneVideo({
+      storyId: job.payload.storyId,
+      sceneId: job.payload.sceneId,
+      userId: job.payload.userId,
+      data: buf,
+    })
+    const result: AnimateResult = { videoUrl }
+    await markCompleted(jobId, result)
+  } catch (err) {
+    console.error('Animate webhook failed', err)
+    await markFailed(jobId, err instanceof Error ? err.message : 'Blob upload failed')
+  }
+
   return new Response('ok')
 }

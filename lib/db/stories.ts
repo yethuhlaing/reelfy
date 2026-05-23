@@ -130,6 +130,63 @@ export async function getStoryForUser(storyId: string, userId: string) {
   return { story, scenes: sceneRows }
 }
 
+export async function duplicateStoryForUser(storyId: string, userId: string): Promise<string | null> {
+  const result = await getStoryForUser(storyId, userId)
+  if (!result) return null
+
+  const { story, scenes: sceneRows } = result
+  const newStoryId = crypto.randomUUID()
+  const now = new Date()
+  const storyData = rowToStoryData(story, sceneRows)
+  storyData.title = `${storyData.title} (copy)`
+
+  await db.insert(stories).values({
+    id: newStoryId,
+    userId,
+    title: storyData.title,
+    tagline: storyData.tagline,
+    protagonist: storyData.protagonist,
+    thumbnailUrl: story.thumbnailUrl,
+    thumbnailPrompt: story.thumbnailPrompt,
+    sceneCount: sceneRows.length,
+    storyInput: story.storyInput,
+    options: story.options,
+    composedVideoUrl: story.composedVideoUrl,
+    category: story.category,
+    status: story.status,
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  if (sceneRows.length > 0) {
+    await db.insert(scenes).values(
+      sceneRows.map((sc) => ({
+        id: crypto.randomUUID(),
+        storyId: newStoryId,
+        orderIndex: sc.orderIndex,
+        imageUrl: sc.imageUrl,
+        voiceoverUrl: sc.voiceoverUrl,
+        videoUrl: sc.videoUrl,
+        sentence: sc.sentence,
+        voiceoverText: sc.voiceoverText,
+        action: sc.action,
+        setting: sc.setting,
+        emotion: sc.emotion,
+        imagePrompt: sc.imagePrompt,
+        motionPrompt: sc.motionPrompt,
+        characters: sc.characters,
+        props: sc.props,
+        voiceoverDuration: sc.voiceoverDuration,
+        imageModel: sc.imageModel,
+        videoModel: sc.videoModel,
+        createdAt: now,
+      })),
+    )
+  }
+
+  return newStoryId
+}
+
 export async function deleteStoryForUser(storyId: string, userId: string) {
   const rows = await db
     .delete(stories)

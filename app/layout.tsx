@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
-import { Toaster } from '@/components/ui/sonner'
-import { ThemeProvider } from '@/components/providers/theme-provider'
-import { AppShell } from '@/components/layout/app-shell'
+import { Toaster } from '@/features/ui/sonner'
+import { ThemeProvider } from '@/features/providers/theme-provider'
+import { AppShell } from '@/features/layout/app-shell'
 import { getSessionUser } from '@/lib/auth-session'
 import { getUserSession } from '@/lib/db/user'
 

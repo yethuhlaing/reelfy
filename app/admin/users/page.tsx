@@ -4,8 +4,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { UserSpendTable } from '@/components/admin/UserSpendTable'
+} from '@/features/ui/card'
+import { UserSpendTable } from '@/features/admin/UserSpendTable'
 import { getAdminUsers } from '@/lib/db/admin'
 import { getUserSession } from '@/lib/db/user'
 

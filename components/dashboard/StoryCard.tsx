@@ -22,9 +22,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
-  duplicateStory,
-  renameStory,
-} from '@/lib/storage'
+  duplicateStoryApi,
+  patchStoryMeta,
+} from '@/lib/api/stories-client'
 import type { DashboardStory, DashboardStoryStatus } from '@/lib/types/dashboard'
 
 const STATUS_LABEL: Record<DashboardStoryStatus, string> = {
@@ -67,19 +67,21 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
   const handleRenameCommit = () => {
     const next = title.trim()
     if (next && next !== summary.title) {
-      renameStory(summary.id, next)
-      onChange()
+      void patchStoryMeta(summary.id, { title: next }).then((ok) => {
+        if (ok) onChange()
+      })
     }
     setRenaming(false)
   }
 
   const handleDuplicate = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const id = duplicateStory(summary.id)
-    if (id) {
-      toast.success('Story duplicated')
-      onChange()
-    }
+    void duplicateStoryApi(summary.id).then((id) => {
+      if (id) {
+        toast.success('Story duplicated')
+        onChange()
+      }
+    })
   }
 
   const handleDelete = async () => {

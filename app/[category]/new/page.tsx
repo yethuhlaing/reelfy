@@ -1,4 +1,4 @@
-import { StoryForm } from '@/components/story/StoryForm'
+import { StoryForm } from '@/features/story/StoryForm'
 
 export default async function NewStoryPage({
   params,

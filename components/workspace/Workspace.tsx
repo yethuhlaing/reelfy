@@ -16,13 +16,8 @@ import { StageDetailsPopover } from '@/components/workspace/media/StageDetailsPo
 import { STICKMAN_GIBBERISH } from '@/data/gibberish-pool'
 import { ExportStateProvider } from '@/context/export-state'
 import { readSSE } from '@/lib/sse'
-import {
-  clearPendingStory,
-  getPendingStory,
-  getStory,
-  saveStory,
-  updateStoryScene,
-} from '@/lib/storage'
+import { clearPendingStory, getPendingStory } from '@/lib/pending-story'
+import { fetchStory, patchSceneFields } from '@/lib/api/stories-client'
 import { notifications } from '@/lib/notifications'
 import { shouldShowToastFor } from '@/lib/utils'
 import { usePathname } from 'next/navigation'
@@ -78,49 +73,29 @@ export function Workspace({ storyId, category }: Props) {
   }
 
   useEffect(() => {
-    const existing = getStory(storyId)
-    if (existing) {
-      setStoryData(existing.storyData)
-      setOptions(existing.options)
-      setStoryInput(existing.storyInput)
-    } else if (startingFlag) {
+    if (startingFlag) {
       const pending = getPendingStory(storyId)
       if (pending) {
         setOptions(pending.options)
         setStoryInput(pending.storyInput)
       }
-    } else {
-      let cancelled = false
-      fetch(`/api/stories/${storyId}`)
-        .then(async (res) => {
-          if (!res.ok) return null
-          return res.json() as Promise<{
-            storyInput: string
-            options: GenerateOptions | null
-            storyData: StoryData
-            category: string
-          }>
-        })
-        .then((data) => {
-          if (cancelled || !data) return
-          setStoryData(data.storyData)
-          if (data.options) setOptions(data.options)
-          setStoryInput(data.storyInput ?? '')
-          saveStory({
-            id: storyId,
-            storyInput: data.storyInput ?? '',
-            options: data.options ?? ({} as GenerateOptions),
-            storyData: data.storyData,
-            category: data.category ?? category,
-          })
-        })
-        .catch(() => {})
-      return () => {
-        cancelled = true
-      }
+      return
+    }
+
+    let cancelled = false
+    fetchStory(storyId)
+      .then((data) => {
+        if (cancelled || !data) return
+        setStoryData(data.storyData)
+        if (data.options) setOptions(data.options)
+        setStoryInput(data.storyInput ?? '')
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storyId])
+  }, [storyId, startingFlag])
 
   useEffect(() => {
     if (!startingFlag || startedRef.current) return
@@ -171,9 +146,6 @@ export function Workspace({ storyId, category }: Props) {
             }
           : prev,
       )
-      updateStoryScene(storyId, sid, {
-        videoUrl: result.videoUrl, pendingJobId: undefined, lastError: undefined,
-      })
       const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
       const link = `/${category}/story/${storyId}`
       notifications.add({
@@ -200,7 +172,6 @@ export function Workspace({ storyId, category }: Props) {
             }
           : prev,
       )
-      updateStoryScene(storyId, sid, { pendingJobId: undefined, lastError: error })
       const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
       const link = `/${category}/story/${storyId}`
       notifications.add({
@@ -307,7 +278,6 @@ export function Workspace({ storyId, category }: Props) {
 
       const finalData = storyDataRef.current
       if (finalData && !ctrl.signal.aborted) {
-        saveStory({ id: storyId, storyInput: input, options: opts, storyData: finalData, category })
         const link = `/${category}/story/${storyId}`
         notifications.add({
           type: 'generation-complete',
@@ -386,7 +356,6 @@ export function Workspace({ storyId, category }: Props) {
               ? { ...prev, scenes: prev.scenes.map((s) => (s.id === scene.id ? { ...s, voiceoverUrl: url } : s)) }
               : prev,
           )
-          updateStoryScene(storyId, scene.id, { voiceoverUrl: url })
         }
         if (!url) { setPlayState({ isPlaying: false, currentIndex: -1 }); return }
         const audio = new Audio(url)
@@ -394,7 +363,17 @@ export function Workspace({ storyId, category }: Props) {
         audio.onloadedmetadata = () => {
           const dur = audio.duration
           if (Number.isFinite(dur) && dur > 0) {
-            updateStoryScene(storyId, scene.id, { voiceoverDuration: dur })
+            void patchSceneFields(storyId, scene.id, { voiceoverDuration: dur })
+            setStoryData((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    scenes: prev.scenes.map((s) =>
+                      s.id === scene.id ? { ...s, voiceoverDuration: dur } : s,
+                    ),
+                  }
+                : prev,
+            )
           }
         }
         return new Promise<void>((resolve, reject) => {
@@ -456,13 +435,12 @@ export function Workspace({ storyId, category }: Props) {
     }
   }
 
-  const patchScene = (sceneId: string, patch: Parameters<typeof updateStoryScene>[2]) => {
+  const patchScene = (sceneId: string, patch: Partial<import('@/lib/types').Scene>) => {
     setStoryData((prev) =>
       prev
         ? { ...prev, scenes: prev.scenes.map((s) => (s.id === sceneId ? { ...s, ...patch } : s)) }
         : prev,
     )
-    updateStoryScene(storyId, sceneId, patch)
   }
 
   const retryVoice = async (sceneId: string) => {

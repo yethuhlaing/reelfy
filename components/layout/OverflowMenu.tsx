@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { deleteStory, duplicateStory, renameStory } from '@/lib/storage'
+import { duplicateStoryApi, patchStoryMeta } from '@/lib/api/stories-client'
 
 interface Props {
   storyId: string
@@ -27,8 +27,8 @@ export function OverflowMenu({ storyId, category, title, onRenamed, readOnly }: 
   const [newTitle, setNewTitle] = useState(title)
   const [delOpen, setDelOpen] = useState(false)
 
-  const dup = () => {
-    const id = duplicateStory(storyId)
+  const dup = async () => {
+    const id = await duplicateStoryApi(storyId)
     if (id) {
       toast.success('Duplicated')
       router.push(`/${category}/story/${id}`)
@@ -36,8 +36,11 @@ export function OverflowMenu({ storyId, category, title, onRenamed, readOnly }: 
   }
 
   const doDelete = async () => {
-    try { await fetch(`/api/stories/${storyId}`, { method: 'DELETE' }) } catch { /* best-effort */ }
-    deleteStory(storyId)
+    const res = await fetch(`/api/stories/${storyId}`, { method: 'DELETE' })
+    if (!res.ok) {
+      toast.error('Delete failed')
+      return
+    }
     toast.success('Story deleted')
     router.push('/dashboard')
   }
@@ -61,7 +64,7 @@ export function OverflowMenu({ storyId, category, title, onRenamed, readOnly }: 
           <DropdownMenuItem disabled={readOnly} onSelect={() => setRenameOpen(true)}>
             <Pencil size={14} /> Rename
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={readOnly} onSelect={dup}>
+          <DropdownMenuItem disabled={readOnly} onSelect={() => void dup()}>
             <Copy size={14} /> Duplicate
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -89,8 +92,9 @@ export function OverflowMenu({ storyId, category, title, onRenamed, readOnly }: 
               onClick={() => {
                 const t = newTitle.trim()
                 if (t) {
-                  renameStory(storyId, t)
-                  onRenamed?.(t)
+                  void patchStoryMeta(storyId, { title: t }).then((ok) => {
+                    if (ok) onRenamed?.(t)
+                  })
                 }
               }}
             >
@@ -121,7 +125,7 @@ export function OverflowMenu({ storyId, category, title, onRenamed, readOnly }: 
           <AlertDialogFooter className="border-t border-[var(--border)] px-6 py-4">
             <AlertDialogCancel>Keep story</AlertDialogCancel>
             <AlertDialogAction
-              onClick={doDelete}
+              onClick={() => void doDelete()}
               className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500"
             >
               Delete story

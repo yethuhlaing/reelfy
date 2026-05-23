@@ -3,7 +3,9 @@ import { buildWebhookUrl } from '@/lib/jobs/webhook-url'
 import { getVideoProvider } from '@/lib/providers/video'
 import type { AnimatePayload } from '@/lib/jobs/types'
 import type { VideoModel, VideoQuality } from '@/lib/types'
-import { auth } from '@/lib/externals/betterauth'
+import { requireUserSession, isAuthError } from '@/lib/db/user'
+import { getStoryForUser } from '@/lib/db/stories'
+import { clearSceneVideo } from '@/lib/story-assets'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -13,8 +15,9 @@ function badRequest(message: string) {
 }
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  const userId = session?.user?.id
+  const session = await requireUserSession(request)
+  if (isAuthError(session)) return session
+  const userId = session.user.id
 
   const body = await request.json().catch(() => null)
   if (!body) return badRequest('Invalid JSON')
@@ -36,8 +39,13 @@ export async function POST(request: Request) {
     return badRequest('Missing required fields: storyId, sceneId, imageUrl, motionPrompt')
   }
 
+  const story = await getStoryForUser(storyId, userId)
+  if (!story) return badRequest('Story not found')
+
   if (!process.env.FAL_KEY) return badRequest('FAL_KEY is not configured')
   if (!process.env.WEBHOOK_BASE_URL) return badRequest('WEBHOOK_BASE_URL is not configured')
+
+  await clearSceneVideo(storyId, sceneId, userId)
 
   const payload: AnimatePayload = {
     storyId,
@@ -45,6 +53,7 @@ export async function POST(request: Request) {
     imageUrl,
     motionPrompt,
     videoModel,
+    userId,
   }
 
   const job = await createJob<AnimatePayload>('animate', payload)

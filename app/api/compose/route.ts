@@ -1,6 +1,8 @@
 import { fal } from '@/lib/providers/fal'
 import { createJob, markRunning } from '@/lib/jobs/store'
 import { buildWebhookUrl } from '@/lib/jobs/webhook-url'
+import { requireUserSession, isAuthError } from '@/lib/db/user'
+import { getStoryForUser } from '@/lib/db/stories'
 import type { ComposePayload, ComposeTrackInput } from '@/lib/jobs/types'
 
 export const runtime = 'nodejs'
@@ -69,6 +71,10 @@ async function rehostVoiceoversToFal(tracks: ComposeTrackInput[]): Promise<Compo
 }
 
 export async function POST(request: Request) {
+  const session = await requireUserSession(request)
+  if (isAuthError(session)) return session
+  const userId = session.user.id
+
   const body = await request.json().catch(() => null)
   if (!body) return badRequest('Invalid JSON')
 
@@ -76,6 +82,9 @@ export async function POST(request: Request) {
   if (!storyId) return badRequest('Missing storyId')
   const validated = validateTracks(tracks)
   if (!validated) return badRequest('Invalid tracks')
+
+  const story = await getStoryForUser(storyId, userId)
+  if (!story) return badRequest('Story not found')
 
   if (!process.env.FAL_KEY) return badRequest('FAL_KEY is not configured')
   if (!process.env.WEBHOOK_BASE_URL) return badRequest('WEBHOOK_BASE_URL is not configured')
@@ -87,7 +96,7 @@ export async function POST(request: Request) {
     return badRequest(err instanceof Error ? err.message : 'Failed to rehost voiceovers')
   }
 
-  const payload: ComposePayload = { storyId, tracks: rehosted }
+  const payload: ComposePayload = { storyId, tracks: rehosted, userId }
   const job = await createJob<ComposePayload>('compose', payload)
 
   try {
