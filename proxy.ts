@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { auth } from './lib/externals/betterauth'
+import { auth } from './features/auth/server/auth'
 
 
 const protectedPathMatchers = [
   /^\/dashboard(?:\/|$)/,
   /^\/settings(?:\/|$)/,
-  /^\/new-story(?:\/|$)/,
+  /^\/usage(?:\/|$)/,
+  /^\/new(?:\/|$)/,
   /^\/[^/]+\/new(?:\/|$)/,
   /^\/[^/]+\/story\/[^/]+(?:\/|$)/,
 ]

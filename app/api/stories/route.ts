@@ -1,6 +1,6 @@
-import { requireUserSession, isAuthError } from '@/lib/db/user'
-import { listUserStories } from '@/lib/db/stories'
-import type { DashboardStory } from '@/lib/types/dashboard'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
+import { listUserStories } from '@/features/stories/server/stories-db'
+import type { DashboardStory } from '@/shared/lib/types/dashboard'
 
 export const runtime = 'nodejs'
 

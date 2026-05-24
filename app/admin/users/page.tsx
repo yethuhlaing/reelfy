@@ -4,10 +4,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/features/ui/card'
-import { UserSpendTable } from '@/features/admin/UserSpendTable'
-import { getAdminUsers } from '@/lib/db/admin'
-import { getUserSession } from '@/lib/db/user'
+} from '@/shared/ui/card'
+import { UserSpendTable } from '@/features/admin/components/UserSpendTable'
+import { getAdminUsers } from '@/features/admin/server/admin'
+import { getUserSession } from '@/shared/lib/db/user'
 
 export const dynamic = 'force-dynamic'
 

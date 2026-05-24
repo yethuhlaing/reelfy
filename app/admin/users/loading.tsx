@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader } from '@/features/ui/card'
-import { Skeleton } from '@/features/ui/skeleton'
+import { Card, CardContent, CardHeader } from '@/shared/ui/card'
+import { Skeleton } from '@/shared/ui/skeleton'
 
 export default function LoadingAdminUsersPage() {
   return (

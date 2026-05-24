@@ -1,4 +1,4 @@
-import { DashboardSkeleton } from '@/features/dashboard/DashboardSkeleton'
+import { DashboardSkeleton } from '@/features/stories/components/dashboard/DashboardSkeleton'
 
 export default function LoadingDashboardPage() {
   return (

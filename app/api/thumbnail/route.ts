@@ -1,9 +1,9 @@
-import { getImageProvider } from '@/lib/providers/image'
-import { buildThumbnailPrompt } from '@/lib/prompts/thumbnail'
-import type { ImageModel } from '@/lib/types'
-import { requireUserSession, isAuthError } from '@/lib/db/user'
-import { getStoryForUser } from '@/lib/db/stories'
-import { completeThumbnail } from '@/lib/story-assets'
+import { getImageProvider } from '@/shared/lib/providers/image'
+import { buildThumbnailPrompt } from '@/shared/lib/prompts/thumbnail'
+import type { ImageModel } from '@/shared/lib/types'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
+import { getStoryForUser } from '@/features/stories/server/stories-db'
+import { completeThumbnail } from '@/features/stories/server/story-assets'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60

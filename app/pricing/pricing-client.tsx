@@ -3,12 +3,12 @@
 import { useState, useTransition } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { authClient } from '@/lib/auth-client'
-import { Button } from '@/features/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/features/ui/card'
-import { Badge } from '@/features/ui/badge'
-import { cn } from '@/lib/utils'
-import type { PlanConfig } from '@/lib/billing/plans'
+import { authClient } from '@/features/auth/server/auth-client'
+import { Button } from '@/shared/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Badge } from '@/shared/ui/badge'
+import { cn } from '@/shared/lib/utils'
+import type { PlanConfig } from '@/features/billing/server/plans'
 
 interface Props {
   subscriptions: PlanConfig[]

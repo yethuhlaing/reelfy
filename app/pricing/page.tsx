@@ -1,5 +1,5 @@
-import { SUBSCRIPTION_PLANS, CREDIT_PACKS } from '@/lib/billing/plans'
-import { getUserSession } from '@/lib/db/user'
+import { SUBSCRIPTION_PLANS, CREDIT_PACKS } from '@/features/billing/server/plans'
+import { getUserSession } from '@/shared/lib/db/user'
 import { PricingClient } from './pricing-client'
 
 export const dynamic = 'force-dynamic'

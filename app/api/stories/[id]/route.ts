@@ -1,11 +1,11 @@
-import { requireUserSession, isAuthError } from '@/lib/db/user'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import {
   getStoryForUser,
   parseOptions,
   rowToStoryData,
   updateStoryMeta,
-} from '@/lib/db/stories'
-import { deleteStoryWithAssets } from '@/lib/story-assets'
+} from '@/features/stories/server/stories-db'
+import { deleteStoryWithAssets } from '@/features/stories/server/story-assets'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300

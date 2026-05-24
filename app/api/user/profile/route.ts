@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
-import { requireUserSession, isAuthError } from '@/lib/db/user'
-import { db } from '@/lib/db'
-import { user } from '@/lib/db/schema'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
+import { db } from '@/shared/lib/db'
+import { user } from '@/shared/lib/db/schema'
 
 export const runtime = 'nodejs'
 

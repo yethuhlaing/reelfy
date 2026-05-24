@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
-import { Toaster } from '@/features/ui/sonner'
-import { ThemeProvider } from '@/features/providers/theme-provider'
-import { AppShell } from '@/features/layout/app-shell'
-import { getSessionUser } from '@/lib/auth-session'
-import { getUserSession } from '@/lib/db/user'
+import { Toaster } from '@/shared/ui/sonner'
+import { ThemeProvider } from '@/shared/providers/theme-provider'
+import { AppShell } from '@/shared/layout/app-shell'
+import { getSessionUser } from '@/features/auth/server/auth-session'
+import { getUserSession } from '@/shared/lib/db/user'
 
 const jakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],

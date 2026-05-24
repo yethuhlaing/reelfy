@@ -1,4 +1,4 @@
-import { UsageDetailsSkeleton, UsageStatsSkeleton } from '@/features/billing/UsageSkeleton'
+import { UsageDetailsSkeleton, UsageStatsSkeleton } from '@/features/billing/components/UsageSkeleton'
 
 export default function LoadingUsagePage() {
   return (

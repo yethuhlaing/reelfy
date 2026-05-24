@@ -1,5 +1,5 @@
-import { requireUserSession, isAuthError } from '@/lib/db/user'
-import { duplicateStoryForUser } from '@/lib/db/stories'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
+import { duplicateStoryForUser } from '@/features/stories/server/stories-db'
 
 export const runtime = 'nodejs'
 

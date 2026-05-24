@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm'
-import { SettingsPanel } from '@/features/settings/SettingsPanel'
-import { db } from '@/lib/db'
-import { getCredits } from '@/lib/db/credits'
-import { account } from '@/lib/db/schema'
-import { getUserSession } from '@/lib/db/user'
+import { SettingsPanel } from '@/features/auth/components/SettingsPanel'
+import { db } from '@/shared/lib/db'
+import { getCredits } from '@/shared/lib/db/credits'
+import { account } from '@/shared/lib/db/schema'
+import { getUserSession } from '@/shared/lib/db/user'
 
 export default async function SettingsPage() {
   const session = await getUserSession('/settings')

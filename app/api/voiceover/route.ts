@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { generateVoiceover } from '@/lib/externals/elevenlabs'
-import { requireUserSession, isAuthError } from '@/lib/db/user'
-import { getStoryForUser } from '@/lib/db/stories'
-import { completeSceneVoiceover } from '@/lib/story-assets'
+import { generateVoiceover } from '@/shared/lib/integrations/elevenlabs'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
+import { getStoryForUser } from '@/features/stories/server/stories-db'
+import { completeSceneVoiceover } from '@/features/stories/server/story-assets'
 
 export async function POST(request: Request) {
   try {

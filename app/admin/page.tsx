@@ -1,18 +1,16 @@
-import { Suspense } from 'react'
 import { revalidatePath } from 'next/cache'
-import { AdminDashboardContent } from '@/features/admin/AdminDashboardContent'
-import { AdminSkeleton } from '@/features/admin/AdminSkeleton'
-import { Button } from '@/features/ui/button'
+import { AdminDashboardContent } from '@/features/admin/components/AdminDashboardContent'
+import { Button } from '@/shared/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/features/ui/card'
-import { Input } from '@/features/ui/input'
-import { getFreeCreditsOnSignup, setFreeCreditsOnSignup } from '@/lib/db/config'
-import { getUserSession } from '@/lib/db/user'
+} from '@/shared/ui/card'
+import { Input } from '@/shared/ui/input'
+import { getFreeCreditsOnSignup, setFreeCreditsOnSignup } from '@/shared/lib/db/config'
+import { getUserSession } from '@/shared/lib/db/user'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,9 +66,7 @@ export default async function AdminPage() {
         </CardContent>
       </Card>
 
-      <Suspense fallback={<AdminSkeleton />}>
-        <AdminDashboardContent />
-      </Suspense>
+      <AdminDashboardContent />
     </div>
   )
 }

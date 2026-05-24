@@ -1,5 +1,5 @@
-import { requireAdminSession, isAuthError } from '@/lib/db/user'
-import { getAdminStats } from '@/lib/db/admin'
+import { requireAdminSession, isAuthError } from '@/shared/lib/db/user'
+import { getAdminStats } from '@/features/admin/server/admin'
 
 export const runtime = 'nodejs'
 

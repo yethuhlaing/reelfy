@@ -1,8 +1,8 @@
 import { Suspense } from 'react'
-import { UsageStats } from '@/features/billing/UsageStats'
-import { UsageDetails } from '@/features/billing/UsageDetails'
-import { UsageDetailsSkeleton, UsageStatsSkeleton } from '@/features/billing/UsageSkeleton'
-import { getUserSession } from '@/lib/db/user'
+import { UsageStats } from '@/features/billing/components/UsageStats'
+import { UsageDetails } from '@/features/billing/components/UsageDetails'
+import { UsageDetailsSkeleton, UsageStatsSkeleton } from '@/features/billing/components/UsageSkeleton'
+import { getUserSession } from '@/shared/lib/db/user'
 
 export const dynamic = 'force-dynamic'
 

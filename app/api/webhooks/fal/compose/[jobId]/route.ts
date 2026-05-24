@@ -1,7 +1,7 @@
-import { getJob, markCompleted, markFailed } from '@/lib/jobs/store'
-import { readFalHeaders, verifyFalWebhook } from '@/lib/jobs/verify-fal'
-import { completeComposedVideo } from '@/lib/story-assets'
-import type { ComposePayload, ComposeResult } from '@/lib/jobs/types'
+import { getJob, markCompleted, markFailed } from '@/shared/lib/jobs/store'
+import { readFalHeaders, verifyFalWebhook } from '@/shared/lib/jobs/verify-fal'
+import { completeComposedVideo } from '@/features/stories/server/story-assets'
+import type { ComposePayload, ComposeResult } from '@/shared/lib/jobs/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60

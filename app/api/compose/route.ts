@@ -1,9 +1,9 @@
-import { fal } from '@/lib/providers/fal'
-import { createJob, markRunning } from '@/lib/jobs/store'
-import { buildWebhookUrl } from '@/lib/jobs/webhook-url'
-import { requireUserSession, isAuthError } from '@/lib/db/user'
-import { getStoryForUser } from '@/lib/db/stories'
-import type { ComposePayload, ComposeTrackInput } from '@/lib/jobs/types'
+import { fal } from '@/shared/lib/providers/fal'
+import { createJob, markRunning } from '@/shared/lib/jobs/store'
+import { buildWebhookUrl } from '@/shared/lib/jobs/webhook-url'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
+import { getStoryForUser } from '@/features/stories/server/stories-db'
+import type { ComposePayload, ComposeTrackInput } from '@/shared/lib/jobs/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60

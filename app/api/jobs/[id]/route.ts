@@ -1,4 +1,4 @@
-import { getJob } from '@/lib/jobs/store'
+import { getJob } from '@/shared/lib/jobs/store'
 
 export const runtime = 'nodejs'
 

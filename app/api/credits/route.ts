@@ -1,5 +1,5 @@
-import { requireUserSession, isAuthError } from '@/lib/db/user'
-import { getCredits } from '@/lib/db/credits'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
+import { getCredits } from '@/shared/lib/db/credits'
 
 export const runtime = 'nodejs'
 
