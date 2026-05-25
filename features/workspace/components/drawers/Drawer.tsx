@@ -30,8 +30,8 @@ export function Drawer({ open, onClose, title, placement = 'right', children }: 
       <div
         className={
           placement === 'top-right'
-            ? 'fixed right-3.5 top-16 z-[580] max-h-[80vh] w-[360px] max-w-[calc(100vw-28px)] overflow-auto rounded-[10px] border border-[var(--border)] bg-[var(--surface)]'
-            : 'fixed inset-y-0 right-0 z-[601] flex w-[min(480px,100vw)] flex-col border-l border-[var(--border)] bg-[var(--surface)]'
+            ? 'fixed right-3.5 top-16 z-[580] max-h-[80vh] w-[360px] max-w-[calc(100vw-28px)] overflow-auto rounded-[10px] border border-[var(--border)] bg-[var(--surface-solid)] shadow-[0_12px_32px_rgba(0,0,0,0.35)]'
+            : 'fixed inset-y-0 right-0 z-[601] flex w-[min(480px,100vw)] flex-col border-l border-[var(--border)] bg-[var(--surface-solid)] shadow-[-12px_0_32px_rgba(0,0,0,0.35)]'
         }
         role="dialog"
         aria-label={title}

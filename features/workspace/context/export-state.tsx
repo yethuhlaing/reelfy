@@ -180,7 +180,6 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
 
         const scale = RESOLUTION_SIZE[opts.resolution]
         const clipFiles: string[] = []
-        const audioFiles: string[] = []
 
         for (let i = 0; i < tracks.length; i += 1) {
           const t = tracks[i]
@@ -200,34 +199,34 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
             '-loop', '1',
             '-framerate', '30',
             '-i', imageFile,
+            '-i', audioFile,
             '-t', `${Math.max(0.1, t.duration)}`,
             '-vf', `scale=${scale},format=yuv420p`,
             '-r', '30',
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac',
+            '-shortest',
             clipFile,
           ])
           if (clipRc !== 0) throw new Error(`Static clip render failed (${i + 1}/${tracks.length})`)
           clipFiles.push(clipFile)
-          audioFiles.push(audioFile)
 
           const renderPct = 45 + Math.round(((i + 1) / tracks.length) * 45)
           setState((prev) => (isRunActive(runId) ? { ...prev, status: 'rendering', progress: renderPct } : prev))
         }
 
         if (!isRunActive(runId)) return
-        const concatInputs = tracks.map((_t, i) => `[${i * 2}:v][${i * 2 + 1}:a]`).join('')
+        const concatInputs = clipFiles.map((_, i) => `[${i}:v][${i}:a]`).join('')
         const outputFile = 'output.mp4'
         const concatRc = await ffmpeg.exec([
           ...clipFiles.flatMap((f) => ['-i', f]),
-          ...audioFiles.flatMap((f) => ['-i', f]),
           '-filter_complex', `${concatInputs}concat=n=${tracks.length}:v=1:a=1[outv][outa]`,
           '-map', '[outv]',
           '-map', '[outa]',
           '-c:v', 'libx264',
           '-pix_fmt', 'yuv420p',
           '-c:a', 'aac',
-          '-shortest',
           outputFile,
         ])
         if (concatRc !== 0) throw new Error('Static final compose failed')

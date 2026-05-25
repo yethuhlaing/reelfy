@@ -7,6 +7,18 @@ const nextConfig = {
     unoptimized: true,
   },
   serverExternalPackages: ['ffmpeg-static'],
+  async headers() {
+    return [
+      {
+        // ffmpeg.wasm needs crossOriginIsolated (SharedArrayBuffer)
+        source: '/:category/story/:id',
+        headers: [
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Cross-Origin-Embedder-Policy', value: 'credentialless' },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig
