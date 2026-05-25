@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { Button } from '@/shared/ui/button'
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -95,32 +94,25 @@ export async function AdminDashboardContent() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-5">
-        <Card className="gap-4 py-5 xl:col-span-3">
-          <CardHeader className="px-5">
-            <CardTitle>Gross margin by model</CardTitle>
-            <CardDescription>Estimated margin from credits charged vs API costs.</CardDescription>
-          </CardHeader>
-          <CardContent className="px-5">
-            <MarginByModel rows={data.marginByModel} />
-          </CardContent>
-        </Card>
+      <Card className="gap-4 py-5">
+        <CardHeader className="px-5">
+          <CardTitle>Gross margin by model</CardTitle>
+          <CardDescription>Estimated margin from credits charged vs API costs.</CardDescription>
+        </CardHeader>
+        <CardContent className="px-5">
+          <MarginByModel rows={data.marginByModel} />
+        </CardContent>
+      </Card>
 
-        <Card className="gap-4 py-5 xl:col-span-2">
-          <CardHeader className="px-5">
-            <CardTitle>Unprofitable users</CardTitle>
-            <CardDescription>Users where API costs exceed payments.</CardDescription>
-            <CardAction>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/admin/users?state=unprofitable">Open list</Link>
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="px-5">
-            <UserSpendTable rows={data.unprofitableUsers.slice(0, 5)} />
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="gap-4 py-5">
+        <CardHeader className="px-5">
+          <CardTitle>Unprofitable users</CardTitle>
+          <CardDescription>Users where API costs exceed payments.</CardDescription>
+        </CardHeader>
+        <CardContent className="px-5">
+          <UserSpendTable rows={data.unprofitableUsers} />
+        </CardContent>
+      </Card>
 
       <Card className="gap-4 py-5">
         <CardHeader className="px-5">
