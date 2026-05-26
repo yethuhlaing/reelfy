@@ -7,8 +7,6 @@ import type { TextModel } from '@/shared/lib/types'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-const MUSIC_COUNT_MIN = 10
-const MUSIC_COUNT_MAX = 30
 const VISUAL_COUNT_MIN = 1
 const VISUAL_COUNT_MAX = 12
 
@@ -17,33 +15,26 @@ function badRequest(message: string) {
 }
 
 function defaultMusicCount(targetDurationSec: number) {
-  return Math.max(MUSIC_COUNT_MIN, Math.ceil(targetDurationSec / 180))
+  return Math.max(10, Math.ceil(targetDurationSec / 180))
 }
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return badRequest('Invalid JSON')
 
-  const { vibe, targetDurationSec, targetMusicCount, targetVisualCount, textModel } = body as Record<
-    string,
-    unknown
-  >
+  const { vibe, targetDurationSec, targetVisualCount, textModel } = body as Record<string, unknown>
 
   if (typeof vibe !== 'string' || vibe.trim().length === 0) return badRequest('vibe is required')
   if (typeof targetDurationSec !== 'number' || !ALLOWED_DURATION_SEC.includes(targetDurationSec)) {
     return badRequest(`targetDurationSec must be one of: ${ALLOWED_DURATION_SEC.join(', ')}`)
   }
 
-  const musicCount =
-    typeof targetMusicCount === 'number' ? targetMusicCount : defaultMusicCount(targetDurationSec)
-  if (!Number.isInteger(musicCount) || musicCount < MUSIC_COUNT_MIN || musicCount > MUSIC_COUNT_MAX) {
-    return badRequest(`targetMusicCount must be an integer from ${MUSIC_COUNT_MIN} to ${MUSIC_COUNT_MAX}`)
-  }
-
   const visualCount = typeof targetVisualCount === 'number' ? targetVisualCount : 4
   if (!Number.isInteger(visualCount) || visualCount < VISUAL_COUNT_MIN || visualCount > VISUAL_COUNT_MAX) {
     return badRequest(`targetVisualCount must be an integer from ${VISUAL_COUNT_MIN} to ${VISUAL_COUNT_MAX}`)
   }
+
+  const musicCount = visualCount === 1 ? 1 : defaultMusicCount(targetDurationSec)
 
   const model = typeof textModel === 'string' && TEXT_MODEL_VALUES.includes(textModel as TextModel)
     ? (textModel as TextModel)

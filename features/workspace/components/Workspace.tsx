@@ -15,6 +15,7 @@ import { GibberishText } from '@/features/workspace/components/media/GibberishTe
 import { StageDetailsPopover } from '@/features/workspace/components/media/StageDetailsPopover'
 import { STICKMAN_GIBBERISH } from '@/shared/data/gibberish-pool'
 import { ExportStateProvider } from '@/features/workspace/context/export-state'
+import { AudioPlayerProvider, useAudioPlayer } from '@/shared/ui/audio-player'
 import { readSSE } from '@/shared/lib/sse'
 import { clearPendingStory, getPendingStory } from '@/features/stories/server/pending-story'
 import { fetchStory, patchSceneFields } from '@/features/stories/client/stories-client'
@@ -37,6 +38,15 @@ interface Props {
 }
 
 export function Workspace({ storyId, category }: Props) {
+  return (
+    <AudioPlayerProvider>
+      <WorkspaceInner storyId={storyId} category={category} />
+    </AudioPlayerProvider>
+  )
+}
+
+function WorkspaceInner({ storyId, category }: Props) {
+  const { play, pause, setActiveItem, ref: audioPlayerRef } = useAudioPlayer<{ index: number }>()
   const router = useRouter()
   const pathname = usePathname() ?? ''
   const search = useSearchParams()
@@ -56,12 +66,12 @@ export function Workspace({ storyId, category }: Props) {
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
 
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const isPlayingAllRef = useRef(false)
   const storyDataRef = useRef<StoryData | null>(null)
   const inflightVoiceover = useRef<Map<string, Promise<string>>>(new Map())
   const generateAbortRef = useRef<AbortController | null>(null)
   const voiceoverAbortRef = useRef<AbortController | null>(null)
+  const playbackCleanupRef = useRef<(() => void) | null>(null)
   const startedRef = useRef(false)
 
   const setStoryData: React.Dispatch<React.SetStateAction<StoryData | null>> = (u) => {
@@ -345,7 +355,8 @@ export function Workspace({ storyId, category }: Props) {
       const data = storyDataRef.current
       if (!data || index >= data.scenes.length) return
       const scene = data.scenes[index]
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+      playbackCleanupRef.current?.()
+      playbackCleanupRef.current = null
       setPlayState({ isPlaying: true, currentIndex: index })
       try {
         let url = scene.voiceoverUrl
@@ -358,38 +369,76 @@ export function Workspace({ storyId, category }: Props) {
           )
         }
         if (!url) { setPlayState({ isPlaying: false, currentIndex: -1 }); return }
-        const audio = new Audio(url)
-        audioRef.current = audio
-        audio.onloadedmetadata = () => {
-          const dur = audio.duration
-          if (Number.isFinite(dur) && dur > 0) {
-            void patchSceneFields(storyId, scene.id, { voiceoverDuration: dur })
-            setStoryData((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    scenes: prev.scenes.map((s) =>
-                      s.id === scene.id ? { ...s, voiceoverDuration: dur } : s,
-                    ),
-                  }
-                : prev,
-            )
-          }
-        }
+
+        const item = { id: scene.id, src: url, data: { index } }
+
         return new Promise<void>((resolve, reject) => {
-          audio.onended = () => {
+          const audio = audioPlayerRef.current
+          if (!audio) {
+            resolve()
+            return
+          }
+
+          const onLoadedMetadata = () => {
+            const dur = audio.duration
+            if (Number.isFinite(dur) && dur > 0) {
+              void patchSceneFields(storyId, scene.id, { voiceoverDuration: dur })
+              setStoryData((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      scenes: prev.scenes.map((s) =>
+                        s.id === scene.id ? { ...s, voiceoverDuration: dur } : s,
+                      ),
+                    }
+                  : prev,
+              )
+            }
+            audio.removeEventListener('loadedmetadata', onLoadedMetadata)
+          }
+
+          const onEnded = () => {
+            cleanup()
             if (!isPlayingAllRef.current) setPlayState({ isPlaying: false, currentIndex: -1 })
             resolve()
           }
-          audio.onerror = () => { setPlayState({ isPlaying: false, currentIndex: -1 }); reject(new Error('Audio failed')) }
-          audio.play().catch(reject)
+
+          const onError = () => {
+            cleanup()
+            setPlayState({ isPlaying: false, currentIndex: -1 })
+            reject(new Error('Audio failed'))
+          }
+
+          const cleanup = () => {
+            audio.removeEventListener('loadedmetadata', onLoadedMetadata)
+            audio.removeEventListener('ended', onEnded)
+            audio.removeEventListener('error', onError)
+            if (playbackCleanupRef.current === cleanup) {
+              playbackCleanupRef.current = null
+            }
+          }
+
+          playbackCleanupRef.current = cleanup
+
+          audio.addEventListener('loadedmetadata', onLoadedMetadata)
+          audio.addEventListener('ended', onEnded)
+          audio.addEventListener('error', onError)
+
+          void play(item).catch((err) => {
+            cleanup()
+            if (err instanceof DOMException && err.name === 'AbortError') {
+              resolve()
+              return
+            }
+            reject(err)
+          })
         })
       } catch (err) {
         console.error(err)
         setPlayState({ isPlaying: false, currentIndex: -1 })
       }
     },
-    [fetchVoiceoverUrl, storyId],
+    [audioPlayerRef, fetchVoiceoverUrl, pause, play, storyId],
   )
 
   const playAll = async () => {
@@ -405,7 +454,10 @@ export function Workspace({ storyId, category }: Props) {
 
   const stopPlayback = () => {
     isPlayingAllRef.current = false
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    playbackCleanupRef.current?.()
+    playbackCleanupRef.current = null
+    pause()
+    void setActiveItem(null)
     setPlayState({ isPlaying: false, currentIndex: -1 })
   }
 
@@ -545,7 +597,6 @@ export function Workspace({ storyId, category }: Props) {
       readOnly={false}
       playState={playState}
       setPlayState={setPlayState}
-      audioRef={audioRef}
       playScene={playScene}
       enqueueAnimate={enqueueAnimate}
       retryVoice={retryVoice}

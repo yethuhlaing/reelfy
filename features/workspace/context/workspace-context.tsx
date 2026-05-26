@@ -26,7 +26,6 @@ export interface WorkspaceCtx {
   readOnly: boolean
   playState: PlayState
   setPlayState: (s: PlayState) => void
-  audioRef: React.MutableRefObject<HTMLAudioElement | null>
   patchScene: (sceneId: string, patch: Partial<Scene>) => void
   activeSceneId: string | null
   setActiveSceneId: (id: string | null) => void
@@ -48,7 +47,6 @@ interface ProviderProps {
   readOnly?: boolean
   playState: PlayState
   setPlayState: (s: PlayState) => void
-  audioRef: React.MutableRefObject<HTMLAudioElement | null>
   playScene?: WorkspaceCtx['playScene']
   enqueueAnimate?: WorkspaceCtx['enqueueAnimate']
   retryVoice?: WorkspaceCtx['retryVoice']
@@ -66,7 +64,6 @@ export function WorkspaceProvider({
   readOnly = false,
   playState,
   setPlayState,
-  audioRef,
   playScene,
   enqueueAnimate,
   retryVoice,
@@ -101,7 +98,6 @@ export function WorkspaceProvider({
         readOnly,
         playState,
         setPlayState,
-        audioRef,
         patchScene,
         activeSceneId,
         setActiveSceneId,

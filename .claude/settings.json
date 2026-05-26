@@ -5,7 +5,8 @@
       "WebFetch(domain:pixabay.com)",
       "WebFetch(domain:freetouse.com)",
       "WebFetch(domain:api.freetouse.com)",
-      "Bash(rtk curl *)"
+      "Bash(rtk curl *)",
+      "Bash(xargs ls)"
     ]
   }
 }

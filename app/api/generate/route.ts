@@ -90,6 +90,38 @@ export async function POST(request: Request) {
         send({ type: 'stage', id: 'analyze', status: 'done' })
         send({ type: 'stage', id: 'plan', status: 'active', detail: `Planning scenes with ${textProvider.label}` })
 
+        const generateOptions = {
+          density,
+          style,
+          tone,
+          imageModel: imageModel ?? 'flux-schnell-fal',
+          videoModel: videoModel ?? 'ltx-video-fal',
+          videoQuality: videoQuality ?? '720p',
+          textModel: textModel ?? 'gemini-2.5-flash',
+        } as const
+
+        try {
+          await clearStoryAssetsBeforeRegenerate(storyId, userId)
+          await upsertStoryWithScenes({
+            storyId,
+            userId,
+            category: category ?? 'stickman',
+            storyInput: story,
+            options: generateOptions,
+            storyData: {
+              title: 'Generating…',
+              tagline: '',
+              protagonist: '',
+              thumbnailPrompt: '',
+              thumbnailUrl: null,
+              scenes: [],
+            },
+            status: 'generating',
+          })
+        } catch (persistErr) {
+          console.error('Failed to persist story stub', persistErr)
+        }
+
         const plan = await textProvider.planStory(story, density, style, tone, signal, {
           userId,
           storyId,
@@ -110,21 +142,12 @@ export async function POST(request: Request) {
         send({ type: 'info', message: `Using image provider: ${imageProvider.id}` })
 
         try {
-          await clearStoryAssetsBeforeRegenerate(storyId, userId)
           await upsertStoryWithScenes({
             storyId,
             userId,
             category: category ?? 'stickman',
             storyInput: story,
-            options: {
-              density,
-              style,
-              tone,
-              imageModel: imageModel ?? 'flux-schnell-fal',
-              videoModel: videoModel ?? 'ltx-video-fal',
-              videoQuality: videoQuality ?? '720p',
-              textModel: textModel ?? 'gemini-2.5-flash',
-            },
+            options: generateOptions,
             storyData: {
               title: plan.title,
               tagline: plan.tagline,
@@ -225,15 +248,7 @@ export async function POST(request: Request) {
             userId,
             category: category ?? 'stickman',
             storyInput: story,
-            options: {
-              density,
-              style,
-              tone,
-              imageModel: imageModel ?? 'flux-schnell-fal',
-              videoModel: videoModel ?? 'ltx-video-fal',
-              videoQuality: videoQuality ?? '720p',
-              textModel: textModel ?? 'gemini-2.5-flash',
-            },
+            options: generateOptions,
             storyData,
             status: 'ready',
           })

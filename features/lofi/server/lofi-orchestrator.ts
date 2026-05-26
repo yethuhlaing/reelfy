@@ -114,7 +114,7 @@ function buildAssetRows(videoId: string, input: GenerateInput) {
         orderIndex: i,
         prompt: track.title,
         model: 'freetouse',
-        durationSec: track.duration_sec,
+        durationSec: Math.round(track.duration_sec),
         costUsd: '0',
         status: 'ready',
         creditsCharged: 0,

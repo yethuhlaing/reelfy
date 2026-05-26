@@ -129,7 +129,7 @@ export function StoryForm({ category }: { category: string }) {
         <textarea
           id="story"
           className="min-h-[260px] resize-y rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 font-[var(--font-body)] text-[0.95rem] text-[var(--text)] outline-none focus:border-transparent focus:outline-2 focus:outline-[var(--accent)] focus:outline-offset-[-1px]"
-          placeholder="Drop the story. Founder journey, narrative, anything. The wilder the better."
+          placeholder="A cinematic stickman explainer about a world where humans suddenly stop dreaming forever. The story follows an exhausted college student as people across the planet begin suffering emotional numbness, memory problems, creativity loss, and psychological instability. Governments and scientists struggle to explain the phenomenon while society slowly becomes colder, more aggressive, and emotionally disconnected. The story explores the hidden importance of dreams and how losing them changes humanity forever."
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={submitting}

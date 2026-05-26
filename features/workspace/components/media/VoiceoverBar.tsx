@@ -1,10 +1,18 @@
 'use client'
 
 import type { Scene } from '@/shared/lib/types'
-import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { SkipBack, SkipForward, Play, Pause, X } from 'lucide-react'
+import { SkipBack, SkipForward, X } from 'lucide-react'
 import { useWorkspace } from '@/features/workspace/context/workspace-context'
+import {
+  AudioPlayerButton,
+  AudioPlayerDuration,
+  AudioPlayerProgress,
+  AudioPlayerTime,
+  useAudioPlayer,
+} from '@/shared/ui/audio-player'
+import { BarVisualizer, type AgentState } from '@/shared/ui/bar-visualizer'
+import { useMediaStreamFromAudio, isUsableMediaStream } from '@/shared/hooks/use-media-stream-from-audio'
 
 interface VoiceoverBarProps {
   scene: Scene | null
@@ -21,57 +29,30 @@ export function VoiceoverBar({
   isPlaying,
   onStop,
 }: VoiceoverBarProps) {
-  const { audioRef, playScene, setActiveSceneId, setPlayState } = useWorkspace()
+  const { playScene, setActiveSceneId } = useWorkspace()
   const pathname = usePathname() ?? ''
-  const [paused, setPaused] = useState(false)
-  const [progress, setProgress] = useState({ current: 0, duration: 0 })
-  const rafRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    setPaused(false)
-  }, [scene?.id])
-
-  useEffect(() => {
-    if (!isPlaying) return
-    const tick = () => {
-      const a = audioRef.current
-      if (a) setProgress({ current: a.currentTime, duration: a.duration || 0 })
-      rafRef.current = requestAnimationFrame(tick)
-    }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }
-  }, [isPlaying, audioRef])
+  const { ref, isPlaying: playerPlaying, isBuffering, activeItem } = useAudioPlayer<{ index: number }>()
+  const mediaStream = useMediaStreamFromAudio(ref, isPlaying && playerPlaying, activeItem?.id)
+  const visualizerDemo = !isUsableMediaStream(mediaStream)
 
   if (!pathname.includes('/story/')) return null
   if (!isPlaying || !scene) return null
 
-  const togglePause = () => {
-    const a = audioRef.current
-    if (!a) return
-    if (a.paused) { a.play(); setPaused(false); setPlayState({ isPlaying: true, currentIndex }) }
-    else { a.pause(); setPaused(true) }
-  }
-
-  const seek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const a = audioRef.current
-    if (!a || !progress.duration) return
-    a.currentTime = (+e.target.value / 100) * progress.duration
-  }
+  const visualizerState: AgentState = isBuffering
+    ? 'connecting'
+    : playerPlaying
+      ? 'speaking'
+      : 'listening'
 
   const jump = (delta: number) => {
     const next = currentIndex + delta
     if (next < 0 || next >= totalScenes) return
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
     playScene?.(next)
   }
 
-  const pct = progress.duration ? (progress.current / progress.duration) * 100 : 0
-
   return (
     <div className="fixed bottom-6 left-1/2 z-[700] w-[min(960px,calc(100vw-32px))] -translate-x-1/2 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-[18px] py-3 shadow-[0_16px_40px_rgba(0,0,0,0.55)]">
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 max-md:flex-wrap">
         <button
           className="inline-flex whitespace-nowrap rounded-[20px] bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)]"
           onClick={() => setActiveSceneId(scene.id)}
@@ -80,18 +61,26 @@ export function VoiceoverBar({
           Scene {currentIndex + 1}
         </button>
 
-        <div className="min-w-0 flex-1"><p className="truncate text-sm text-[var(--text)]">{scene.voiceover}</p></div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm text-[var(--text)]">{scene.voiceover}</p>
+        </div>
 
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={0.5}
-          value={pct}
-          onChange={seek}
-          className="min-w-[100px] flex-1"
-          aria-label="Playback position"
+        <BarVisualizer
+          state={visualizerState}
+          demo={visualizerDemo}
+          mediaStream={visualizerDemo ? undefined : mediaStream}
+          barCount={7}
+          minHeight={15}
+          maxHeight={90}
+          className="h-8 w-24 shrink-0 text-[var(--accent)]"
         />
+
+        <div className="flex min-w-[160px] flex-1 items-center gap-2">
+          <AudioPlayerProgress className="flex-1 [&_[data-slot=slider-range]]:bg-[var(--accent)] [&_[data-slot=slider-thumb]]:border-[var(--accent)]" />
+          <AudioPlayerTime className="text-xs tabular-nums text-[var(--muted)]" />
+          <span className="text-xs text-[var(--muted)]">/</span>
+          <AudioPlayerDuration className="text-xs tabular-nums text-[var(--muted)]" />
+        </div>
 
         <button
           className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-2.5 text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)] disabled:cursor-not-allowed disabled:opacity-45"
@@ -101,13 +90,11 @@ export function VoiceoverBar({
         >
           <SkipBack size={14} />
         </button>
-        <button
-          className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-2.5 text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
-          onClick={togglePause}
-          aria-label={paused ? 'Resume' : 'Pause'}
-        >
-          {paused ? <Play size={14} /> : <Pause size={14} />}
-        </button>
+        <AudioPlayerButton
+          className="inline-flex h-[34px] min-w-[34px] items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-2.5 text-[var(--text)] hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
+          size="icon"
+          variant="outline"
+        />
         <button
           className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-2.5 text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)] disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => jump(1)}

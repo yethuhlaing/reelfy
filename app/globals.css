@@ -23,6 +23,19 @@
   --popover: var(--surface);
   --popover-foreground: var(--text);
   --gradient-border: linear-gradient(135deg, rgba(139,92,246,0.4), rgba(255,255,255,0.06));
+  /* shadcn / ElevenLabs UI semantic tokens */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-ink);
+  --secondary: var(--surface2);
+  --secondary-foreground: var(--text);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--accent-ink);
+  --ring: var(--accent);
+  --input: var(--border);
+  --card: var(--surface-solid);
+  --card-foreground: var(--text);
 }
 
 :root.light {
@@ -39,6 +52,18 @@
   --text: #0a0a0a;
   --muted: #525252;
   --gradient-border: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(0,0,0,0.06));
+  --background: var(--bg);
+  --foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-ink);
+  --secondary: var(--surface2);
+  --secondary-foreground: var(--text);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--accent-ink);
+  --ring: var(--accent);
+  --input: var(--border);
+  --card: var(--surface-solid);
+  --card-foreground: var(--text);
 }
 
 @layer base {

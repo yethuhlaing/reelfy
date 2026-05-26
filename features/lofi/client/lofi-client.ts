@@ -3,7 +3,6 @@ import type { TextModel, VisualMode, VisualConfig } from '@/shared/lib/types'
 export interface ExpandPromptsRequest {
   vibe: string
   targetDurationSec: number
-  targetMusicCount?: number
   targetVisualCount?: number
   textModel?: TextModel
 }

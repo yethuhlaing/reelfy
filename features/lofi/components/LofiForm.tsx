@@ -13,7 +13,8 @@ import {
 import { TEXT_MODEL_OPTIONS, DEFAULT_TEXT_MODEL } from '@/shared/lib/text-model-options'
 import { LofiCostPreview } from './LofiCostPreview'
 import { LofiPromptList } from './LofiPromptList'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { ConfigPill } from './ConfigPill'
+import { calcVisualDuration } from '@/features/lofi/lib/visual-duration'
 import type { TextModel, VisualMode, VisualAsset } from '@/shared/lib/types'
 
 const DEFAULT_MUSIC_MODEL = 'minimax'
@@ -21,18 +22,10 @@ const DEFAULT_VISUAL_MODEL = 'flux-schnell-fal'
 const LOFI_OPTIONS_STORAGE_KEY = 'new-lofi:options'
 const DEFAULT_DURATION_SEC = 3600
 
-const MUSIC_COUNT_OPTIONS = Array.from({ length: 21 }, (_, i) => {
-  const n = i + 10
-  return { value: String(n), label: String(n) }
-})
 const VISUAL_COUNT_OPTIONS = Array.from({ length: 12 }, (_, i) => {
   const n = i + 1
   return { value: String(n), label: String(n) }
 })
-
-function defaultMusicCount(durationSec: number) {
-  return Math.max(10, Math.ceil(durationSec / 180))
-}
 
 interface ExpandResult {
   musicPrompts: string[]
@@ -47,7 +40,6 @@ export function LofiForm() {
 
   const [vibe, setVibe] = useState('')
   const [duration, setDuration] = useState<number>(DEFAULT_DURATION_SEC)
-  const [musicCount, setMusicCount] = useState(() => defaultMusicCount(DEFAULT_DURATION_SEC))
   const [visualCount, setVisualCount] = useState(4)
   const [musicModel, setMusicModel] = useState(DEFAULT_MUSIC_MODEL)
   const [visualModel, setVisualModel] = useState(DEFAULT_VISUAL_MODEL)
@@ -76,13 +68,10 @@ export function LofiForm() {
     } catch { /* ignore */ }
   }, [textModel])
 
-  const expandBody = (overrides?: { targetMusicCount?: number; targetVisualCount?: number }) => ({
+  const expandBody = (overrides?: { targetVisualCount?: number }) => ({
     vibe: vibe.trim(),
     targetDurationSec: duration,
     textModel,
-    targetMusicCount:
-      overrides?.targetMusicCount ??
-      (phase === 'editing' ? editedMusicPrompts.length : musicCount),
     targetVisualCount:
       overrides?.targetVisualCount ??
       (phase === 'editing' ? editedVisualPrompts.length : visualCount),
@@ -135,7 +124,7 @@ export function LofiForm() {
       const res = await fetch('/api/lofi/expand-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expandBody({ targetMusicCount: 1, targetVisualCount: 1 })),
+        body: JSON.stringify(expandBody({ targetVisualCount: 1 })),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string }
@@ -155,7 +144,7 @@ export function LofiForm() {
       const res = await fetch('/api/lofi/expand-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expandBody({ targetMusicCount: 1, targetVisualCount: 1 })),
+        body: JSON.stringify(expandBody({ targetVisualCount: 1 })),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string }
@@ -177,7 +166,7 @@ export function LofiForm() {
       const res = await fetch('/api/lofi/expand-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expandBody({ targetMusicCount: 1, targetVisualCount: 1 })),
+        body: JSON.stringify(expandBody({ targetVisualCount: 1 })),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string }
@@ -202,7 +191,7 @@ export function LofiForm() {
       const res = await fetch('/api/lofi/expand-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expandBody({ targetMusicCount: 1, targetVisualCount: 1 })),
+        body: JSON.stringify(expandBody({ targetVisualCount: 1 })),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string }
@@ -269,7 +258,6 @@ export function LofiForm() {
     ? expandResult.visualMode === 'single-image' || expandResult.visualMode === 'single-video'
     : false
 
-  const displayedMusicCount = phase === 'editing' ? editedMusicPrompts.length : musicCount
   const displayedVisualCount = phase === 'editing' ? editedVisualPrompts.length : visualCount
 
   return (
@@ -329,15 +317,6 @@ export function LofiForm() {
           options={VISUAL_MODEL_OPTIONS}
           current={visualModel}
           onChange={setVisualModel}
-          disabled={phase !== 'idle'}
-        />
-
-        <ConfigPill
-          label="Music loops"
-          value={String(displayedMusicCount)}
-          options={MUSIC_COUNT_OPTIONS}
-          current={String(displayedMusicCount)}
-          onChange={(v) => setMusicCount(Number(v))}
           disabled={phase !== 'idle'}
         />
 
@@ -471,67 +450,5 @@ export function LofiForm() {
               : 'Expand Prompts →'}
       </button>
     </div>
-  )
-}
-
-function calcVisualDuration(
-  index: number,
-  mode: VisualMode,
-  total: number,
-  targetDurationSec: number,
-): number {
-  if (mode === 'single-image' || mode === 'single-video') return targetDurationSec
-  const perAsset = Math.floor(targetDurationSec / total)
-  const remainder = targetDurationSec - perAsset * total
-  return perAsset + (index === total - 1 ? remainder : 0)
-}
-
-function ConfigPill({
-  label,
-  value,
-  current,
-  options,
-  onChange,
-  disabled,
-}: {
-  label: string
-  value: string
-  current: string
-  options: { value: string; label: string }[]
-  onChange: (next: string) => void
-  disabled?: boolean
-}) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-1 font-inherit text-[var(--text)] transition hover:bg-[var(--surface2)] disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={disabled}
-        >
-          <span className="text-[0.68rem] text-[var(--muted)]">{label}</span>
-          <span className="text-[0.72rem]">{value}</span>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-[220px] p-1.5">
-        <div className="flex max-h-[190px] flex-col gap-px overflow-auto">
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`w-full cursor-pointer rounded-[5px] border border-transparent bg-transparent px-[7px] py-[5px] text-left font-inherit text-[0.74rem] leading-[1.2] text-[var(--text)] hover:bg-[var(--surface2)] ${current === opt.value ? 'border-[color-mix(in_srgb,var(--accent)_35%,var(--border))] bg-[color-mix(in_srgb,var(--surface2)_75%,var(--accent)_25%)]' : ''}`}
-              onClick={() => {
-                onChange(opt.value)
-                setOpen(false)
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
   )
 }
