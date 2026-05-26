@@ -24,7 +24,6 @@ export const env = createEnv({
     NVIDIA_API_KEY: optionalNonEmpty,
     ELEVENLABS_API_KEY: optionalNonEmpty,
     ELEVENLABS_VOICE_ID: optionalNonEmpty,
-    PIXABAY_API_KEY: optionalNonEmpty,
 
     // Storage & webhooks
     BLOB_READ_WRITE_TOKEN: optionalNonEmpty,
@@ -66,7 +65,6 @@ export const env = createEnv({
     NVIDIA_API_KEY: process.env.NVIDIA_API_KEY,
     ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
     ELEVENLABS_VOICE_ID: process.env.ELEVENLABS_VOICE_ID,
-    PIXABAY_API_KEY: process.env.PIXABAY_API_KEY,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     WEBHOOK_BASE_URL: process.env.WEBHOOK_BASE_URL,
     PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL,

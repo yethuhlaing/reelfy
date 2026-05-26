@@ -1,6 +1,6 @@
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { launchVideo, InsufficientCreditsError } from '@/features/lofi/server/lofi-orchestrator'
-import type { PixabayTrackRef } from '@/features/lofi/server/lofi-orchestrator'
+import type { FreetouseTrackRef } from '@/features/lofi/server/lofi-orchestrator'
 import { toUserErrorMessage } from '@/shared/lib/user-error-message'
 import type { VisualConfig } from '@/shared/lib/types'
 import { ALLOWED_DURATION_SEC } from '@/features/lofi/lib/pricing-constants'
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const {
     vibe,
     targetDurationSec,
-    selectedTracks, // Array of selected Pixabay track objects
+    selectedTracks,
     visualConfig,
     visualPrompts,
     suggestedTitle,
@@ -42,15 +42,15 @@ export async function POST(request: Request) {
     const result = await launchVideo({
       vibe: vibe.trim(),
       targetDurationSec,
-      musicModel: 'pixabay',
+      musicModel: 'freetouse',
       musicLoopCount: selectedTracks.length,
-      musicPrompts: [], // not used for stock, but required by interface
+      musicPrompts: [],
       visualConfig: visualConfig as VisualConfig,
       visualPrompts: visualPrompts as string[],
       suggestedTitle: typeof suggestedTitle === 'string' ? suggestedTitle : vibe.trim(),
       suggestedAmbientBed: typeof suggestedAmbientBed === 'string' ? suggestedAmbientBed : null,
       category: 'lofi-stock',
-      selectedTracks: selectedTracks as PixabayTrackRef[],
+      selectedTracks: selectedTracks as FreetouseTrackRef[],
     }, userId)
 
     return Response.json(result, { status: 201 })

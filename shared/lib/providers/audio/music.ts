@@ -2,7 +2,7 @@ import { env } from '@/shared/lib/env'
 import { minimaxProvider } from './music-fal-minimax'
 import { stableAudioProvider } from './music-fal-stable-audio'
 import { cassetteProvider } from './music-fal-cassette'
-import { pixabayProvider } from './music-pixabay'
+import { freetouseProvider } from './music-freetouse'
 
 export interface MusicGenInput {
   prompt: string
@@ -30,7 +30,7 @@ export const MUSIC_PROVIDERS: Record<string, MusicGenProvider> = {
   minimax: minimaxProvider,
   'stable-audio': stableAudioProvider,
   cassette: cassetteProvider,
-  pixabay: pixabayProvider,
+  freetouse: freetouseProvider,
 }
 
 const DEFAULT_MUSIC_PROVIDER = MUSIC_PROVIDERS.minimax

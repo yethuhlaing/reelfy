@@ -211,10 +211,10 @@ export const lofiAssets = pgTable(
 
         resultUrl: text('result_url'),
         // Stock music tracking columns
-        sourceProvider: text('source_provider'),    // null | 'pixabay'
-        sourceTrackId: text('source_track_id'),    // pixabay track id when sourceProvider is set
+        sourceProvider: text('source_provider'),    // null | 'freetouse'
+        sourceTrackId: text('source_track_id'),    // provider track id when sourceProvider is set
         sourceLicence: text('source_licence'),     // licence text snapshot at pick time
-        sourceAttribution: text('source_attribution'),  // attribution string (null for Pixabay)
+        sourceAttribution: text('source_attribution'),  // attribution string (null for freetouse)
 
         creditsCharged: integer('credits_charged').notNull().default(0),
         costUsd: numeric('cost_usd', { precision: 10, scale: 4 }).notNull().default('0'),

@@ -48,14 +48,13 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
-export interface PixabayTrackRef {
-  id: number
-  tags: string
-  url: string
+export interface FreetouseTrackRef {
+  id: string
+  title: string
+  mp3Url: string
   duration_sec: number
   genre?: string
   artist_name?: string
-  [key: string]: unknown
 }
 
 export interface GenerateInput {
@@ -69,7 +68,7 @@ export interface GenerateInput {
   suggestedTitle: string
   suggestedAmbientBed: string | null
   category?: 'lofi' | 'lofi-stock'
-  selectedTracks?: PixabayTrackRef[]
+  selectedTracks?: FreetouseTrackRef[]
 }
 
 export async function preAuthCredits(userId: string, amount: number): Promise<void> {
@@ -113,16 +112,16 @@ function buildAssetRows(videoId: string, input: GenerateInput) {
         videoId,
         kind: 'stock-music',
         orderIndex: i,
-        prompt: track.tags,
-        model: 'pixabay',
+        prompt: track.title,
+        model: 'freetouse',
         durationSec: track.duration_sec,
         costUsd: '0',
         status: 'ready',
         creditsCharged: 0,
-        resultUrl: track.url,
-        sourceProvider: 'pixabay',
-        sourceTrackId: String(track.id),
-        sourceLicence: 'Pixabay Content License (CC0-style, no attribution required)',
+        resultUrl: track.mp3Url,
+        sourceProvider: 'freetouse',
+        sourceTrackId: track.id,
+        sourceLicence: 'Free To Use License (freetouse.com) — free for personal use',
         sourceAttribution: null,
       })
     }

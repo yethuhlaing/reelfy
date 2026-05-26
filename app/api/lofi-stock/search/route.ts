@@ -1,30 +1,41 @@
 import { NextResponse } from 'next/server'
-import type { PixabayTrack, PixabayResponse } from '@/shared/lib/providers/audio/music-pixabay'
-import { pixabayProvider } from '@/shared/lib/providers/audio/music-pixabay'
+import { freetouseProvider } from '@/shared/lib/providers/audio/music-freetouse'
+import type { TrackOrder } from '@/shared/lib/providers/audio/music-freetouse'
 
 export const runtime = 'nodejs'
-export const maxDuration = 30 // 30 seconds timeout for search
+export const maxDuration = 30
+
+const TAB_TO_ORDER: Record<string, TrackOrder> = {
+  popular: 'downloads',
+  new: 'release_date',
+  staff: 'staff_order',
+  random: 'random',
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const query = searchParams.get('q') ?? ''
-  const perPage = searchParams.get('per_page') ?? '10'
+  const q = searchParams.get('q') ?? ''
+  const tab = searchParams.get('tab') ?? 'popular'
+  const category = searchParams.get('category') ?? ''
+  const limit = Math.min(Number(searchParams.get('limit') ?? '20'), 50)
+  const offset = Number(searchParams.get('offset') ?? '0')
 
-  if (!query.trim()) {
-    return NextResponse.json({ error: 'Query parameter "q" is required' }, { status: 400 })
-  }
+  const order = TAB_TO_ORDER[tab] ?? 'downloads'
 
   try {
-    const tracks = await pixabayProvider.searchTracks(query, Number(perPage))
-    const response: PixabayResponse = {
-      total: tracks.length,
-      hits: tracks,
-    }
-    console.log('Pixabay search response:', response)
-    return NextResponse.json(response)
+    const tracks = q.trim()
+      ? await freetouseProvider.searchTracks(q.trim(), { limit, offset })
+      : await freetouseProvider.browseTracks({
+          order,
+          categoryId: category || undefined,
+          limit,
+          offset,
+        })
+
+    return NextResponse.json({ tracks, hasMore: tracks.length === limit })
   } catch (err) {
-    console.error('Pixabay search failed:', err)
-    const message = err instanceof Error ? err.message : 'Failed to search Pixabay'
+    console.error('Freetouse search failed:', err)
+    const message = err instanceof Error ? err.message : 'Failed to fetch tracks'
     return NextResponse.json({ error: message }, { status: 502 })
   }
 }
