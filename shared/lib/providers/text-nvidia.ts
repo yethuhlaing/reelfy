@@ -60,6 +60,48 @@ function makeNvidiaProvider(modelId: TextModel, label: string): TextProvider {
       if (fenceMatch) content = fenceMatch[1]
       return JSON.parse(content)
     },
+
+    async completeJson(
+      prompt: string,
+      signal?: AbortSignal,
+      costContext?: ApiCostContext,
+    ): Promise<string> {
+      const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.NVIDIA_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' },
+          temperature: 0.7,
+          max_tokens: 8192,
+        }),
+        signal,
+      })
+      if (!res.ok) {
+        const err = await res.text()
+        throw new Error(`NVIDIA API error (${res.status}): ${err}`)
+      }
+      const data = (await res.json()) as {
+        choices: { message: { content: string } }[]
+        usage?: { total_tokens?: number }
+      }
+      const totalTokens = data.usage?.total_tokens ?? 0
+      await logApiCost({
+        userId: costContext?.userId,
+        storyId: costContext?.storyId,
+        sceneId: costContext?.sceneId,
+        provider: 'nvidia',
+        model: modelId,
+        operation: costContext?.operation ?? 'text_complete',
+        costUsd: (totalTokens / 1000) * 0.008,
+        creditsCharged: costContext?.creditsCharged ?? 0,
+      })
+      return data.choices[0].message.content
+    },
   }
 }
 

@@ -1,6 +1,7 @@
 import {
   bigint,
   boolean,
+  index,
   integer,
   numeric,
   pgTable,
@@ -11,6 +12,8 @@ import {
 } from 'drizzle-orm/pg-core'
 
 export type StoryStatus = 'draft' | 'generating' | 'ready' | 'rendered' | 'failed'
+export type LofiVideoStatus = 'planning' | 'generating' | 'gating' | 'rendering' | 'complete' | 'failed' | 'aborted'
+export type LofiAssetStatus = 'pending' | 'submitted' | 'ready' | 'failed' | 'skipped'
 
 const createdAt = timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 const updatedAt = timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
@@ -148,6 +151,77 @@ export const scenes = pgTable('scenes', {
   createdAt,
 })
 
+export const lofiVideos = pgTable(
+  'lofi_videos',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    storyId: text('story_id')
+      .notNull()
+      .references(() => stories.id, { onDelete: 'cascade' }),
+
+    vibe: text('vibe').notNull(),
+    targetDurationSec: integer('target_duration_sec').notNull(),
+    musicModel: text('music_model').notNull(),
+    musicLoopCount: integer('music_loop_count').notNull(),
+    visualMode: text('visual_mode').notNull(),
+    imageModel: text('image_model'),
+    videoModel: text('video_model'),
+    ambientBed: text('ambient_bed'),
+
+    status: text('status').notNull().default('planning'),
+
+    arrangementJson: text('arrangement_json'),
+    finalVideoUrl: text('final_video_url'),
+    finalDurationSec: integer('final_duration_sec'),
+
+    creditsPreAuth: integer('credits_pre_auth').notNull().default(0),
+    creditsSettled: integer('credits_settled').notNull().default(0),
+    costUsd: numeric('cost_usd', { precision: 10, scale: 4 }).notNull().default('0'),
+
+    createdAt,
+    updatedAt,
+  },
+  (table) => ({
+    userStatusIdx: index('lofi_videos_user_status_idx').on(table.userId, table.status),
+    storyIdx: index('lofi_videos_story_idx').on(table.storyId),
+  }),
+)
+
+export const lofiAssets = pgTable(
+  'lofi_assets',
+  {
+    id: text('id').primaryKey(),
+    videoId: text('video_id')
+      .notNull()
+      .references(() => lofiVideos.id, { onDelete: 'cascade' }),
+
+    kind: text('kind').notNull(),
+    orderIndex: integer('order_index').notNull(),
+    prompt: text('prompt').notNull(),
+    model: text('model').notNull(),
+    durationSec: integer('duration_sec').notNull(),
+
+    falJobId: text('fal_job_id'),
+    status: text('status').notNull().default('pending'),
+    retryCount: integer('retry_count').notNull().default(0),
+    errorMessage: text('error_message'),
+
+    resultUrl: text('result_url'),
+
+    creditsCharged: integer('credits_charged').notNull().default(0),
+    costUsd: numeric('cost_usd', { precision: 10, scale: 4 }).notNull().default('0'),
+
+    createdAt,
+  },
+  (table) => ({
+    videoStatusIdx: index('lofi_assets_video_status_idx').on(table.videoId, table.status),
+    falJobIdx: index('lofi_assets_fal_job_idx').on(table.falJobId),
+  }),
+)
+
 export const payments = pgTable(
   'payments',
   {
@@ -229,6 +303,8 @@ export const schema = {
   rateLimit,
   stories,
   scenes,
+  lofiVideos,
+  lofiAssets,
   payments,
   subscriptions,
   apiUsageEvents,

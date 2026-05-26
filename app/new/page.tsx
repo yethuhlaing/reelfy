@@ -1,117 +1,164 @@
 import Link from 'next/link'
-import { ArrowRight, Clapperboard, Palette, Sparkles } from 'lucide-react'
+import { ArrowRight, Music2, PenLine, Layers, Pencil } from 'lucide-react'
 
 const CATEGORIES = [
   {
     id: 'stickman',
     label: 'Stickman',
-    status: 'Available now',
-    description: 'Fast visual storytelling with simple characters, clear actions, and expressive scenes.',
+    tagline: 'Visual storytelling, fast',
+    description:
+      'Simple characters, expressive scenes, clear narrative arc. Best for founder stories, product explainers, and educational content.',
+    status: 'available',
+    href: '/stickman/new',
+    icon: '◈',
+    accent: 'var(--accent)',
+    glow: 'var(--accent-glow)',
+  },
+  {
+    id: 'lofi',
+    label: 'Lofi',
+    tagline: 'Ambient visuals with music',
+    description:
+      'Lo-fi aesthetics with auto-generated music and calm motion. Perfect for background content, study playlists, and chill brand moments.',
+    status: 'available',
+    href: '/lofi/new',
+    icon: null,
+    iconEl: Music2,
+    accent: '#4f8ef7',
+    glow: 'rgba(79,142,247,0.3)',
   },
   {
     id: 'whiteboard',
     label: 'Whiteboard',
-    status: 'Coming soon',
-    description: 'Hand-drawn explainer style for educational and business walkthroughs.',
+    tagline: 'Hand-drawn explainer style',
+    description:
+      'Animated sketch-on-canvas feel for step-by-step walkthroughs, tutorials, and business breakdowns.',
+    status: 'coming_soon',
+    href: null,
+    icon: null,
+    iconEl: PenLine,
+    accent: '#64748b',
+    glow: 'rgba(100,116,139,0.2)',
   },
   {
     id: 'comic',
     label: 'Comic',
-    status: 'Coming soon',
-    description: 'Panel-based storytelling with stronger contrast, drama, and punchier moments.',
+    tagline: 'Panel-based storytelling',
+    description:
+      'Bold panels, high contrast, dramatic beats. Built for punchy social content, product launches, and narrative sequences.',
+    status: 'coming_soon',
+    href: null,
+    icon: null,
+    iconEl: Layers,
+    accent: '#f59e0b',
+    glow: 'rgba(245,158,11,0.25)',
   },
   {
     id: 'doodle',
     label: 'Doodle',
-    status: 'Coming soon',
-    description: 'Casual sketch style focused on playful ideas and social-ready short videos.',
+    tagline: 'Casual sketch energy',
+    description:
+      'Playful hand-drawn style for social-first short videos, quick ideas, and brand personality moments.',
+    status: 'coming_soon',
+    href: null,
+    icon: null,
+    iconEl: Pencil,
+    accent: '#10b981',
+    glow: 'rgba(16,185,129,0.25)',
   },
-]
-
-const SAMPLE_VIDEOS = [
-  {
-    title: 'Founder Journey',
-    angle: 'Startup origin story with clear beginning, tension, and payoff.',
-  },
-  {
-    title: 'Product Explainer',
-    angle: 'Show a problem, then break down how your product solves it in scenes.',
-  },
-  {
-    title: 'Educational Story',
-    angle: 'Teach a topic with short scene-by-scene visual metaphors and voiceover.',
-  },
-]
-
-const BRANDING_NOTES = [
-  'Keep one consistent protagonist, color accent, and voice tone across scenes.',
-  'Use your brand promise in the opening scene and repeat it in the ending CTA.',
-  'Prefer concise voiceover lines so visuals and narration stay aligned and clear.',
 ]
 
 export default function NewPage() {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-8">
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <div className="inline-flex items-center gap-2 text-sm text-[var(--muted)]">
-          <Sparkles size={16} /> Plan before generating
-        </div>
-        <h1 className="mt-2 font-[var(--font-heading)] text-3xl">Build a stronger story brief</h1>
-        <p className="mt-2 max-w-3xl text-[var(--muted)]">
-          Use this page to pick your category, review direction ideas, and align your brand voice before opening the editor.
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
+      <header className="flex flex-col gap-2">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">New video</p>
+        <h1 className="font-[var(--font-heading)] text-4xl font-bold leading-tight tracking-tight text-[var(--text)]">
+          Pick your style
+        </h1>
+        <p className="max-w-xl text-[var(--muted)]">
+          Each category is a different visual language. Choose one, shape your story.
         </p>
-        <div className="mt-5 flex flex-wrap gap-2.5">
-          <Link
-            href="/stickman/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-ink)] transition hover:brightness-105"
-          >
-            Start in Stickman <ArrowRight size={14} />
-          </Link>
-        </div>
-      </section>
+      </header>
 
-      <section className="grid gap-3 md:grid-cols-2">
-        {CATEGORIES.map((category) => (
-          <article key={category.id} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="font-[var(--font-heading)] text-xl">{category.label}</h2>
-              <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--muted)]">
-                {category.status}
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-[var(--muted)]">{category.description}</p>
-          </article>
-        ))}
-      </section>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {CATEGORIES.map((cat) => {
+          const IconEl = cat.iconEl ?? null
+          const available = cat.status === 'available'
 
-      <section className="grid gap-3 lg:grid-cols-2">
-        <article className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-          <div className="inline-flex items-center gap-1.5 text-sm text-[var(--muted)]">
-            <Clapperboard size={15} /> Sample video directions
-          </div>
-          <div className="mt-3 space-y-3">
-            {SAMPLE_VIDEOS.map((video) => (
-              <div key={video.title} className="rounded-lg border border-[var(--border)] bg-[var(--surface2)] p-3">
-                <h3 className="text-sm font-semibold text-[var(--text)]">{video.title}</h3>
-                <p className="mt-1 text-sm text-[var(--muted)]">{video.angle}</p>
+          const card = (
+            <article
+              key={cat.id}
+              style={
+                available
+                  ? {
+                      '--cat-accent': cat.accent,
+                      '--cat-glow': cat.glow,
+                    } as React.CSSProperties
+                  : undefined
+              }
+              className={[
+                'group relative flex flex-col gap-3 rounded-2xl border p-5 transition-all duration-200',
+                available
+                  ? 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--cat-accent)] hover:shadow-[0_0_20px_var(--cat-glow)] cursor-pointer'
+                  : 'border-[var(--border)] bg-[var(--surface)] opacity-50 cursor-not-allowed select-none',
+              ].join(' ')}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-base transition-colors"
+                  style={{
+                    background: available ? `${cat.glow ?? 'rgba(255,255,255,0.06)'}` : 'rgba(255,255,255,0.04)',
+                    color: available ? cat.accent : 'var(--muted)',
+                  }}
+                >
+                  {cat.icon ? (
+                    <span className="font-bold">{cat.icon}</span>
+                  ) : IconEl ? (
+                    <IconEl size={17} />
+                  ) : null}
+                </div>
+                <span
+                  className="rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none"
+                  style={
+                    available
+                      ? { borderColor: cat.accent, color: cat.accent, background: cat.glow }
+                      : { borderColor: 'var(--border)', color: 'var(--muted)', background: 'transparent' }
+                  }
+                >
+                  {available ? 'Available' : 'Coming soon'}
+                </span>
               </div>
-            ))}
-          </div>
-        </article>
 
-        <article className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
-          <div className="inline-flex items-center gap-1.5 text-sm text-[var(--muted)]">
-            <Palette size={15} /> Branding checklist
-          </div>
-          <ul className="mt-3 space-y-2 text-sm text-[var(--muted)]">
-            {BRANDING_NOTES.map((note) => (
-              <li key={note} className="rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-3 py-2">
-                {note}
-              </li>
-            ))}
-          </ul>
-        </article>
-      </section>
+              <div className="flex flex-col gap-1">
+                <h2 className="font-[var(--font-heading)] text-lg font-semibold text-[var(--text)]">{cat.label}</h2>
+                <p className="text-xs font-medium text-[var(--muted)]">{cat.tagline}</p>
+              </div>
+
+              <p className="text-sm leading-relaxed text-[var(--muted)]">{cat.description}</p>
+
+              {available && (
+                <div className="mt-auto pt-1">
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+                    style={{ background: cat.accent }}
+                  >
+                    Start creating <ArrowRight size={13} />
+                  </span>
+                </div>
+              )}
+            </article>
+          )
+
+          return available && cat.href ? (
+            <Link key={cat.id} href={cat.href} className="block">
+              {card}
+            </Link>
+          ) : (
+            <div key={cat.id}>{card}</div>
+          )
+        })}
+      </div>
     </div>
   )
 }

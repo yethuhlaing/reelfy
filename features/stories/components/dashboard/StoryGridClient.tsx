@@ -7,10 +7,9 @@ import type { DashboardStory } from '@/shared/lib/types/dashboard'
 import { useRouter } from 'next/navigation'
 interface StoryGridClientProps {
   stories: DashboardStory[]
-  category: string
 }
 
-export function StoryGridClient({ stories: initialStories, category }: StoryGridClientProps) {
+export function StoryGridClient({ stories: initialStories }: StoryGridClientProps) {
   const [stories, setStories] = useState(initialStories)
   const router = useRouter()
   useEffect(() => {
@@ -39,7 +38,7 @@ export function StoryGridClient({ stories: initialStories, category }: StoryGrid
   )
 
   if (stories.length === 0) {
-    return <EmptyDashboard category={category} />
+    return <EmptyDashboard />
   }
 
   return (

@@ -56,6 +56,48 @@ function makeGroqProvider(modelId: TextModel, label: string): TextProvider {
       })
       return JSON.parse(data.choices[0].message.content)
     },
+
+    async completeJson(
+      prompt: string,
+      signal?: AbortSignal,
+      costContext?: ApiCostContext,
+    ): Promise<string> {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: modelId.replace('groq/', ''),
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' },
+          temperature: 0.7,
+          max_tokens: 8192,
+        }),
+        signal,
+      })
+      if (!res.ok) {
+        const err = await res.text()
+        throw new Error(`Groq API error (${res.status}): ${err}`)
+      }
+      const data = (await res.json()) as {
+        choices: { message: { content: string } }[]
+        usage?: { total_tokens?: number }
+      }
+      const totalTokens = data.usage?.total_tokens ?? 0
+      await logApiCost({
+        userId: costContext?.userId,
+        storyId: costContext?.storyId,
+        sceneId: costContext?.sceneId,
+        provider: 'groq',
+        model: modelId.replace('groq/', ''),
+        operation: costContext?.operation ?? 'text_complete',
+        costUsd: (totalTokens / 1000) * 0.00059,
+        creditsCharged: costContext?.creditsCharged ?? 0,
+      })
+      return data.choices[0].message.content
+    },
   }
 }
 

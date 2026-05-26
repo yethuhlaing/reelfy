@@ -26,6 +26,7 @@ import {
   patchStoryMeta,
 } from '@/features/stories/client/stories-client'
 import type { DashboardStory, DashboardStoryStatus } from '@/shared/lib/types/dashboard'
+import { getCategoryNavLabel } from '@/shared/lib/categories'
 
 const STATUS_LABEL: Record<DashboardStoryStatus, string> = {
   draft: 'Draft',
@@ -164,7 +165,9 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
           ) : (
             <div className="truncate font-[var(--font-heading)] text-[0.95rem] font-semibold leading-[1.3]">{summary.title}</div>
           )}
-          <div className="flex gap-2.5 text-[0.72rem] text-[var(--muted)]">
+          <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[0.72rem] text-[var(--muted)]">
+            <span className="text-[var(--text)]">{getCategoryNavLabel(summary.category)}</span>
+            <span>·</span>
             <span>{total} scenes</span>
             <span>·</span>
             <span>{animated} animated</span>

@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { Sparkles, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import type { GenerateOptions } from '@/shared/lib/types'
+import { TEXT_MODEL_OPTIONS } from '@/shared/lib/text-model-options'
 import { savePendingStory } from '@/features/stories/server/pending-story'
 
 const DEFAULTS: GenerateOptions = {
@@ -52,13 +53,6 @@ const VIDEO_QUALITY_OPTIONS: OptionItem<GenerateOptions['videoQuality']>[] = [
   { value: '720p', label: '720p' },
   { value: '1080p', label: '1080p' },
 ]
-
-const TEXT_MODEL_OPTIONS: OptionItem<GenerateOptions['textModel']>[] = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-  { value: 'groq/llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Groq)' },
-  { value: 'groq/deepseek-r1-distill-llama-70b', label: 'DeepSeek R1 70B (Groq)' },
-  { value: 'nvidia/nemotron-ultra-253b-v1', label: 'Nemotron Ultra 253B' },
-] as const
 
 const IMAGE_MODEL_OPTIONS: OptionItem<GenerateOptions['imageModel']>[] = [
   { value: 'flux-schnell-fal', label: 'Flux Schnell' },

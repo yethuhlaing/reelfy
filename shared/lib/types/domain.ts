@@ -77,6 +77,25 @@ export interface Stage {
   detail?: string
 }
 
+// Lofi types
+export type VisualMode = 'single-image' | 'multi-image' | 'single-video' | 'multi-video'
+
+export type VisualAsset = {
+  prompt: string
+  durationSec: number
+}
+
+export type VisualConfig = {
+  mode: VisualMode
+  model: string
+  assets: VisualAsset[]
+}
+
+export type LofiVideoStatus = 'planning' | 'generating' | 'gating' | 'rendering' | 'complete' | 'failed' | 'aborted'
+export type LofiAssetStatus = 'pending' | 'submitted' | 'ready' | 'failed' | 'skipped'
+
+export type AmbientBed = 'rain' | 'vinyl' | 'fireplace' | 'cafe'
+
 export type StreamEvent =
   | { type: 'stage'; id: StageId; status: StageStatus; detail?: string }
   | { type: 'story'; title: string; tagline: string; protagonist: string }

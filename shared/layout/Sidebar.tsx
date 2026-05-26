@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Settings, LayoutDashboard, ChartNoAxesCombined, Shield, Clapperboard, LogOut } from 'lucide-react'
+import { Settings, LayoutDashboard, ChartNoAxesCombined, Shield, LogOut } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { signOut } from '@/features/auth/server/auth-client'
 import type { SessionUser } from '@/features/auth/server/auth-session'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { useSidebar } from '@/shared/layout/sidebar-context'
 import { usePathname } from 'next/navigation'
+import { SidebarCategories } from '@/shared/layout/SidebarCategories'
 
 interface SidebarProps {
   currentUser: SessionUser | null
@@ -39,16 +40,13 @@ export function Sidebar({ currentUser }: SidebarProps) {
     }
   }
 
-  const onDashboard = pathname === '/dashboard'
-  const onNew = pathname === '/new'
-
   return (
     <aside className="sticky top-0 flex h-screen flex-col gap-2 overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] px-2.5 py-3.5">
       <div className={cn('flex items-center gap-2.5 px-2.5 pb-3.5', collapsed && 'justify-center')}>
         <Link
           href="/dashboard"
           className={cn('inline-flex items-center gap-2.5', collapsed && 'justify-center')}
-          title="Go to Dashboard"
+          title="Dashboard"
         >
           <div className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--accent)] font-[var(--font-heading)] text-[var(--accent-ink)] font-bold">
             ◈
@@ -58,28 +56,20 @@ export function Sidebar({ currentUser }: SidebarProps) {
       </div>
 
       <Link
-        href="/new"
-        className={cn(
-          'inline-flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--text)] transition hover:bg-[var(--surface2)]',
-          onNew && 'bg-[var(--surface2)] text-[var(--accent)]',
-          collapsed && 'justify-center px-2',
-        )}
-      >
-        <Clapperboard size={16} />
-        {!collapsed && <span>New</span>}
-      </Link>
-
-      <Link
         href="/dashboard"
         className={cn(
           'inline-flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-[var(--text)] transition hover:bg-[var(--surface2)]',
-          onDashboard && 'bg-[var(--surface2)] text-[var(--accent)]',
+          pathname === '/dashboard' && 'bg-[var(--surface2)] text-[var(--accent)]',
           collapsed && 'justify-center px-2',
         )}
       >
         <LayoutDashboard size={16} />
         {!collapsed && <span>Dashboard</span>}
       </Link>
+
+      <SidebarCategories collapsed={collapsed} />
+
+      <div className={cn('border-t border-[var(--border)]', collapsed ? 'mx-1' : 'mx-2')} />
 
       <Link
         href="/usage"

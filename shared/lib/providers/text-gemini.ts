@@ -59,4 +59,50 @@ export const geminiProvider: TextProvider = {
 
     return JSON.parse(result.response.text())
   },
+
+  async completeJson(
+    prompt: string,
+    signal?: AbortSignal,
+    costContext?: ApiCostContext,
+  ): Promise<string> {
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    })
+    const result = await withAbort(
+      model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      }),
+      signal,
+    )
+    const usage = result.response.usageMetadata
+    const inputTokens = usage?.promptTokenCount ?? 0
+    const outputTokens = usage?.candidatesTokenCount ?? 0
+    const op = costContext?.operation ?? 'text_complete'
+
+    await Promise.all([
+      logApiCost({
+        userId: costContext?.userId,
+        storyId: costContext?.storyId,
+        sceneId: costContext?.sceneId,
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        operation: `${op}_input`,
+        costUsd: (inputTokens / 1000) * 0.00015,
+        creditsCharged: costContext?.creditsCharged ?? 0,
+      }),
+      logApiCost({
+        userId: costContext?.userId,
+        storyId: costContext?.storyId,
+        sceneId: costContext?.sceneId,
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        operation: `${op}_output`,
+        costUsd: (outputTokens / 1000) * 0.0006,
+        creditsCharged: costContext?.creditsCharged ?? 0,
+      }),
+    ])
+
+    return result.response.text()
+  },
 }

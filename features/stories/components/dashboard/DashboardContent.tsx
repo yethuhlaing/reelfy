@@ -5,11 +5,10 @@ import type { DashboardStory } from '@/shared/lib/types/dashboard'
 
 interface DashboardContentProps {
   userId: string
-  category: string
 }
 
-export async function DashboardContent({ userId, category }: DashboardContentProps) {
-  const rows = await listUserStories(userId, category)
+export async function DashboardContent({ userId }: DashboardContentProps) {
+  const rows = await listUserStories(userId)
   const stories: DashboardStory[] = rows.map((s) => ({
     id: s.id,
     title: s.title,
@@ -32,7 +31,7 @@ export async function DashboardContent({ userId, category }: DashboardContentPro
   return (
     <>
       <DashboardHero stats={stats} />
-      <StoryGridClient stories={stories} category={category} />
+      <StoryGridClient stories={stories} />
     </>
   )
 }

@@ -22,6 +22,20 @@
       "when": 1779600000000,
       "tag": "0002_polar_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779667200000,
+      "tag": "0003_lofi_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779724196081,
+      "tag": "0004_empty_zemo",
+      "breakpoints": true
     }
   ]
 }

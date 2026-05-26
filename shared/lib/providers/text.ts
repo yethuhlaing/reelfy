@@ -20,6 +20,12 @@ export interface TextProvider {
     signal?: AbortSignal,
     costContext?: ApiCostContext,
   ): Promise<PlanResult>
+  /** Single-shot JSON-oriented completion (e.g. lofi prompt expand). */
+  completeJson(
+    prompt: string,
+    signal?: AbortSignal,
+    costContext?: ApiCostContext,
+  ): Promise<string>
 }
 
 import { geminiProvider } from './text-gemini'
