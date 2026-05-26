@@ -3,6 +3,22 @@ import { getLofiVideoForUser, getLofiAssetsForVideo } from '@/features/lofi/serv
 
 export const runtime = 'nodejs'
 
+function computeAssetProgress(assets: { kind: string; status: string }[]) {
+  const music = assets.filter((a) => a.kind === 'music')
+  const visual = assets.filter((a) => a.kind === 'visual')
+  const musicReady = music.filter((a) => a.status === 'ready').length
+  const visualReady = visual.filter((a) => a.status === 'ready').length
+  const total = music.length + visual.length
+  const ready = musicReady + visualReady
+  return {
+    musicReady,
+    musicTotal: music.length,
+    visualReady,
+    visualTotal: visual.length,
+    overallPct: total > 0 ? Math.round((ready / total) * 100) : 0,
+  }
+}
+
 export async function GET(
   request: Request,
   ctx: { params: Promise<{ videoId: string }> },
@@ -36,7 +52,7 @@ export async function GET(
     finalDurationSec: video.finalDurationSec,
     createdAt: video.createdAt.toISOString(),
     updatedAt: video.updatedAt.toISOString(),
-    assets: assets.map(a => ({
+    assets: assets.map((a) => ({
       id: a.id,
       kind: a.kind,
       orderIndex: a.orderIndex,
@@ -46,5 +62,6 @@ export async function GET(
       status: a.status,
       resultUrl: a.resultUrl,
     })),
+    progress: computeAssetProgress(assets),
   })
 }

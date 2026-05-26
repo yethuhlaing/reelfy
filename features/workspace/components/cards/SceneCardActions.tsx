@@ -8,6 +8,7 @@ interface Props {
   scene: Scene
   isPlaying?: boolean
   onPlay?: () => void
+  onRegenImage?: () => void
   onAnimate?: () => void
   onCancel?: () => void
   readOnly?: boolean
@@ -17,6 +18,7 @@ export function SceneCardActions({
   scene,
   isPlaying,
   onPlay,
+  onRegenImage,
   onAnimate,
   onCancel,
   readOnly,
@@ -49,26 +51,39 @@ export function SceneCardActions({
         >
           <Square size={13} />
         </button>
-      ) : state === 'error' ? (
-        <button
-          className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[#ca8a04] bg-[#ca8a04] px-2.5 text-[0.72rem] text-[#111]"
-          onClick={(e) => stop(e, onAnimate)}
-          title="Retry"
-          disabled={readOnly}
-        >
-          <RefreshCw size={13} /> Retry
-        </button>
       ) : (
-        scene.imageUrl && scene.motionPrompt && !scene.videoUrl && (
-          <button
-            className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[var(--accent)] bg-[var(--accent)] px-2.5 text-[0.72rem] text-[#111]"
-            onClick={(e) => stop(e, onAnimate)}
-            title="Animate"
-            disabled={readOnly}
-          >
-            <Sparkles size={13} /> Animate
-          </button>
-        )
+        <>
+          {onRegenImage && scene.imagePrompt && (
+            <button
+              className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 text-[0.72rem] text-[var(--text)] shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
+              onClick={(e) => stop(e, onRegenImage)}
+              title={scene.imageUrl ? 'Regenerate image' : 'Generate image'}
+              disabled={readOnly}
+            >
+              <RefreshCw size={13} /> {scene.imageUrl ? 'Regen' : 'Image'}
+            </button>
+          )}
+          {onAnimate && scene.imageUrl && scene.motionPrompt && (
+            <button
+              className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[var(--accent)] bg-[var(--accent)] px-2.5 text-[0.72rem] text-[#111] shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
+              onClick={(e) => stop(e, onAnimate)}
+              title={scene.videoUrl ? 'Re-animate scene' : 'Animate scene'}
+              disabled={readOnly}
+            >
+              <Sparkles size={13} /> {scene.videoUrl ? 'Re-animate' : 'Animate'}
+            </button>
+          )}
+          {state === 'error' && onAnimate && (
+            <button
+              className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[#ca8a04] bg-[#ca8a04] px-2.5 text-[0.72rem] text-[#111]"
+              onClick={(e) => stop(e, onAnimate)}
+              title="Retry animation"
+              disabled={readOnly || !scene.imageUrl || !scene.motionPrompt}
+            >
+              <RefreshCw size={13} /> Retry
+            </button>
+          )}
+        </>
       )}
     </div>
   )

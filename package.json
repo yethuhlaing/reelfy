@@ -8,7 +8,8 @@
     ]
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx scripts/dev-with-tunnel.ts",
+    "dev:next": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

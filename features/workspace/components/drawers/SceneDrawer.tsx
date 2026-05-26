@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { Play, RefreshCw, Sparkles, AlertCircle } from 'lucide-react'
-import { toast } from 'sonner'
 import { Drawer } from './Drawer'
 import { useWorkspace } from '@/features/workspace/context/workspace-context'
 
@@ -14,7 +13,7 @@ interface Props {
 }
 
 export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
-  const { storyData, activeSceneId, patchScene, readOnly } = useWorkspace()
+  const { storyData, activeSceneId, patchScene, readOnly, retryImage } = useWorkspace()
   const scene = storyData?.scenes.find((s) => s.id === activeSceneId) ?? null
   const idx = storyData?.scenes.findIndex((s) => s.id === activeSceneId) ?? -1
 
@@ -83,30 +82,11 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
         )}
         <button
           className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-2.5 text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)] disabled:cursor-not-allowed disabled:opacity-45"
-          disabled={readOnly}
-          onClick={async () => {
-            if (!scene.imageUrl) return
-            try {
-              const res = await fetch('/api/scene/regen-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sceneId: scene.id }),
-              })
-              if (res.status === 501) {
-                toast.message('Regen image — coming soon')
-                return
-              }
-              if (!res.ok) throw new Error(await res.text())
-              const d = (await res.json()) as { url: string }
-              patchScene(scene.id, { imageUrl: d.url })
-              toast.success('Image regenerated')
-            } catch (err) {
-              toast.error('Regen failed', { description: err instanceof Error ? err.message : 'Try again' })
-            }
-          }}
-          title="Regenerate image"
+          disabled={readOnly || !scene.imagePrompt || !!scene.pendingJobId}
+          onClick={() => retryImage?.(scene.id)}
+          title={scene.imageUrl ? 'Regenerate image' : 'Generate image'}
         >
-          <RefreshCw size={14} /> Regen image
+          <RefreshCw size={14} /> {scene.imageUrl ? 'Regen image' : 'Generate image'}
         </button>
         <button
           className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-2.5 font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"

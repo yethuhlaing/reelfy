@@ -1,3 +1,7 @@
+import { minimaxProvider } from './music-fal-minimax'
+import { stableAudioProvider } from './music-fal-stable-audio'
+import { cassetteProvider } from './music-fal-cassette'
+
 export interface MusicGenInput {
   prompt: string
   durationSec: number
@@ -20,16 +24,27 @@ export interface MusicGenProvider {
   submit(input: MusicGenInput): Promise<MusicGenSubmitResult>
 }
 
+export const MUSIC_PROVIDERS: Record<string, MusicGenProvider> = {
+  minimax: minimaxProvider,
+  'stable-audio': stableAudioProvider,
+  cassette: cassetteProvider,
+}
+
+const DEFAULT_MUSIC_PROVIDER = MUSIC_PROVIDERS.minimax
+
 export function getMusicProvider(key?: string): MusicGenProvider {
   const id = key ?? process.env.MUSIC_MODEL ?? 'minimax'
-  if (!MUSIC_PROVIDERS[id]) {
+  const provider = MUSIC_PROVIDERS[id]
+  if (!provider) {
     console.warn(`Unknown MUSIC_MODEL "${id}", falling back to minimax`)
   }
-  return MUSIC_PROVIDERS[id] ?? MUSIC_PROVIDERS['minimax']
+  const resolved = provider ?? DEFAULT_MUSIC_PROVIDER
+  if (!resolved) {
+    throw new Error('No music providers configured')
+  }
+  return resolved
 }
 
 export function listMusicProviders() {
   return Object.values(MUSIC_PROVIDERS)
 }
-
-export const MUSIC_PROVIDERS: Record<string, MusicGenProvider> = {}

@@ -457,22 +457,34 @@ export function Workspace({ storyId, category }: Props) {
   }
 
   const retryImage = async (sceneId: string) => {
+    const scene = storyData?.scenes.find((s) => s.id === sceneId)
+    if (!scene?.imagePrompt) {
+      toast.error('This scene has no image prompt')
+      return
+    }
+    patchScene(sceneId, { imageUrl: null, videoUrl: null, lastError: undefined, pendingJobId: undefined })
     try {
       const res = await fetch('/api/scene/regen-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ storyId, sceneId }),
       })
-      if (res.status === 501) {
-        toast.message('Regen image — coming soon')
+      if (res.status === 402) {
+        const d = (await res.json().catch(() => ({}))) as { balance?: number; required?: number }
+        toast.error('Not enough credits', {
+          description: `Need ${d.required ?? '?'} credits (balance: ${d.balance ?? 0})`,
+        })
         return
       }
-      if (!res.ok) throw new Error(await res.text())
+      if (!res.ok) {
+        const d = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(d.error ?? `HTTP ${res.status}`)
+      }
       const d = (await res.json()) as { url: string }
-      patchScene(sceneId, { imageUrl: d.url })
-      toast.success('Image regenerated')
+      patchScene(sceneId, { imageUrl: d.url, videoUrl: null, lastError: undefined })
+      toast.success(scene.imageUrl ? 'Image regenerated' : 'Image generated')
     } catch (err) {
-      toast.error('Regen failed', { description: err instanceof Error ? err.message : 'Try again' })
+      toast.error('Image failed', { description: err instanceof Error ? err.message : 'Try again' })
     }
   }
 
@@ -568,6 +580,7 @@ export function Workspace({ storyId, category }: Props) {
               playingIndex={playState.isPlaying ? playState.currentIndex : null}
               onSceneClick={openScene}
               onAnimateScene={enqueueAnimate}
+              onRegenImageScene={retryImage}
               onPlayScene={playScene}
               readOnly={false}
               skeletonCount={

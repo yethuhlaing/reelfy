@@ -19,6 +19,20 @@ import type { TextModel, VisualMode, VisualAsset } from '@/shared/lib/types'
 const DEFAULT_MUSIC_MODEL = 'minimax'
 const DEFAULT_VISUAL_MODEL = 'flux-schnell-fal'
 const LOFI_OPTIONS_STORAGE_KEY = 'new-lofi:options'
+const DEFAULT_DURATION_SEC = 3600
+
+const MUSIC_COUNT_OPTIONS = Array.from({ length: 21 }, (_, i) => {
+  const n = i + 10
+  return { value: String(n), label: String(n) }
+})
+const VISUAL_COUNT_OPTIONS = Array.from({ length: 12 }, (_, i) => {
+  const n = i + 1
+  return { value: String(n), label: String(n) }
+})
+
+function defaultMusicCount(durationSec: number) {
+  return Math.max(10, Math.ceil(durationSec / 180))
+}
 
 interface ExpandResult {
   musicPrompts: string[]
@@ -32,7 +46,9 @@ export function LofiForm() {
   const router = useRouter()
 
   const [vibe, setVibe] = useState('')
-  const [duration, setDuration] = useState<number>(3600)
+  const [duration, setDuration] = useState<number>(DEFAULT_DURATION_SEC)
+  const [musicCount, setMusicCount] = useState(() => defaultMusicCount(DEFAULT_DURATION_SEC))
+  const [visualCount, setVisualCount] = useState(4)
   const [musicModel, setMusicModel] = useState(DEFAULT_MUSIC_MODEL)
   const [visualModel, setVisualModel] = useState(DEFAULT_VISUAL_MODEL)
   const [textModel, setTextModel] = useState<TextModel>(DEFAULT_TEXT_MODEL)
@@ -60,10 +76,16 @@ export function LofiForm() {
     } catch { /* ignore */ }
   }, [textModel])
 
-  const expandBody = () => ({
+  const expandBody = (overrides?: { targetMusicCount?: number; targetVisualCount?: number }) => ({
     vibe: vibe.trim(),
     targetDurationSec: duration,
     textModel,
+    targetMusicCount:
+      overrides?.targetMusicCount ??
+      (phase === 'editing' ? editedMusicPrompts.length : musicCount),
+    targetVisualCount:
+      overrides?.targetVisualCount ??
+      (phase === 'editing' ? editedVisualPrompts.length : visualCount),
   })
 
   const fetchBalance = useCallback(async () => {
@@ -88,7 +110,7 @@ export function LofiForm() {
       const res = await fetch('/api/lofi/expand-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vibe: trimmed, targetDurationSec: duration, textModel }),
+        body: JSON.stringify(expandBody()),
       })
 
       if (!res.ok) {
@@ -113,7 +135,7 @@ export function LofiForm() {
       const res = await fetch('/api/lofi/expand-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expandBody()),
+        body: JSON.stringify(expandBody({ targetMusicCount: 1, targetVisualCount: 1 })),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string }
@@ -121,7 +143,7 @@ export function LofiForm() {
       }
       const result = (await res.json()) as ExpandResult
       const updated = [...editedMusicPrompts]
-      updated[index] = result.musicPrompts[0]
+      updated[index] = result.musicPrompts[0] ?? ''
       setEditedMusicPrompts(updated)
     } catch (err) {
       toast.error(toUserErrorMessage(err, 'Could not regenerate that prompt. Please try again.'))
@@ -133,7 +155,7 @@ export function LofiForm() {
       const res = await fetch('/api/lofi/expand-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expandBody()),
+        body: JSON.stringify(expandBody({ targetMusicCount: 1, targetVisualCount: 1 })),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as { error?: string }
@@ -141,10 +163,60 @@ export function LofiForm() {
       }
       const result = (await res.json()) as ExpandResult
       const updated = [...editedVisualPrompts]
-      updated[index] = result.visualPrompts[0]
+      updated[index] = result.visualPrompts[0] ?? ''
       setEditedVisualPrompts(updated)
     } catch (err) {
       toast.error(toUserErrorMessage(err, 'Could not regenerate that prompt. Please try again.'))
+    }
+  }
+
+  const handleAddMusic = async () => {
+    const insertIndex = editedMusicPrompts.length
+    setEditedMusicPrompts((prev) => [...prev, ''])
+    try {
+      const res = await fetch('/api/lofi/expand-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(expandBody({ targetMusicCount: 1, targetVisualCount: 1 })),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(data.error ?? 'Failed to add prompt')
+      }
+      const result = (await res.json()) as ExpandResult
+      setEditedMusicPrompts((prev) => {
+        const updated = [...prev]
+        updated[insertIndex] = result.musicPrompts[0] ?? ''
+        return updated
+      })
+    } catch (err) {
+      setEditedMusicPrompts((prev) => prev.filter((_, i) => i !== insertIndex))
+      toast.error(toUserErrorMessage(err, 'Could not add that prompt. Please try again.'))
+    }
+  }
+
+  const handleAddVisual = async () => {
+    const insertIndex = editedVisualPrompts.length
+    setEditedVisualPrompts((prev) => [...prev, ''])
+    try {
+      const res = await fetch('/api/lofi/expand-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(expandBody({ targetMusicCount: 1, targetVisualCount: 1 })),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(data.error ?? 'Failed to add prompt')
+      }
+      const result = (await res.json()) as ExpandResult
+      setEditedVisualPrompts((prev) => {
+        const updated = [...prev]
+        updated[insertIndex] = result.visualPrompts[0] ?? ''
+        return updated
+      })
+    } catch (err) {
+      setEditedVisualPrompts((prev) => prev.filter((_, i) => i !== insertIndex))
+      toast.error(toUserErrorMessage(err, 'Could not add that prompt. Please try again.'))
     }
   }
 
@@ -196,6 +268,9 @@ export function LofiForm() {
   const isSingle = expandResult
     ? expandResult.visualMode === 'single-image' || expandResult.visualMode === 'single-video'
     : false
+
+  const displayedMusicCount = phase === 'editing' ? editedMusicPrompts.length : musicCount
+  const displayedVisualCount = phase === 'editing' ? editedVisualPrompts.length : visualCount
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-[18px] px-6 pb-20">
@@ -256,83 +331,109 @@ export function LofiForm() {
           onChange={setVisualModel}
           disabled={phase !== 'idle'}
         />
+
+        <ConfigPill
+          label="Music loops"
+          value={String(displayedMusicCount)}
+          options={MUSIC_COUNT_OPTIONS}
+          current={String(displayedMusicCount)}
+          onChange={(v) => setMusicCount(Number(v))}
+          disabled={phase !== 'idle'}
+        />
+
+        <ConfigPill
+          label="Visuals"
+          value={String(displayedVisualCount)}
+          options={VISUAL_COUNT_OPTIONS}
+          current={String(displayedVisualCount)}
+          onChange={(v) => setVisualCount(Number(v))}
+          disabled={phase !== 'idle'}
+        />
       </div>
 
       {phase === 'editing' && expandResult && (
         <div className="flex flex-col gap-4">
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-1 text-[0.75rem] text-[var(--accent)] hover:underline"
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/lofi/expand-prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(expandBody()),
+                  })
+                  if (!res.ok) {
+                    const data = await res.json().catch(() => ({})) as { error?: string }
+                    throw new Error(data.error ?? 'Failed to expand prompts')
+                  }
+                  const result = (await res.json()) as ExpandResult
+                  setExpandResult(result)
+                  setEditedMusicPrompts(result.musicPrompts)
+                  setEditedVisualPrompts(result.visualPrompts)
+                } catch (err) {
+                  toast.error(toUserErrorMessage(err, 'Could not regenerate prompts. Please try again.'))
+                }
+              }}
+            >
+              <Sparkles size={13} /> Regenerate all
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
                 <span className="text-[0.85rem] font-semibold text-[var(--text)]">
                   Music prompts ({editedMusicPrompts.length})
                 </span>
               </div>
-              <button
-                type="button"
-                className="flex cursor-pointer items-center gap-1 text-[0.75rem] text-[var(--accent)] hover:underline"
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/lofi/expand-prompts', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(expandBody()),
-                    })
-                    if (!res.ok) {
-                      const data = await res.json().catch(() => ({})) as { error?: string }
-                      throw new Error(data.error ?? 'Failed to expand prompts')
-                    }
-                    const result = (await res.json()) as ExpandResult
-                    setExpandResult(result)
-                    setEditedMusicPrompts(result.musicPrompts)
-                    setEditedVisualPrompts(result.visualPrompts)
-                  } catch (err) {
-                    toast.error(toUserErrorMessage(err, 'Could not regenerate prompts. Please try again.'))
-                  }
+              <LofiPromptList
+                prompts={editedMusicPrompts}
+                onChange={(i, v) => {
+                  const updated = [...editedMusicPrompts]
+                  updated[i] = v
+                  setEditedMusicPrompts(updated)
                 }}
-              >
-                <Sparkles size={13} /> Regenerate all
-              </button>
+                onRegenerate={handleRegenerateMusic}
+                onRemove={(i) => setEditedMusicPrompts(editedMusicPrompts.filter((_, idx) => idx !== i))}
+                onAdd={editedMusicPrompts.length < 30 ? handleAddMusic : undefined}
+                collapsedHint={`${editedMusicPrompts.length} music prompts (click to expand)`}
+              />
             </div>
-            <LofiPromptList
-              prompts={editedMusicPrompts}
-              onChange={(i, v) => {
-                const updated = [...editedMusicPrompts]
-                updated[i] = v
-                setEditedMusicPrompts(updated)
-              }}
-              onRegenerate={handleRegenerateMusic}
-              collapsedHint={`${editedMusicPrompts.length} music prompts (click to expand)`}
-            />
-          </div>
 
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-[0.85rem] font-semibold text-[var(--text)]">
-                Visual prompts ({editedVisualPrompts.length})
-              </span>
-              <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.68rem] text-[var(--muted)]">
-                {expandResult.visualMode}
-              </span>
-            </div>
-            <LofiPromptList
-              prompts={editedVisualPrompts}
-              onChange={(i, v) => {
-                const updated = [...editedVisualPrompts]
-                updated[i] = v
-                setEditedVisualPrompts(updated)
-              }}
-              onRegenerate={handleRegenerateVisual}
-            />
-            {!isSingle && (
-              <div className="mt-2 text-[0.75rem] text-[var(--muted)]">
-                Total visual duration:{' '}
-                {editedVisualPrompts.reduce(
-                  (sum, _, i) => sum + calcVisualDuration(i, expandResult.visualMode, editedVisualPrompts.length, duration),
-                  0,
-                )}
-                s = target {Math.round(duration / 60)}min {editedVisualPrompts.length > 0 ? '✓' : ''}
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-[0.85rem] font-semibold text-[var(--text)]">
+                  Visual prompts ({editedVisualPrompts.length})
+                </span>
+                <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.68rem] text-[var(--muted)]">
+                  {expandResult.visualMode}
+                </span>
               </div>
-            )}
+              <LofiPromptList
+                prompts={editedVisualPrompts}
+                onChange={(i, v) => {
+                  const updated = [...editedVisualPrompts]
+                  updated[i] = v
+                  setEditedVisualPrompts(updated)
+                }}
+                onRegenerate={handleRegenerateVisual}
+                onRemove={(i) => setEditedVisualPrompts(editedVisualPrompts.filter((_, idx) => idx !== i))}
+                onAdd={editedVisualPrompts.length < 12 ? handleAddVisual : undefined}
+              />
+              {!isSingle && (
+                <div className="mt-2 text-[0.75rem] text-[var(--muted)]">
+                  Total visual duration:{' '}
+                  {editedVisualPrompts.reduce(
+                    (sum, _, i) =>
+                      sum + calcVisualDuration(i, expandResult.visualMode, editedVisualPrompts.length, duration),
+                    0,
+                  )}
+                  s = target {Math.round(duration / 60)}min {editedVisualPrompts.length > 0 ? '✓' : ''}
+                </div>
+              )}
+            </div>
           </div>
 
           <LofiCostPreview

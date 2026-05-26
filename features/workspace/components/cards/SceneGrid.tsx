@@ -10,6 +10,7 @@ interface SceneGridProps {
   playingIndex: number | null
   onSceneClick: (index: number) => void
   onAnimateScene?: (sceneId: string) => void
+  onRegenImageScene?: (sceneId: string) => void
   onPlayScene?: (index: number) => void
   readOnly?: boolean
   skeletonCount?: number
@@ -21,6 +22,7 @@ export function SceneGrid({
   playingIndex,
   onSceneClick,
   onAnimateScene,
+  onRegenImageScene,
   onPlayScene,
   readOnly,
   skeletonCount = 0,
@@ -47,6 +49,7 @@ export function SceneGrid({
             isPlaying={playingIndex === index}
             onClick={() => onSceneClick(index)}
             onAnimate={onAnimateScene ? () => onAnimateScene(scene.id) : undefined}
+            onRegenImage={onRegenImageScene ? () => onRegenImageScene(scene.id) : undefined}
             onPlay={onPlayScene ? () => onPlayScene(index) : undefined}
             readOnly={readOnly}
             jobStartedAt={jobStartedAt?.(scene.id)}

@@ -10,6 +10,7 @@ interface SceneCardProps {
   isPlaying: boolean
   onClick: () => void
   onAnimate?: () => void
+  onRegenImage?: () => void
   onPlay?: () => void
   readOnly?: boolean
   jobStartedAt?: number
@@ -33,6 +34,7 @@ export function SceneCard({
   isPlaying,
   onClick,
   onAnimate,
+  onRegenImage,
   onPlay,
   readOnly,
   jobStartedAt,
@@ -86,6 +88,7 @@ export function SceneCard({
         scene={scene}
         isPlaying={isPlaying}
         onPlay={onPlay}
+        onRegenImage={onRegenImage}
         onAnimate={onAnimate}
         readOnly={readOnly}
       />

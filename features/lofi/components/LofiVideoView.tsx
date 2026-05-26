@@ -35,12 +35,28 @@ interface VideoStatusResponse {
   finalVideoUrl: string | null
   arrangementJson: string | null
   assets: AssetStatus[]
-  progress: {
+  progress?: {
     musicReady: number
     musicTotal: number
     visualReady: number
     visualTotal: number
     overallPct: number
+  }
+}
+
+function computeProgressFromAssets(assets: AssetStatus[]) {
+  const music = assets.filter((a) => a.kind === 'music')
+  const visual = assets.filter((a) => a.kind === 'visual')
+  const musicReady = music.filter((a) => a.status === 'ready').length
+  const visualReady = visual.filter((a) => a.status === 'ready').length
+  const total = music.length + visual.length
+  const ready = musicReady + visualReady
+  return {
+    musicReady,
+    musicTotal: music.length,
+    visualReady,
+    visualTotal: visual.length,
+    overallPct: total > 0 ? Math.round((ready / total) * 100) : 0,
   }
 }
 
@@ -167,6 +183,7 @@ export function LofiVideoView({ id }: { id: string }) {
   const isComplete = data.status === 'complete'
   const isFailed = data.status === 'failed'
   const isAborted = data.status === 'aborted'
+  const progress = data.progress ?? computeProgressFromAssets(data.assets)
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8">
@@ -185,10 +202,10 @@ export function LofiVideoView({ id }: { id: string }) {
       {isActive && (
         <div className="flex flex-col gap-4">
           <LofiProgress
-            musicReady={data.progress.musicReady}
-            musicTotal={data.progress.musicTotal}
-            visualReady={data.progress.visualReady}
-            visualTotal={data.progress.visualTotal}
+            musicReady={progress.musicReady}
+            musicTotal={progress.musicTotal}
+            visualReady={progress.visualReady}
+            visualTotal={progress.visualTotal}
             status={data.status}
           />
           <button
@@ -242,27 +259,7 @@ export function LofiVideoView({ id }: { id: string }) {
             >
               <RefreshCw size={16} /> Retry render
             </button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button className="inline-flex h-[38px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--danger)] bg-transparent px-4 text-[0.85rem] text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_15%,transparent)]">
-                  <Trash2 size={16} /> Delete
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this video?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently remove the video and all assets.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-[var(--danger)] text-white">
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <DeleteVideoDialog onDelete={handleDelete} />
           </div>
         </div>
       )}
@@ -273,29 +270,47 @@ export function LofiVideoView({ id }: { id: string }) {
             <XCircle size={16} />
             <span>Cancelled by user</span>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button className="inline-flex h-[38px] w-fit cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--danger)] bg-transparent px-4 text-[0.85rem] text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_15%,transparent)]">
-                <Trash2 size={16} /> Delete
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete this video?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently remove the video and all assets.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-[var(--danger)] text-white">
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <DeleteVideoDialog onDelete={handleDelete} />
         </div>
       )}
     </div>
+  )
+}
+
+function DeleteVideoDialog({ onDelete }: { onDelete: () => void }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <button className="inline-flex h-[38px] w-fit cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--danger)] bg-transparent px-4 text-[0.85rem] text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_15%,transparent)]">
+          <Trash2 size={16} /> Delete
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent className="gap-0 border-[var(--border)] bg-[var(--surface-solid)] p-0 shadow-2xl sm:max-w-md">
+        <div className="space-y-4 px-6 pt-6 pb-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--danger)_15%,transparent)] text-[var(--danger)]">
+              <Trash2 size={18} />
+            </div>
+            <AlertDialogHeader className="gap-1 text-left">
+              <AlertDialogTitle className="text-base text-[var(--text)]">
+                Delete this video?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-[var(--muted)]">
+                This will permanently remove the video and all assets.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          </div>
+        </div>
+        <AlertDialogFooter className="border-t border-[var(--border)] px-6 py-4">
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onDelete}
+            className="bg-[var(--danger)] text-white hover:brightness-110"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

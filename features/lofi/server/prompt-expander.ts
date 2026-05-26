@@ -5,6 +5,8 @@ import type { VisualMode, AmbientBed } from '@/shared/lib/types'
 export interface ExpandPromptsInput {
   vibe: string
   targetDurationSec: number
+  targetMusicCount: number
+  targetVisualCount: number
   textModel: TextModel
 }
 
@@ -17,11 +19,10 @@ export interface ExpandPromptsOutput {
 }
 
 function buildSystemPrompt(input: ExpandPromptsInput): string {
-  const musicLoopCount = Math.ceil(input.targetDurationSec / 180)
   return `You generate prompt sets for AI-generated lofi YouTube videos. Given a single vibe phrase, return JSON with:
-- musicPrompts: array of exactly ${musicLoopCount} short prompts for instrumental lofi music. Each prompt should describe a slight variation of the same mood (different instrument focus, energy level, tempo subtly different). All should fit together as one cohesive listening session.
+- musicPrompts: array of exactly ${input.targetMusicCount} short prompts for instrumental lofi music. Each prompt should describe a slight variation of the same mood (different instrument focus, energy level, tempo subtly different). All should fit together as one cohesive listening session.
 - visualMode: choose the best fit from "single-image", "multi-image", "single-video", "multi-video". Use "single-image" for calm static vibes, "multi-image" when the vibe implies multiple scenes or changing settings, "single-video" for subtle motion (rain, steam, flickering), "multi-video" only for very dynamic vibes.
-- visualPrompts: array of 1–6 prompts. If visualMode is "single-image" or "single-video", return exactly 1 prompt. For "multi-image"/"multi-video", choose 3–6 prompts that feel like the same world from different angles or moments — cohesive, not jarring.
+- visualPrompts: array of exactly ${input.targetVisualCount} prompts that feel like the same world from different angles or moments — cohesive, not jarring.
 - suggestedTitle: a short YouTube-style title (≤60 chars).
 - suggestedAmbientBed: pick best fit from rain/vinyl/fireplace/cafe based on the vibe, or null if none fit.
 
