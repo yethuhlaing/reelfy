@@ -1,11 +1,12 @@
 import type { SceneDensity, StickStyle, VoiceTone, ImageModel, TextModel, StreamEvent, Scene, StoryData, VideoModel, VideoQuality } from '@/shared/lib/types'
-import { getImageProvider } from '@/shared/lib/providers/image'
-import { getTextProvider } from '@/shared/lib/providers/text'
+import { getImageProvider } from '@/shared/lib/providers/image/image'
+import { getTextProvider } from '@/shared/lib/providers/text/text'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getCredits, deductCredits } from '@/shared/lib/db/credits'
 import { upsertStoryWithScenes } from '@/features/stories/server/stories-db'
 import { fireAndForgetUsage } from '@/features/billing/server/usage'
 import { clearStoryAssetsBeforeRegenerate, completeSceneImage } from '@/features/stories/server/story-assets'
+import { env } from '@/shared/lib/env'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -48,26 +49,9 @@ export async function POST(request: Request) {
   }
 
   const textProvider = getTextProvider(textModel)
-  const isNvidia = textProvider.id.startsWith('nvidia/')
-  const isGroq = textProvider.id.startsWith('groq/')
-
-  if (!isNvidia && !isGroq && !process.env.GEMINI_API_KEY) {
-    return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not configured' }), { status: 500 })
-  }
-  if (isNvidia && !process.env.NVIDIA_API_KEY) {
-    return new Response(JSON.stringify({ error: 'NVIDIA_API_KEY is not configured' }), { status: 500 })
-  }
-  if (isGroq && !process.env.GROQ_API_KEY) {
-    return new Response(JSON.stringify({ error: 'GROQ_API_KEY is not configured' }), { status: 500 })
-  }
-
   const imageProvider = getImageProvider(imageModel)
-  if (!process.env.FAL_KEY) {
-    return new Response(JSON.stringify({ error: 'FAL_KEY is not configured' }), { status: 500 })
-  }
-
   const creditsPerScene = IMAGE_MODEL_CREDITS[imageModel ?? 'flux-schnell-fal'] ?? 1
-  const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
+  const hasBlobToken = Boolean(env.BLOB_READ_WRITE_TOKEN)
   const signal = request.signal
 
   const encoder = new TextEncoder()

@@ -3,7 +3,6 @@ import { generateVoiceover } from '@/shared/lib/integrations/elevenlabs'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getStoryForUser } from '@/features/stories/server/stories-db'
 import { completeSceneVoiceover } from '@/features/stories/server/story-assets'
-
 export async function POST(request: Request) {
   try {
     const session = await requireUserSession(request)
@@ -27,20 +26,6 @@ export async function POST(request: Request) {
     const story = await getStoryForUser(storyId, userId)
     if (!story) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 })
-    }
-
-    if (!process.env.ELEVENLABS_API_KEY) {
-      return NextResponse.json(
-        { error: 'ELEVENLABS_API_KEY is not configured' },
-        { status: 500 },
-      )
-    }
-
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json(
-        { error: 'BLOB_READ_WRITE_TOKEN is not configured' },
-        { status: 500 },
-      )
     }
 
     const audioBuffer = await generateVoiceover(text, request.signal, {

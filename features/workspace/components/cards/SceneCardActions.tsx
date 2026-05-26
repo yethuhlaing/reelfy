@@ -34,6 +34,7 @@ export function SceneCardActions({
     <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-[2] flex translate-y-1 justify-end gap-1.5 opacity-0 transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
       {onPlay && !isPlaying && (
         <button
+          type="button"
           className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--surface)_72%,var(--accent)_28%)] text-[var(--text)] shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
           onClick={(e) => stop(e, onPlay)}
           title="Play voiceover"
@@ -44,6 +45,7 @@ export function SceneCardActions({
       )}
       {state === 'animating' ? (
         <button
+          type="button"
           className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[#b91c1c] bg-[#b91c1c] px-2.5 text-[0.72rem] text-white"
           onClick={(e) => stop(e, onCancel)}
           title="Stop"
@@ -53,8 +55,9 @@ export function SceneCardActions({
         </button>
       ) : (
         <>
-          {onRegenImage && scene.imagePrompt && (
+          {onRegenImage && (
             <button
+              type="button"
               className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 text-[0.72rem] text-[var(--text)] shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
               onClick={(e) => stop(e, onRegenImage)}
               title={scene.imageUrl ? 'Regenerate image' : 'Generate image'}
@@ -63,8 +66,9 @@ export function SceneCardActions({
               <RefreshCw size={13} /> {scene.imageUrl ? 'Regen' : 'Image'}
             </button>
           )}
-          {onAnimate && scene.imageUrl && scene.motionPrompt && (
+          {onAnimate && (
             <button
+              type="button"
               className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[var(--accent)] bg-[var(--accent)] px-2.5 text-[0.72rem] text-[#111] shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
               onClick={(e) => stop(e, onAnimate)}
               title={scene.videoUrl ? 'Re-animate scene' : 'Animate scene'}
@@ -75,10 +79,11 @@ export function SceneCardActions({
           )}
           {state === 'error' && onAnimate && (
             <button
+              type="button"
               className="pointer-events-auto inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[#ca8a04] bg-[#ca8a04] px-2.5 text-[0.72rem] text-[#111]"
               onClick={(e) => stop(e, onAnimate)}
               title="Retry animation"
-              disabled={readOnly || !scene.imageUrl || !scene.motionPrompt}
+              disabled={readOnly}
             >
               <RefreshCw size={13} /> Retry
             </button>

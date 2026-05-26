@@ -1,4 +1,4 @@
-import { fal, withAbort } from './fal'
+import { fal, withAbort } from '@/shared/lib/providers/fal'
 import type { ImageProvider, ImageOpts } from './image'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
 

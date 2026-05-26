@@ -1,10 +1,13 @@
 import { StoryForm } from '@/features/stories/components/story/StoryForm'
 import { LofiForm } from '@/features/lofi/components/LofiForm'
+import { LofiStockForm } from '@/features/lofi-stock/components/LofiStockForm'
 
 function NewCategoryForm({ category }: { category: string }) {
   switch (category) {
     case 'lofi':
       return <LofiForm />
+    case 'lofi-stock':
+      return <LofiStockForm />
     default:
       return <StoryForm category={category} />
   }

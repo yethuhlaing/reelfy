@@ -1,6 +1,6 @@
 import type { VoiceTone, SceneDensity, StickStyle } from '../types'
 
-export function buildPlanPrompt(tone: VoiceTone, density: SceneDensity, style: StickStyle): string {
+export function stickmanPlanSystemPrompt(tone: VoiceTone, density: SceneDensity, style: StickStyle): string {
   const styleDescriptions: Record<StickStyle, string> = {
     minimal: 'clean, sparse linework; restrained but readable',
     expressive: 'dynamic, exaggerated poses; bouncy energy; cartoonish motion',
@@ -8,7 +8,7 @@ export function buildPlanPrompt(tone: VoiceTone, density: SceneDensity, style: S
   }
 
   return `You are a visual storyboard engine for a hand-drawn stickman explainer video (YouTube style, ~55-60s, beginner-friendly).
-Convert the founder story into vivid, cinematic stickman scenes with a CLEAR NARRATIVE ARC: hook → problem/middle → resolution/takeaway.
+Convert the user's narrative into vivid, cinematic stickman scenes with a CLEAR NARRATIVE ARC: hook → problem/middle → resolution/takeaway. The input may be any topic — startup journey, product explainer, history, science, personal anecdote, etc.
 Return ONLY valid JSON matching this exact schema — no markdown, no prose, no fences.
 
 {
@@ -42,7 +42,7 @@ IMAGE PROMPT — REQUIRED CONTENT (write 90-160 words, dense, specific):
 Each imagePrompt MUST be a concrete, cinematic description of a SINGLE moment.
 After the mandatory "Use the same stickman character as before: ..." opening, include, in order:
 
-1. WHO + EMOTION: count of stickmen, their roles ("solo founder", "founder + skeptical investor", "founder + small crowd"), and current emotion shown via body posture (see ENCODING below).
+1. WHO + EMOTION: count of stickmen, their roles (e.g. "solo protagonist", "protagonist + skeptical investor", "protagonist + small crowd"), and current emotion shown via body posture (see ENCODING below).
 2. WHAT THEY ARE DOING: exact physical action tied to the story sentence — running, slumping at desk, pitching with arm extended, staring at empty wallet, climbing a graph line, etc. Be specific.
 3. SETTING + PROPS: concrete environment — coffee shop, garage, boardroom, server room, mountaintop. List at least 1 (ideally 2-4) minimalist props the character interacts with (laptop, whiteboard with rough chart, coffee cup, suitcase, money bag $, rocket, lightbulb, phone, clock, book).
 4. VISUAL EFFECTS (always include at least 2): motion lines, speed swooshes, sweat droplets, exclamation/question marks above head, light rays / radiating sunburst, sparkle stars ✦, smoke puffs, sad rain cloud, thought bubble, broken-heart symbol, fire flames, downward/upward arrow, dotted-line trajectory, impact stars, dollar signs flying, dust kick-up at feet.
@@ -112,4 +112,12 @@ SCENE COUNT:
 Generate approximately ${density} scenes total. Adjust scene splitting based on story length and emotional beats — shorter stories get fewer scenes, longer stories get more. Aim for ~${density} scenes to match target runtime (~${Math.round(Number(density) * 0.8)}s video at 0.8s/scene for shorter, ~${Math.round(Number(density) * 1.2)}s at 1.2s/scene for longer content).
 
 Current density: ${density}`
+}
+
+export function stickmanPlanUserMessage(narrative: string): string {
+  return `STORY:\n${narrative}`
+}
+
+export function stickmanPlanRequest(systemPrompt: string, narrative: string): string {
+  return `${systemPrompt}\n\n${stickmanPlanUserMessage(narrative)}`
 }

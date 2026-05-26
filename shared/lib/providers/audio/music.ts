@@ -1,6 +1,8 @@
+import { env } from '@/shared/lib/env'
 import { minimaxProvider } from './music-fal-minimax'
 import { stableAudioProvider } from './music-fal-stable-audio'
 import { cassetteProvider } from './music-fal-cassette'
+import { pixabayProvider } from './music-pixabay'
 
 export interface MusicGenInput {
   prompt: string
@@ -28,12 +30,13 @@ export const MUSIC_PROVIDERS: Record<string, MusicGenProvider> = {
   minimax: minimaxProvider,
   'stable-audio': stableAudioProvider,
   cassette: cassetteProvider,
+  pixabay: pixabayProvider,
 }
 
 const DEFAULT_MUSIC_PROVIDER = MUSIC_PROVIDERS.minimax
 
 export function getMusicProvider(key?: string): MusicGenProvider {
-  const id = key ?? process.env.MUSIC_MODEL ?? 'minimax'
+  const id = key ?? env.MUSIC_MODEL ?? 'minimax'
   const provider = MUSIC_PROVIDERS[id]
   if (!provider) {
     console.warn(`Unknown MUSIC_MODEL "${id}", falling back to minimax`)

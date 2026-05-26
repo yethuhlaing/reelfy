@@ -1,4 +1,4 @@
-import { fal } from './fal'
+import { fal } from '../fal'
 import type { VideoProvider, VideoOpts } from './video'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
 

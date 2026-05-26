@@ -12,6 +12,7 @@ export type CreateCategoryLink = {
 export const CREATE_CATEGORY_LINKS: CreateCategoryLink[] = [
   { id: 'stickman', navLabel: 'Animated characters', glyph: '◈' },
   { id: 'lofi', navLabel: 'Chill music & visuals', icon: Music2 },
+  { id: 'lofi-stock', navLabel: 'Stock music & visuals', glyph: '♪' },
 ]
 
 /** Sidebar heading above create links — matches /new picker */

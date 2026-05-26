@@ -1,8 +1,12 @@
-import type { VoiceTone, SceneDensity, StickStyle, TextModel } from '../types'
+import type { VoiceTone, SceneDensity, StickStyle, TextModel } from '@/shared/lib/types'
 import type { TextProvider, PlanResult } from './text'
-import { buildPlanPrompt } from '../prompts/plan'
+import {
+  stickmanPlanSystemPrompt,
+  stickmanPlanUserMessage,
+} from '@/shared/lib/prompts/stickman-plan'
 import type { ApiCostContext } from '@/shared/lib/db/cost-logger'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
+import { env } from '@/shared/lib/env'
 
 function makeGroqProvider(modelId: TextModel, label: string): TextProvider {
   return {
@@ -16,18 +20,18 @@ function makeGroqProvider(modelId: TextModel, label: string): TextProvider {
       signal?: AbortSignal,
       costContext?: ApiCostContext,
     ): Promise<PlanResult> {
-      const systemPrompt = buildPlanPrompt(tone, density, style)
+      const systemPrompt = stickmanPlanSystemPrompt(tone, density, style)
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          Authorization: `Bearer ${env.GROQ_API_KEY}`,
         },
         body: JSON.stringify({
           model: modelId.replace('groq/', ''),
           messages: [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: `FOUNDER STORY:\n${story}` },
+            { role: 'user', content: stickmanPlanUserMessage(story) },
           ],
           response_format: { type: 'json_object' },
           temperature: 0.7,
@@ -66,7 +70,7 @@ function makeGroqProvider(modelId: TextModel, label: string): TextProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          Authorization: `Bearer ${env.GROQ_API_KEY}`,
         },
         body: JSON.stringify({
           model: modelId.replace('groq/', ''),

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E \"\\\\.\\(ts|tsx|js|jsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js|jsx\\)$\")",
+      "WebFetch(domain:pixabay.com)",
+      "WebFetch(domain:freetouse.com)",
+      "WebFetch(domain:api.freetouse.com)",
+      "Bash(rtk curl *)"
     ]
   }
 }

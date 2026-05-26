@@ -1,4 +1,4 @@
-import { fal } from './fal'
+import { fal } from '@/shared/lib/providers/fal'
 import type { MusicGenInput, MusicGenProvider } from './music'
 
 export function createFalMusicProvider(config: {

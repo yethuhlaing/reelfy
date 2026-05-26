@@ -1,6 +1,9 @@
 import { fal } from '@fal-ai/client'
+import { env } from '@/shared/lib/env'
 
-fal.config({ credentials: process.env.FAL_KEY })
+if (env.FAL_KEY) {
+  fal.config({ credentials: env.FAL_KEY })
+}
 
 export { fal }
 

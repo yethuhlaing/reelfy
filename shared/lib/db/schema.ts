@@ -191,35 +191,40 @@ export const lofiVideos = pgTable(
 )
 
 export const lofiAssets = pgTable(
-  'lofi_assets',
-  {
-    id: text('id').primaryKey(),
-    videoId: text('video_id')
-      .notNull()
-      .references(() => lofiVideos.id, { onDelete: 'cascade' }),
+    'lofi_assets',
+    {
+        id: text('id').primaryKey(),
+        videoId: text('video_id')
+            .notNull()
+            .references(() => lofiVideos.id, { onDelete: 'cascade' }),
 
-    kind: text('kind').notNull(),
-    orderIndex: integer('order_index').notNull(),
-    prompt: text('prompt').notNull(),
-    model: text('model').notNull(),
-    durationSec: integer('duration_sec').notNull(),
+        kind: text('kind').notNull(),
+        orderIndex: integer('order_index').notNull(),
+        prompt: text('prompt').notNull(),
+        model: text('model').notNull(),
+        durationSec: integer('duration_sec').notNull(),
 
-    falJobId: text('fal_job_id'),
-    status: text('status').notNull().default('pending'),
-    retryCount: integer('retry_count').notNull().default(0),
-    errorMessage: text('error_message'),
+        falJobId: text('fal_job_id'),
+        status: text('status').notNull().default('pending'),
+        retryCount: integer('retry_count').notNull().default(0),
+        errorMessage: text('error_message'),
 
-    resultUrl: text('result_url'),
+        resultUrl: text('result_url'),
+        // Stock music tracking columns
+        sourceProvider: text('source_provider'),    // null | 'pixabay'
+        sourceTrackId: text('source_track_id'),    // pixabay track id when sourceProvider is set
+        sourceLicence: text('source_licence'),     // licence text snapshot at pick time
+        sourceAttribution: text('source_attribution'),  // attribution string (null for Pixabay)
 
-    creditsCharged: integer('credits_charged').notNull().default(0),
-    costUsd: numeric('cost_usd', { precision: 10, scale: 4 }).notNull().default('0'),
+        creditsCharged: integer('credits_charged').notNull().default(0),
+        costUsd: numeric('cost_usd', { precision: 10, scale: 4 }).notNull().default('0'),
 
-    createdAt,
-  },
-  (table) => ({
-    videoStatusIdx: index('lofi_assets_video_status_idx').on(table.videoId, table.status),
-    falJobIdx: index('lofi_assets_fal_job_idx').on(table.falJobId),
-  }),
+        createdAt,
+    },
+    (table) => ({
+        videoStatusIdx: index('lofi_assets_video_status_idx').on(table.videoId, table.status),
+        falJobIdx: index('lofi_assets_fal_job_idx').on(table.falJobId),
+    }),
 )
 
 export const payments = pgTable(

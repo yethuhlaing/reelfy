@@ -1,4 +1,4 @@
-import type { VoiceTone, SceneDensity, StickStyle, ScenePlan, TextModel } from '../types'
+import type { VoiceTone, SceneDensity, StickStyle, ScenePlan, TextModel } from '@/shared/lib/types'
 import type { ApiCostContext } from '@/shared/lib/db/cost-logger'
 
 export interface PlanResult {

@@ -1,10 +1,11 @@
-import { getImageProvider } from '@/shared/lib/providers/image'
+import { getImageProvider } from '@/shared/lib/providers/image/image'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getCredits, deductCredits } from '@/shared/lib/db/credits'
 import { getStoryForUser, parseOptions, updateSceneForUser } from '@/features/stories/server/stories-db'
 import { clearSceneVideo, completeSceneImage } from '@/features/stories/server/story-assets'
 import { fireAndForgetUsage } from '@/features/billing/server/usage'
 import type { ImageModel } from '@/shared/lib/types'
+import { env } from '@/shared/lib/env'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -43,10 +44,6 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Scene has no image prompt' }, { status: 400 })
   }
 
-  if (!process.env.FAL_KEY) {
-    return Response.json({ error: 'FAL_KEY is not configured' }, { status: 500 })
-  }
-
   const options = parseOptions(result.story.options)
   const imageModel = (options?.imageModel ?? 'flux-schnell-fal') as ImageModel
   const credits = IMAGE_MODEL_CREDITS[imageModel] ?? 1
@@ -60,7 +57,7 @@ export async function POST(request: Request) {
   }
 
   const imageProvider = getImageProvider(imageModel)
-  const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN
+  const hasBlobToken = Boolean(env.BLOB_READ_WRITE_TOKEN)
 
   try {
     const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, {

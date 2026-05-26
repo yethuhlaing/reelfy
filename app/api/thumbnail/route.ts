@@ -1,5 +1,5 @@
-import { getImageProvider } from '@/shared/lib/providers/image'
-import { buildThumbnailPrompt } from '@/shared/lib/prompts/thumbnail'
+import { getImageProvider } from '@/shared/lib/providers/image/image'
+import { stickmanThumbnailRequest } from '@/shared/lib/prompts/stickman-thumbnail'
 import type { ImageModel } from '@/shared/lib/types'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getStoryForUser } from '@/features/stories/server/stories-db'
@@ -40,15 +40,9 @@ export async function POST(request: Request) {
   }
 
   const imageProvider = getImageProvider(imageModel)
-  if (!process.env.FAL_KEY) {
-    return badRequest('FAL_KEY is not configured')
-  }
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return badRequest('BLOB_READ_WRITE_TOKEN is not configured')
-  }
 
   try {
-    const fullPrompt = buildThumbnailPrompt({ scenePrompt: prompt, title, tagline })
+    const fullPrompt = stickmanThumbnailRequest({ scenePrompt: prompt, title, tagline })
     const { mimeType, data } = await imageProvider.generate(fullPrompt, {
       aspectRatio: '16:9',
       costContext: {

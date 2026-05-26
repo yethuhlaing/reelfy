@@ -1,12 +1,16 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import type { VoiceTone, SceneDensity, StickStyle } from '../types'
+import type { VoiceTone, SceneDensity, StickStyle } from '@/shared/lib/types'
 import type { TextProvider, PlanResult } from './text'
-import { buildPlanPrompt } from '../prompts/plan'
-import { withAbort } from './fal'
+import {
+  stickmanPlanSystemPrompt,
+  stickmanPlanRequest,
+} from '@/shared/lib/prompts/stickman-plan'
+import { withAbort } from '@/shared/lib/providers/fal'
 import type { ApiCostContext } from '@/shared/lib/db/cost-logger'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
+import { env } from '@/shared/lib/env'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? '')
 
 export const geminiProvider: TextProvider = {
   id: 'gemini-2.5-flash',
@@ -23,10 +27,10 @@ export const geminiProvider: TextProvider = {
       model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     })
-    const systemInstruction = buildPlanPrompt(tone, density, style)
+    const systemInstruction = stickmanPlanSystemPrompt(tone, density, style)
     const result = await withAbort(
       model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\nFOUNDER STORY:\n${story}` }] }],
+        contents: [{ role: 'user', parts: [{ text: stickmanPlanRequest(systemInstruction, story) }] }],
       }),
       signal,
     )

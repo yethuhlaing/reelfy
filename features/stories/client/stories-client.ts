@@ -27,7 +27,15 @@ export async function patchStoryMeta(
 export async function patchSceneFields(
   storyId: string,
   sceneId: string,
-  body: Pick<Scene, 'voiceoverDuration'> & { voiceoverDuration?: number | null },
+  body: {
+    voiceoverDuration?: number | null
+    imagePrompt?: string
+    motionPrompt?: string | null
+    voiceover?: string
+    imageUrl?: string | null
+    videoUrl?: string | null
+    voiceoverUrl?: string | null
+  },
 ): Promise<boolean> {
   const res = await fetch(`/api/stories/${storyId}/scenes/${sceneId}`, {
     method: 'PATCH',

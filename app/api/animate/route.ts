@@ -1,12 +1,11 @@
 import { createJob, markRunning } from '@/shared/lib/jobs/store'
 import { buildWebhookUrl } from '@/shared/lib/jobs/webhook-url'
-import { getVideoProvider } from '@/shared/lib/providers/video'
+import { getVideoProvider } from '@/shared/lib/providers/video/video'
 import type { AnimatePayload } from '@/shared/lib/jobs/types'
 import type { VideoModel, VideoQuality } from '@/shared/lib/types'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getStoryForUser } from '@/features/stories/server/stories-db'
 import { clearSceneVideo } from '@/features/stories/server/story-assets'
-
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
@@ -41,9 +40,6 @@ export async function POST(request: Request) {
 
   const story = await getStoryForUser(storyId, userId)
   if (!story) return badRequest('Story not found')
-
-  if (!process.env.FAL_KEY) return badRequest('FAL_KEY is not configured')
-  if (!process.env.WEBHOOK_BASE_URL) return badRequest('WEBHOOK_BASE_URL is not configured')
 
   await clearSceneVideo(storyId, sceneId, userId)
 

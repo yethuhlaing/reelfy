@@ -6,6 +6,7 @@ export const MUSIC_PRICING: Record<string, { creditsPerLoop: number; costPerLoop
   minimax: { creditsPerLoop: 5, costPerLoopUsd: 0.1 },
   'stable-audio': { creditsPerLoop: 2, costPerLoopUsd: 0.05 },
   cassette: { creditsPerLoop: 1, costPerLoopUsd: 0.01 },
+  pixabay: { creditsPerLoop: 0, costPerLoopUsd: 0 },
 }
 
 export const VISUAL_PRICING: Record<string, { credits: number; costUsd: number }> = {

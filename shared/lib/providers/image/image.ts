@@ -1,3 +1,4 @@
+import { env } from '@/shared/lib/env'
 import type { ApiCostContext } from '@/shared/lib/db/cost-logger'
 
 export interface ImageOpts {
@@ -24,7 +25,7 @@ export const IMAGE_PROVIDERS: Record<string, ImageProvider> = {
 }
 
 export function getImageProvider(id?: string): ImageProvider {
-  const key = id ?? process.env.IMAGE_MODEL ?? 'flux-schnell-fal'
+  const key = id ?? env.IMAGE_MODEL ?? 'flux-schnell-fal'
   if (!IMAGE_PROVIDERS[key]) {
     console.warn(`Unknown IMAGE_MODEL "${key}", falling back to flux-schnell-fal`)
   }

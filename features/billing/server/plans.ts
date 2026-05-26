@@ -14,7 +14,7 @@ export interface PlanConfig {
   highlight?: boolean
 }
 
-const env = (k: string) => process.env[k]
+import { env } from '@/shared/lib/env'
 
 export const PLANS: Record<ProductSlug, PlanConfig> = {
   free: {
@@ -31,7 +31,7 @@ export const PLANS: Record<ProductSlug, PlanConfig> = {
     slug: 'starter',
     tier: 'starter',
     name: 'Starter',
-    productId: env('POLAR_PRODUCT_STARTER'),
+    productId: env.POLAR_PRODUCT_STARTER,
     priceUsd: 9,
     interval: 'month',
     monthlyCredits: 200,
@@ -42,7 +42,7 @@ export const PLANS: Record<ProductSlug, PlanConfig> = {
     slug: 'pro',
     tier: 'pro',
     name: 'Pro',
-    productId: env('POLAR_PRODUCT_PRO'),
+    productId: env.POLAR_PRODUCT_PRO,
     priceUsd: 29,
     interval: 'month',
     monthlyCredits: 1000,
@@ -52,7 +52,7 @@ export const PLANS: Record<ProductSlug, PlanConfig> = {
     slug: 'credits_small',
     tier: 'free',
     name: '100 Credit Pack',
-    productId: env('POLAR_PRODUCT_CREDITS_SMALL'),
+    productId: env.POLAR_PRODUCT_CREDITS_SMALL,
     priceUsd: 5,
     interval: 'one_time',
     monthlyCredits: 100,
@@ -62,7 +62,7 @@ export const PLANS: Record<ProductSlug, PlanConfig> = {
     slug: 'credits_large',
     tier: 'free',
     name: '500 Credit Pack',
-    productId: env('POLAR_PRODUCT_CREDITS_LARGE'),
+    productId: env.POLAR_PRODUCT_CREDITS_LARGE,
     priceUsd: 20,
     interval: 'one_time',
     monthlyCredits: 500,

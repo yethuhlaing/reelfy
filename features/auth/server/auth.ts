@@ -7,9 +7,10 @@ import { db } from '@/shared/lib/db'
 import { getFreeCreditsOnSignup } from '@/shared/lib/db/config'
 import { account, rateLimit, session, user, verification } from '@/shared/lib/db/schema'
 import { polarPlugins } from '@/features/billing/server/polar-plugin'
+import { env } from '@/shared/lib/env'
 
-const googleClientId = process.env.GOOGLE_CLIENT_ID
-const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
+const googleClientId = env.GOOGLE_CLIENT_ID
+const googleClientSecret = env.GOOGLE_CLIENT_SECRET
 
 // if (!googleClientId || !googleClientSecret) {
 //   throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required')
@@ -26,9 +27,9 @@ export const auth = betterAuth({
       rateLimit,
     },
   }),
-  secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL,
-  trustedOrigins: [process.env.NEXT_PUBLIC_BETTER_AUTH_URL ?? ''],
+  secret: env.BETTER_AUTH_SECRET,
+  baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins: [env.NEXT_PUBLIC_BETTER_AUTH_URL],
   socialProviders: {
     google: {
       clientId: googleClientId!,

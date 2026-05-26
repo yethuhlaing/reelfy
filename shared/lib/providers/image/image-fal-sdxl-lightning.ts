@@ -1,19 +1,18 @@
-import { fal, withAbort } from './fal'
+import { fal, withAbort } from '@/shared/lib/providers/fal'
 import type { ImageProvider, ImageOpts } from './image'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
 
-export const fluxDevFal: ImageProvider = {
-  id: 'flux-dev-fal',
-  costEstimateUsd: 0.025,
+export const sdxlLightningFal: ImageProvider = {
+  id: 'sdxl-lightning-fal',
+  costEstimateUsd: 0.004,
   async generate(prompt: string, opts: ImageOpts) {
     const { signal, costContext } = opts
     const result = await withAbort(
-      fal.subscribe('fal-ai/flux/dev', {
+      fal.subscribe('fal-ai/fast-lightning-sdxl', {
         input: {
           prompt,
           image_size: 'landscape_16_9',
-          num_inference_steps: 28,
-          enable_safety_checker: false,
+          num_inference_steps: '4',
           num_images: 1,
         },
         logs: false,
@@ -29,9 +28,9 @@ export const fluxDevFal: ImageProvider = {
       storyId: costContext?.storyId,
       sceneId: costContext?.sceneId,
       provider: 'fal',
-      model: 'flux-dev',
+      model: 'sdxl-lightning',
       operation: costContext?.operation ?? 'image_generation',
-      costUsd: 0.025,
+      costUsd: 0.004,
       creditsCharged: costContext?.creditsCharged ?? 0,
     })
     return { mimeType, data: buf }

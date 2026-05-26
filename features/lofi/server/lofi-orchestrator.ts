@@ -4,9 +4,8 @@ import { lofiAssets, lofiVideos, stories } from '@/shared/lib/db/schema'
 import { eq, and, sql } from 'drizzle-orm'
 import { deductCredits, getCredits } from '@/shared/lib/db/credits'
 import { fal } from '@/shared/lib/providers/fal'
-import { getImageProvider } from '@/shared/lib/providers/image'
-import { getVideoProvider } from '@/shared/lib/providers/video'
-import { getMusicProvider } from '@/shared/lib/providers/music'
+import { lofiVisualImageRequest } from '@/shared/lib/prompts/lofi-visual-image'
+
 import { logApiCost } from '@/shared/lib/db/cost-logger'
 import {
   getLofiVideo,
@@ -15,7 +14,15 @@ import {
   claimVideoForRendering,
   updateLofiVideo,
   updateLofiAsset,
+  finalizeLofiVideo,
 } from './lofi-db'
+import { uploadComposedVideo } from '@/features/stories/server/story-assets'
+import {
+  rehostToLofiBlob,
+  uploadLofiAsset,
+  downloadToBuffer,
+  type LofiAssetKind,
+} from './lofi-blob-assets'
 import { buildArrangementPlan, buildFilterGraph, allPlanUrls, type BuildPlanInput } from './arrangement'
 import {
   calculateTotalCredits,
@@ -27,6 +34,10 @@ import {
   MIN_MUSIC_LOOPS,
 } from './pricing'
 import type { VisualMode, VisualConfig } from '@/shared/lib/types'
+import { webhookBaseUrl } from '@/shared/lib/env'
+import { getMusicProvider } from '@/shared/lib/providers/audio/music'
+import { getImageProvider } from '@/shared/lib/providers/image/image'
+import { getVideoProvider } from '@/shared/lib/providers/video/video'
 
 export const MAX_RETRIES = 3
 
@@ -35,6 +46,16 @@ export class InsufficientCreditsError extends Error {
     super(`Insufficient credits: have ${balance}, need ${required}`)
     this.name = 'InsufficientCreditsError'
   }
+}
+
+export interface PixabayTrackRef {
+  id: number
+  tags: string
+  url: string
+  duration_sec: number
+  genre?: string
+  artist_name?: string
+  [key: string]: unknown
 }
 
 export interface GenerateInput {
@@ -47,6 +68,8 @@ export interface GenerateInput {
   visualPrompts: string[]
   suggestedTitle: string
   suggestedAmbientBed: string | null
+  category?: 'lofi' | 'lofi-stock'
+  selectedTracks?: PixabayTrackRef[]
 }
 
 export async function preAuthCredits(userId: string, amount: number): Promise<void> {
@@ -60,31 +83,63 @@ export async function preAuthCredits(userId: string, amount: number): Promise<vo
   }
 }
 
+type AssetRow = {
+  id: string
+  videoId: string
+  kind: string
+  orderIndex: number
+  prompt: string
+  model: string
+  durationSec: number
+  costUsd: string
+  status?: string
+  creditsCharged?: number
+  resultUrl?: string | null
+  sourceProvider?: string | null
+  sourceTrackId?: string | null
+  sourceLicence?: string | null
+  sourceAttribution?: string | null
+}
+
 function buildAssetRows(videoId: string, input: GenerateInput) {
-  const rows: {
-    id: string
-    videoId: string
-    kind: 'music' | 'visual'
-    orderIndex: number
-    prompt: string
-    model: string
-    durationSec: number
-    costUsd: string
-  }[] = []
+  const isStock = input.category === 'lofi-stock'
+  const rows: AssetRow[] = []
 
-  const musicProvider = getMusicProvider(input.musicModel)
-
-  for (let i = 0; i < input.musicPrompts.length; i++) {
-    rows.push({
-      id: randomUUID(),
-      videoId,
-      kind: 'music',
-      orderIndex: i,
-      prompt: input.musicPrompts[i],
-      model: input.musicModel,
-      durationSec: musicProvider.defaultDurationSec,
-      costUsd: String(musicProvider.costPerLoopUsd),
-    })
+  if (isStock && input.selectedTracks) {
+    for (let i = 0; i < input.selectedTracks.length; i++) {
+      const track = input.selectedTracks[i]
+      rows.push({
+        id: randomUUID(),
+        videoId,
+        kind: 'stock-music',
+        orderIndex: i,
+        prompt: track.tags,
+        model: 'pixabay',
+        durationSec: track.duration_sec,
+        costUsd: '0',
+        status: 'ready',
+        creditsCharged: 0,
+        resultUrl: track.url,
+        sourceProvider: 'pixabay',
+        sourceTrackId: String(track.id),
+        sourceLicence: 'Pixabay Content License (CC0-style, no attribution required)',
+        sourceAttribution: null,
+      })
+    }
+  } else {
+    const musicProvider = getMusicProvider(input.musicModel)
+    for (let i = 0; i < input.musicPrompts.length; i++) {
+      rows.push({
+        id: randomUUID(),
+        videoId,
+        kind: 'music',
+        orderIndex: i,
+        prompt: input.musicPrompts[i],
+        model: input.musicModel,
+        durationSec: musicProvider.defaultDurationSec,
+        costUsd: String(musicProvider.costPerLoopUsd),
+      })
+    }
   }
 
   for (let i = 0; i < input.visualPrompts.length; i++) {
@@ -94,7 +149,7 @@ function buildAssetRows(videoId: string, input: GenerateInput) {
       id: randomUUID(),
       videoId,
       kind: 'visual',
-      orderIndex: input.musicPrompts.length + i,
+      orderIndex: (input.selectedTracks?.length ?? input.musicPrompts.length) + i,
       prompt: input.visualPrompts[i],
       model,
       durationSec,
@@ -105,23 +160,38 @@ function buildAssetRows(videoId: string, input: GenerateInput) {
   return rows
 }
 
-async function submitVisual(asset: {
-  id: string
-  prompt: string
-  model: string
-  durationSec: number
-}, baseUrl: string): Promise<{ jobId: string; estimatedCostUsd: number }> {
+function toLofiAssetKind(kind: string): LofiAssetKind {
+  if (kind === 'stock-music') return 'stock-music'
+  if (kind === 'music') return 'music'
+  return 'visual'
+}
+
+type VisualSubmitResult =
+  | { type: 'async'; jobId: string; estimatedCostUsd: number }
+  | { type: 'sync'; resultUrl: string; estimatedCostUsd: number }
+
+async function submitVisual(
+  asset: { id: string; prompt: string; model: string; durationSec: number },
+  storyId: string,
+  baseUrl: string,
+): Promise<VisualSubmitResult> {
   const isImage = asset.model.includes('flux') || asset.model.includes('gemini') || asset.model.includes('sdxl')
   const webhookUrl = `${baseUrl}/api/webhooks/fal/lofi-asset/${asset.id}`
 
   if (isImage) {
     const provider = getImageProvider(asset.model)
-    const result = await provider.generate(asset.prompt, {
+    const result = await provider.generate(lofiVisualImageRequest(asset.prompt), {
       aspectRatio: '16:9',
       resolution: '1920x1080',
     })
-    const blob = await fal.storage.upload(new File([result.data], 'image.png', { type: result.mimeType }))
-    return { jobId: blob, estimatedCostUsd: provider.costEstimateUsd }
+    const resultUrl = await uploadLofiAsset({
+      storyId,
+      assetId: asset.id,
+      kind: 'visual',
+      data: result.data,
+      contentType: result.mimeType,
+    })
+    return { type: 'sync', resultUrl, estimatedCostUsd: provider.costEstimateUsd }
   }
 
   const provider = getVideoProvider(asset.model)
@@ -131,7 +201,53 @@ async function submitVisual(asset: {
     { width: 1920, height: 1080 },
     webhookUrl,
   )
-  return { jobId: requestId, estimatedCostUsd: provider.costEstimateUsd }
+  return { type: 'async', jobId: requestId, estimatedCostUsd: provider.costEstimateUsd }
+}
+
+async function persistVisualSubmit(
+  asset: { id: string; model: string; kind: string },
+  result: VisualSubmitResult,
+): Promise<void> {
+  if (result.type === 'sync') {
+    const credits = calculateAssetCredits(asset.model, asset.kind)
+    await updateLofiAsset(asset.id, {
+      status: 'ready',
+      resultUrl: result.resultUrl,
+      creditsCharged: credits,
+      costUsd: String(result.estimatedCostUsd),
+    })
+    return
+  }
+  await updateLofiAsset(asset.id, {
+    falJobId: result.jobId,
+    status: 'submitted',
+    costUsd: String(result.estimatedCostUsd),
+  })
+}
+
+async function rehostStockMusicAssets(
+  storyId: string,
+  rows: AssetRow[],
+): Promise<void> {
+  const stockRows = rows.filter((row) => row.kind === 'stock-music' && row.resultUrl)
+  await Promise.all(
+    stockRows.map(async (row) => {
+      try {
+        const url = await rehostToLofiBlob({
+          storyId,
+          assetId: row.id,
+          kind: 'stock-music',
+          sourceUrl: row.resultUrl!,
+        })
+        await updateLofiAsset(row.id, { resultUrl: url })
+      } catch (err) {
+        await updateLofiAsset(row.id, {
+          status: 'failed',
+          errorMessage: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }),
+  )
 }
 
 async function refundCreditsDirect(userId: string, amount: number): Promise<void> {
@@ -152,6 +268,7 @@ async function logStageTransition(
 }
 
 export async function launchVideo(input: GenerateInput, userId: string) {
+  const isStock = input.category === 'lofi-stock'
   const totalCredits = calculateTotalCredits(input.musicModel, input.musicLoopCount, input.visualConfig)
   await preAuthCredits(userId, totalCredits)
 
@@ -162,7 +279,7 @@ export async function launchVideo(input: GenerateInput, userId: string) {
     await tx.insert(stories).values({
       id: storyId,
       userId,
-      category: 'lofi',
+      category: isStock ? 'lofi-stock' : 'lofi',
       status: 'draft',
       title: input.suggestedTitle,
       tagline: input.vibe.slice(0, 120),
@@ -178,7 +295,7 @@ export async function launchVideo(input: GenerateInput, userId: string) {
       vibe: input.vibe,
       targetDurationSec: input.targetDurationSec,
       musicModel: input.musicModel,
-      musicLoopCount: input.musicLoopCount,
+      musicLoopCount: input.selectedTracks?.length ?? input.musicLoopCount,
       visualMode: input.visualConfig.mode,
       imageModel: (input.visualConfig.mode === 'single-image' || input.visualConfig.mode === 'multi-image') ? input.visualConfig.model : null,
       videoModel: (input.visualConfig.mode === 'single-video' || input.visualConfig.mode === 'multi-video') ? input.visualConfig.model : null,
@@ -194,37 +311,48 @@ export async function launchVideo(input: GenerateInput, userId: string) {
   const assetRows = buildAssetRows(videoId, input)
   await db.insert(lofiAssets).values(assetRows)
 
-  const baseUrl = process.env.PUBLIC_BASE_URL ?? process.env.WEBHOOK_BASE_URL ?? ''
-  if (!baseUrl) {
-    throw new Error('PUBLIC_BASE_URL or WEBHOOK_BASE_URL must be configured')
+  if (isStock) {
+    await rehostStockMusicAssets(storyId, assetRows)
   }
 
-  await Promise.all(assetRows.map(async (row) => {
-    try {
-      let result: { jobId: string; estimatedCostUsd: number }
-      if (row.kind === 'music') {
-        const provider = getMusicProvider(row.model)
-        result = await provider.submit({
-          prompt: row.prompt,
-          durationSec: row.durationSec,
-          webhookUrl: `${baseUrl}/api/webhooks/fal/lofi-asset/${row.id}`,
+  const baseUrl = webhookBaseUrl()
+
+  const submittable = assetRows.filter((row) => row.kind !== 'stock-music')
+  await Promise.all(
+    submittable.map(async (row) => {
+      try {
+        if (row.kind === 'music') {
+          const provider = getMusicProvider(row.model)
+          const result = await provider.submit({
+            prompt: row.prompt,
+            durationSec: row.durationSec,
+            webhookUrl: `${baseUrl}/api/webhooks/fal/lofi-asset/${row.id}`,
+          })
+          await updateLofiAsset(row.id, {
+            falJobId: result.jobId,
+            status: 'submitted',
+            costUsd: String(result.estimatedCostUsd),
+          })
+        } else {
+          const result = await submitVisual(row, storyId, baseUrl)
+          await persistVisualSubmit(row, result)
+          if (result.type === 'sync') {
+            await maybeAdvanceVideo(videoId)
+          }
+        }
+      } catch (err) {
+        console.error(`Asset ${row.id} (${row.kind}) submit failed`, err)
+        await updateLofiAsset(row.id, {
+          status: 'failed',
+          errorMessage: err instanceof Error ? err.message : String(err),
         })
-      } else {
-        result = await submitVisual(row, baseUrl)
       }
-      await updateLofiAsset(row.id, {
-        falJobId: result.jobId,
-        status: 'submitted',
-        costUsd: String(result.estimatedCostUsd),
-      })
-    } catch (err) {
-      console.error(`Asset ${row.id} (${row.kind}) submit failed`, err)
-      await updateLofiAsset(row.id, {
-        status: 'failed',
-        errorMessage: err instanceof Error ? err.message : String(err),
-      })
-    }
-  }))
+    }),
+  )
+
+  if (isStock) {
+    await maybeAdvanceVideo(videoId)
+  }
 
   return { videoId, storyId }
 }
@@ -253,14 +381,6 @@ function extractResultUrl(body: FalWebhookPayload): string | null {
   return null
 }
 
-async function downloadToBlob(sourceUrl: string): Promise<string> {
-  const res = await fetch(sourceUrl)
-  if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`)
-  const buf = Buffer.from(await res.arrayBuffer())
-  const blob = await fal.storage.upload(new File([buf], 'asset', { type: res.headers.get('content-type') ?? 'application/octet-stream' }))
-  return blob
-}
-
 async function retryBackoff(attempt: number): Promise<void> {
   const delays = [0, 5000, 15000]
   const delay = delays[attempt] ?? 30000
@@ -281,26 +401,32 @@ export async function retryAsset(asset: {
   await retryBackoff(asset.retryCount)
   await updateLofiAsset(asset.id, { retryCount: asset.retryCount + 1 })
 
-  const baseUrl = process.env.PUBLIC_BASE_URL ?? process.env.WEBHOOK_BASE_URL ?? ''
+  const video = await getLofiVideo(asset.videoId)
+  if (!video) return
+
+  const baseUrl = webhookBaseUrl()
   const webhookUrl = `${baseUrl}/api/webhooks/fal/lofi-asset/${asset.id}`
 
   try {
-    let result: { jobId: string; estimatedCostUsd: number }
     if (asset.kind === 'music') {
       const provider = getMusicProvider(asset.model)
-      result = await provider.submit({
+      const result = await provider.submit({
         prompt: asset.prompt,
         durationSec: asset.durationSec,
         webhookUrl,
       })
+      await updateLofiAsset(asset.id, {
+        falJobId: result.jobId,
+        status: 'submitted',
+        costUsd: String(result.estimatedCostUsd),
+      })
     } else {
-      result = await submitVisual(asset, baseUrl)
+      const result = await submitVisual(asset, video.storyId, baseUrl)
+      await persistVisualSubmit(asset, result)
+      if (result.type === 'sync') {
+        await maybeAdvanceVideo(asset.videoId)
+      }
     }
-    await updateLofiAsset(asset.id, {
-      falJobId: result.jobId,
-      status: 'submitted',
-      costUsd: String(result.estimatedCostUsd),
-    })
   } catch (err) {
     await updateLofiAsset(asset.id, {
       status: 'failed',
@@ -339,7 +465,12 @@ export async function handleAssetWebhook(assetId: string, body: FalWebhookPayloa
       })
     } else {
       try {
-        const url = await downloadToBlob(sourceUrl)
+        const url = await rehostToLofiBlob({
+          storyId: video.storyId,
+          assetId: asset.id,
+          kind: toLofiAssetKind(asset.kind),
+          sourceUrl,
+        })
         const credits = calculateAssetCredits(asset.model, asset.kind)
         await updateLofiAsset(asset.id, { status: 'ready', resultUrl: url, creditsCharged: credits })
       } catch (err) {
@@ -367,18 +498,38 @@ async function evaluateGate(videoId: string): Promise<GateResult> {
   const assets = await getLofiAssetsForVideo(videoId)
 
   const music = assets.filter(a => a.kind === 'music')
+  const stockMusic = assets.filter(a => a.kind === 'stock-music')
   const visual = assets.filter(a => a.kind === 'visual')
-  const musicReady = music.filter(a => a.status === 'ready')
-  const visualReady = visual.filter(a => a.status === 'ready')
+
+  const hasAiMusic = music.length > 0
+  const hasStockMusic = stockMusic.length > 0
+  const visualReady = visual.filter(a => a.status === 'ready' || a.status === 'skipped')
 
   if (visualReady.length < visual.length) {
     return { proceed: false, reason: 'visual_incomplete' }
   }
-  if (musicReady.length / music.length < 0.8) {
-    return { proceed: false, reason: 'music_below_threshold' }
+
+  if (hasAiMusic) {
+    const musicReady = music.filter(a => a.status === 'ready')
+    if (musicReady.length / music.length < 0.8) {
+      return { proceed: false, reason: 'music_below_threshold' }
+    }
+    if (musicReady.length < MIN_MUSIC_LOOPS) {
+      return { proceed: false, reason: 'music_insufficient_count' }
+    }
   }
-  if (musicReady.length < MIN_MUSIC_LOOPS) {
-    return { proceed: false, reason: 'music_insufficient_count' }
+
+  if (hasStockMusic) {
+    // Stock music assets are born 'ready', so they should all be ready.
+    // If any failed, evaluate below.
+    const stockReady = stockMusic.filter(a => a.status === 'ready')
+    if (stockReady.length < stockMusic.length) {
+      return { proceed: false, reason: 'stock_music_incomplete' }
+    }
+  }
+
+  if (!hasAiMusic && !hasStockMusic) {
+    return { proceed: false, reason: 'no_music_assets' }
   }
 
   return { proceed: true }
@@ -447,7 +598,7 @@ async function loadReadyAssets(videoId: string) {
   const assets = await getLofiAssetsForVideo(videoId)
   return {
     musicLoops: assets
-      .filter(a => a.kind === 'music' && a.status === 'ready' && a.resultUrl)
+      .filter(a => (a.kind === 'music' || a.kind === 'stock-music') && a.status === 'ready' && a.resultUrl)
       .map(a => ({ url: a.resultUrl!, lengthSec: a.durationSec, orderIndex: a.orderIndex })),
     visualAssets: assets
       .filter(a => a.kind === 'visual' && a.status === 'ready' && a.resultUrl)
@@ -483,7 +634,7 @@ export async function runArrangementAndRender(videoId: string) {
   const filterComplex = buildFilterGraph(plan)
   const inputs = allPlanUrls(plan).map(url => ({ url }))
 
-  const baseUrl = process.env.PUBLIC_BASE_URL ?? process.env.WEBHOOK_BASE_URL ?? ''
+  const baseUrl = webhookBaseUrl()
 
   try {
     await fal.queue.submit('fal-ai/ffmpeg-api/compose', {
@@ -529,18 +680,25 @@ export async function handleRenderWebhook(videoId: string, body: FalWebhookPaylo
     return
   }
 
-  await db.transaction(async (tx) => {
-    await tx.update(lofiVideos)
-      .set({
-        status: 'complete',
-        finalVideoUrl: outputUrl,
-        finalDurationSec: video.targetDurationSec,
-      })
-      .where(eq(lofiVideos.id, videoId))
-    await tx.update(stories)
-      .set({ composedVideoUrl: outputUrl, status: 'ready' })
+  try {
+    const { data } = await downloadToBuffer(outputUrl)
+    const blobUrl = await uploadComposedVideo(video.storyId, data)
+    await finalizeLofiVideo(videoId, blobUrl, video.targetDurationSec)
+  } catch (err) {
+    console.error('lofi render blob upload failed', err)
+    await updateLofiVideo(videoId, { status: 'failed' } as any)
+    await db.update(stories)
+      .set({ status: 'failed' })
       .where(eq(stories.id, video.storyId))
-  })
+    await logStageTransition(
+      videoId,
+      video.userId,
+      'rendering',
+      'failed',
+      err instanceof Error ? err.message : 'blob_upload_failed',
+    )
+    return
+  }
 
   await settleCredits(videoId)
   await logStageTransition(videoId, video.userId, 'rendering', 'complete')

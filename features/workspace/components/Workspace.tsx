@@ -412,15 +412,31 @@ export function Workspace({ storyId, category }: Props) {
   const enqueueAnimate = async (sceneId: string) => {
     if (!storyData || !options) return
     const scene = storyData.scenes.find((s) => s.id === sceneId)
-    if (!scene || !scene.imageUrl || !scene.motionPrompt) return
+    if (!scene) return
+    if (scene.pendingJobId) {
+      toast.message('This scene is already animating')
+      return
+    }
+    if (!scene.imageUrl) {
+      toast.error('Generate an image first', { description: 'Use Regen image after adding an image prompt.' })
+      return
+    }
+    if (!scene.motionPrompt?.trim()) {
+      toast.error('Add a motion prompt', { description: 'Describe movement in the scene drawer.' })
+      return
+    }
     patchScene(sceneId, { lastError: undefined, videoUrl: undefined, pendingJobId: 'pending' })
     try {
       const res = await fetch('/api/animate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          storyId, sceneId, imageUrl: scene.imageUrl, motionPrompt: scene.motionPrompt,
-          videoModel: options.videoModel, videoQuality: options.videoQuality,
+          storyId,
+          sceneId,
+          imageUrl: scene.imageUrl,
+          motionPrompt: scene.motionPrompt,
+          videoModel: options.videoModel,
+          videoQuality: options.videoQuality,
         }),
       })
       if (!res.ok) {
@@ -458,8 +474,13 @@ export function Workspace({ storyId, category }: Props) {
 
   const retryImage = async (sceneId: string) => {
     const scene = storyData?.scenes.find((s) => s.id === sceneId)
-    if (!scene?.imagePrompt) {
-      toast.error('This scene has no image prompt')
+    if (!scene) return
+    if (scene.pendingJobId) {
+      toast.message('Wait for the current animation to finish')
+      return
+    }
+    if (!scene.imagePrompt?.trim()) {
+      toast.error('Add an image prompt', { description: 'Describe the still frame in the scene drawer.' })
       return
     }
     patchScene(sceneId, { imageUrl: null, videoUrl: null, lastError: undefined, pendingJobId: undefined })

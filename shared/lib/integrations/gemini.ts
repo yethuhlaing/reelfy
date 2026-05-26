@@ -1,19 +1,15 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { stickmanSceneImageRequest } from '@/shared/lib/prompts/stickman-scene-image'
+import { env } from '@/shared/lib/env'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? '')
 
 const IMAGE_MODEL = 'gemini-2.5-flash-image'
-
-const IMAGE_STYLE_PREAMBLE = `Generate a single 16:9 wide cartoon panel.
-Strict style: hand-drawn stickman comic on off-white paper background, thick black ink linework, slight wobble like a marker on paper, soft gray drop shadows. Stickmen themselves stay black ink only (circle head, dot eyes, simple mouth line, line limbs). Add 2-3 flat accent colors used sparingly on props, FX, speech bubbles, and signs — warm yellow for sunbursts/lightbulbs, red for hearts/alerts/bubble fills, blue for water/tech, green for money/success. Colors are FLAT fills inside ink outlines — no gradients, no shading, no photorealism, no 3D, no anime. No detailed faces. Render speech bubbles, captions, signs, and text EXACTLY as specified using a hand-lettered uppercase style — text must be clearly readable, not gibberish. Render motion lines, sweat drops, sparkles, sunbursts, and other comic FX with visible, deliberate strokes. NO frame, NO border, NO panel outline, NO black bars — image must bleed edge-to-edge on the paper background. The scene must visually match the description below — do not substitute generic stickman art.
-
-SCENE:
-`
 
 export async function generateSceneImage(prompt: string): Promise<{ mimeType: string; data: Buffer }> {
   const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
 
-  const fullPrompt = `${IMAGE_STYLE_PREAMBLE}${prompt}`
+  const fullPrompt = stickmanSceneImageRequest(prompt)
 
   const result = await model.generateContent({
     contents: [

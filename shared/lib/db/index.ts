@@ -1,12 +1,9 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
+import { env } from '@/shared/lib/env'
 import { schema } from './schema'
 
-const databaseUrl = process.env.DATABASE_URL
-
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL is not configured')
-}
+const databaseUrl = env.DATABASE_URL
 
 declare global {
   // eslint-disable-next-line no-var
@@ -27,7 +24,7 @@ const client =
 
 const db = globalThis.__db__ ?? drizzle(client, { schema })
 
-if (process.env.NODE_ENV !== 'production') {
+if (env.NODE_ENV !== 'production') {
   globalThis.__pgClient__ = client
   globalThis.__db__ = db
 }

@@ -1,4 +1,5 @@
-import { getTextProvider } from '@/shared/lib/providers/text'
+import { lofiPlanRequest } from '@/shared/lib/prompts/lofi-plan'
+import { getTextProvider } from '@/shared/lib/providers/text/text'
 import type { TextModel } from '@/shared/lib/types'
 import type { VisualMode, AmbientBed } from '@/shared/lib/types'
 
@@ -16,17 +17,6 @@ export interface ExpandPromptsOutput {
   visualMode: VisualMode
   suggestedTitle: string
   suggestedAmbientBed: AmbientBed | null
-}
-
-function buildSystemPrompt(input: ExpandPromptsInput): string {
-  return `You generate prompt sets for AI-generated lofi YouTube videos. Given a single vibe phrase, return JSON with:
-- musicPrompts: array of exactly ${input.targetMusicCount} short prompts for instrumental lofi music. Each prompt should describe a slight variation of the same mood (different instrument focus, energy level, tempo subtly different). All should fit together as one cohesive listening session.
-- visualMode: choose the best fit from "single-image", "multi-image", "single-video", "multi-video". Use "single-image" for calm static vibes, "multi-image" when the vibe implies multiple scenes or changing settings, "single-video" for subtle motion (rain, steam, flickering), "multi-video" only for very dynamic vibes.
-- visualPrompts: array of exactly ${input.targetVisualCount} prompts that feel like the same world from different angles or moments — cohesive, not jarring.
-- suggestedTitle: a short YouTube-style title (≤60 chars).
-- suggestedAmbientBed: pick best fit from rain/vinyl/fireplace/cafe based on the vibe, or null if none fit.
-
-Return strict JSON, no markdown.`
 }
 
 const VALID_VISUAL_MODES = ['single-image', 'multi-image', 'single-video', 'multi-video']
@@ -61,11 +51,7 @@ async function callModel(
   input: ExpandPromptsInput,
   retryCount: number,
 ): Promise<ExpandPromptsOutput | null> {
-  const systemPrompt = buildSystemPrompt(input)
-  const vibePrompt = `VIBE: "${input.vibe}"\nTARGET DURATION: ${Math.round(input.targetDurationSec / 60)} minutes`
-  const instruction = retryCount > 0
-    ? `${systemPrompt}\n\n${vibePrompt}\n\nReturn only valid JSON, no prose.`
-    : `${systemPrompt}\n\n${vibePrompt}`
+  const instruction = lofiPlanRequest(input, retryCount > 0)
 
   const provider = getTextProvider(input.textModel)
   const text = await provider.completeJson(instruction, undefined, { operation: 'lofi_expand' })

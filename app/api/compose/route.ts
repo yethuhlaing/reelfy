@@ -86,9 +86,6 @@ export async function POST(request: Request) {
   const story = await getStoryForUser(storyId, userId)
   if (!story) return badRequest('Story not found')
 
-  if (!process.env.FAL_KEY) return badRequest('FAL_KEY is not configured')
-  if (!process.env.WEBHOOK_BASE_URL) return badRequest('WEBHOOK_BASE_URL is not configured')
-
   let rehosted: ComposeTrackInput[]
   try {
     rehosted = await rehostVoiceoversToFal(validated)

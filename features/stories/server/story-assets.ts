@@ -8,6 +8,12 @@ import {
   type StoredStoryRow,
 } from '@/features/stories/server/stories-db'
 import { deleteJobsForStory } from '@/shared/lib/jobs/store'
+import { env } from '@/shared/lib/env'
+import { collectLofiBlobUrls, lofiAssetPrefixes } from '@/features/lofi/server/lofi-blob-assets'
+import {
+  getLofiAssetsForVideo,
+  getLofiVideoByStoryId,
+} from '@/features/lofi/server/lofi-db'
 
 const BLOB_HOST = 'blob.vercel-storage.com'
 
@@ -17,7 +23,7 @@ export interface DeleteAssetsResult {
 }
 
 function hasBlobToken(): boolean {
-  return !!process.env.BLOB_READ_WRITE_TOKEN
+  return Boolean(env.BLOB_READ_WRITE_TOKEN)
 }
 
 function stripQuery(url: string): string {
@@ -53,15 +59,21 @@ export function composedVideoPath(storyId: string): string {
   return `composed/${storyId}.mp4`
 }
 
-export function storyAssetPrefixes(storyId: string): string[] {
-  return [
-    `thumbnails/${storyId}`,
-    `scenes/${storyId}/`,
-    `voiceovers/${storyId}/`,
-    `animations/${storyId}/`,
-    `animations/${storyId}-`,
-    `composed/${storyId}`,
-  ]
+const STICKMAN_ASSET_PREFIXES = (storyId: string) => [
+  `thumbnails/${storyId}`,
+  `scenes/${storyId}/`,
+  `voiceovers/${storyId}/`,
+  `animations/${storyId}/`,
+  `animations/${storyId}-`,
+  `composed/${storyId}`,
+]
+
+export function storyAssetPrefixes(storyId: string, category?: string): string[] {
+  const prefixes = STICKMAN_ASSET_PREFIXES(storyId)
+  if (category === 'lofi' || category === 'lofi-stock') {
+    prefixes.push(...lofiAssetPrefixes(storyId))
+  }
+  return prefixes
 }
 
 export function collectStoryAssetUrls(
@@ -321,9 +333,20 @@ export async function deleteStoryWithAssets(
 
   await deleteJobsForStory(storyId)
 
-  const urls = collectStoryAssetUrls(result.story, result.scenes)
-  const urlSummary = await deleteBlobUrls(urls)
-  const prefixSummary = await deletePrefixSweep(storyAssetPrefixes(storyId))
+  const urlSet = new Set(collectStoryAssetUrls(result.story, result.scenes))
+  if (result.story.category === 'lofi' || result.story.category === 'lofi-stock') {
+    const lofiVideo = await getLofiVideoByStoryId(storyId)
+    if (lofiVideo) {
+      const lofiAssets = await getLofiAssetsForVideo(lofiVideo.id)
+      for (const url of collectLofiBlobUrls(lofiAssets, lofiVideo.finalVideoUrl)) {
+        urlSet.add(url)
+      }
+    }
+  }
+  const urlSummary = await deleteBlobUrls([...urlSet])
+  const prefixSummary = await deletePrefixSweep(
+    storyAssetPrefixes(storyId, result.story.category),
+  )
   const summary: DeleteAssetsResult = {
     deleted: urlSummary.deleted + prefixSummary.deleted,
     failed: urlSummary.failed + prefixSummary.failed,

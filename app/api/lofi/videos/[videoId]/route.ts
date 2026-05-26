@@ -1,10 +1,11 @@
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getLofiVideoForUser, getLofiAssetsForVideo } from '@/features/lofi/server/lofi-db'
+import { deleteStoryWithAssets } from '@/features/stories/server/story-assets'
 
 export const runtime = 'nodejs'
 
 function computeAssetProgress(assets: { kind: string; status: string }[]) {
-  const music = assets.filter((a) => a.kind === 'music')
+  const music = assets.filter((a) => a.kind === 'music' || a.kind === 'stock-music')
   const visual = assets.filter((a) => a.kind === 'visual')
   const musicReady = music.filter((a) => a.status === 'ready').length
   const visualReady = visual.filter((a) => a.status === 'ready').length
@@ -64,4 +65,26 @@ export async function GET(
     })),
     progress: computeAssetProgress(assets),
   })
+}
+
+export async function DELETE(
+  request: Request,
+  ctx: { params: Promise<{ videoId: string }> },
+) {
+  const session = await requireUserSession(request)
+  if (isAuthError(session)) return session
+
+  const { videoId } = await ctx.params
+  if (!videoId) return new Response('Missing videoId', { status: 400 })
+
+  const video = await getLofiVideoForUser(videoId, session.user.id)
+  if (!video) return new Response('Not found', { status: 404 })
+
+  const result = await deleteStoryWithAssets(video.storyId, session.user.id)
+  if (!result.ok) {
+    const status = result.error === 'Not found' ? 404 : 500
+    return Response.json({ error: result.error, ...result.summary }, { status })
+  }
+
+  return Response.json({ ok: true, ...result.summary })
 }

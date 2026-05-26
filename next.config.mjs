@@ -6,6 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  output: 'standalone',
+  transpilePackages: ['@t3-oss/env-nextjs', '@t3-oss/env-core'],
   serverExternalPackages: ['ffmpeg-static'],
   async headers() {
     return [

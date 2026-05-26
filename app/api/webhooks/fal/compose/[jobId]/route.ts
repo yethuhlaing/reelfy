@@ -2,7 +2,6 @@ import { getJob, markCompleted, markFailed } from '@/shared/lib/jobs/store'
 import { readFalHeaders, verifyFalWebhook } from '@/shared/lib/jobs/verify-fal'
 import { completeComposedVideo } from '@/features/stories/server/story-assets'
 import type { ComposePayload, ComposeResult } from '@/shared/lib/jobs/types'
-
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
@@ -57,11 +56,6 @@ export async function POST(
 
   if (!job.payload.userId) {
     await markFailed(jobId, 'Job missing userId')
-    return new Response('ok')
-  }
-
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    await markFailed(jobId, 'BLOB_READ_WRITE_TOKEN is not configured')
     return new Response('ok')
   }
 

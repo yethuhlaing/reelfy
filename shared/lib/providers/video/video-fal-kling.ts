@@ -1,24 +1,23 @@
-import { fal } from './fal'
+import { fal } from '../fal'
 import type { VideoProvider, VideoOpts } from './video'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
 
-const MODEL_ID = 'fal-ai/longcat-video/image-to-video'
+const MODEL_ID = 'fal-ai/kling-video/v2.6/pro/image-to-video'
 
-function buildInput(imageUrl: string, prompt: string, opts: VideoOpts) {
+function buildInput(imageUrl: string, prompt: string, _opts: VideoOpts) {
+  void _opts
   return {
     image_url: imageUrl,
     prompt,
-    num_frames: opts.numFrames ?? 121,
-    fps: opts.fps ?? 24,
-    width: opts.width ?? 1280,
-    height: opts.height ?? 720,
+    duration: '5',
+    aspect_ratio: '16:9',
   }
 }
 
-export const longcatFal: VideoProvider = {
-  id: 'longcat-fal',
+export const klingFal: VideoProvider = {
+  id: 'kling-fal',
   falModel: MODEL_ID,
-  costEstimateUsd: 0.15,
+  costEstimateUsd: 0.2,
   async generate(imageUrl, prompt, opts) {
     const { costContext } = opts
     const result = await fal.subscribe(MODEL_ID, {
@@ -31,9 +30,9 @@ export const longcatFal: VideoProvider = {
       storyId: costContext?.storyId,
       sceneId: costContext?.sceneId,
       provider: 'fal',
-      model: 'longcat-video',
+      model: 'kling-video',
       operation: costContext?.operation ?? 'video_generation',
-      costUsd: 0.15,
+      costUsd: 0.2,
       creditsCharged: costContext?.creditsCharged ?? 0,
     })
     return (result.data as { video: { url: string } }).video.url
@@ -50,9 +49,9 @@ export const longcatFal: VideoProvider = {
       storyId: costContext?.storyId,
       sceneId: costContext?.sceneId,
       provider: 'fal',
-      model: 'longcat-video',
+      model: 'kling-video',
       operation: costContext?.operation ?? 'video_generation_enqueue',
-      costUsd: 0.15,
+      costUsd: 0.2,
       creditsCharged: costContext?.creditsCharged ?? 0,
     })
     return { requestId: submitted.request_id }

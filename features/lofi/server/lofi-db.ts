@@ -85,6 +85,15 @@ export async function getLofiVideoForUser(videoId: string, userId: string) {
   return rows[0] ?? null
 }
 
+export async function getLofiVideoByStoryId(storyId: string) {
+  const rows = await db
+    .select()
+    .from(lofiVideos)
+    .where(eq(lofiVideos.storyId, storyId))
+    .limit(1)
+  return rows[0] ?? null
+}
+
 export async function listUserLofiVideos(userId: string) {
   return db
     .select()

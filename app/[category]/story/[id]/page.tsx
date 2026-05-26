@@ -8,8 +8,8 @@ export default async function StoryPage({
 }) {
   const { category, id } = await params
 
-  if (category === 'lofi') {
-    return <LofiVideoView id={id} />
+  if (category === 'lofi' || category === 'lofi-stock') {
+    return <LofiVideoView id={id} category={category} />
   }
 
   return <Workspace storyId={id} category={category} />

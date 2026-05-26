@@ -1,5 +1,6 @@
 import type { ApiCostContext } from '@/shared/lib/db/cost-logger'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
+import { DEFAULT_ELEVENLABS_VOICE_ID, env } from '@/shared/lib/env'
 
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech'
 
@@ -8,12 +9,12 @@ export async function generateVoiceover(
   signal?: AbortSignal,
   costContext?: ApiCostContext,
 ): Promise<ArrayBuffer> {
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB' // Default to Adam
+  const voiceId = env.ELEVENLABS_VOICE_ID ?? DEFAULT_ELEVENLABS_VOICE_ID
 
   const response = await fetch(`${ELEVENLABS_API_URL}/${voiceId}`, {
     method: 'POST',
     headers: {
-      'xi-api-key': process.env.ELEVENLABS_API_KEY || '',
+      'xi-api-key': env.ELEVENLABS_API_KEY ?? '',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({

@@ -1,6 +1,7 @@
 import { Polar } from '@polar-sh/sdk'
+import { env } from '@/shared/lib/env'
 
-const server = (process.env.POLAR_ENVIRONMENT === 'production' ? 'production' : 'sandbox') as
+const server = (env.POLAR_ENVIRONMENT === 'production' ? 'production' : 'sandbox') as
   | 'production'
   | 'sandbox'
 
@@ -8,7 +9,7 @@ let cached: Polar | null = null
 
 export function polar(): Polar {
   if (cached) return cached
-  const accessToken = process.env.POLAR_ACCESS_TOKEN
+  const accessToken = env.POLAR_ACCESS_TOKEN
   if (!accessToken) {
     throw new Error('POLAR_ACCESS_TOKEN missing')
   }

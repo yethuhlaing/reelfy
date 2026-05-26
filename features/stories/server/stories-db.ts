@@ -278,6 +278,9 @@ export interface SceneUpdate {
   voiceoverUrl?: string | null
   videoUrl?: string | null
   voiceoverDuration?: number | null
+  imagePrompt?: string
+  motionPrompt?: string | null
+  voiceoverText?: string
 }
 
 export async function updateSceneForUser(
@@ -300,6 +303,9 @@ export async function updateSceneForUser(
   if (patch.voiceoverDuration !== undefined) {
     set.voiceoverDuration = patch.voiceoverDuration != null ? String(patch.voiceoverDuration) : null
   }
+  if (patch.imagePrompt !== undefined) set.imagePrompt = patch.imagePrompt
+  if (patch.motionPrompt !== undefined) set.motionPrompt = patch.motionPrompt
+  if (patch.voiceoverText !== undefined) set.voiceoverText = patch.voiceoverText
   if (Object.keys(set).length === 0) return true
 
   await db

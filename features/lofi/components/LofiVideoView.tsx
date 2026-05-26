@@ -19,7 +19,7 @@ import {
 
 interface AssetStatus {
   id: string
-  kind: 'music' | 'visual'
+  kind: 'music' | 'stock-music' | 'visual'
   orderIndex: number
   status: string
   resultUrl: string | null
@@ -45,7 +45,7 @@ interface VideoStatusResponse {
 }
 
 function computeProgressFromAssets(assets: AssetStatus[]) {
-  const music = assets.filter((a) => a.kind === 'music')
+  const music = assets.filter((a) => a.kind === 'music' || a.kind === 'stock-music')
   const visual = assets.filter((a) => a.kind === 'visual')
   const musicReady = music.filter((a) => a.status === 'ready').length
   const visualReady = visual.filter((a) => a.status === 'ready').length
@@ -68,12 +68,15 @@ function slugify(text: string): string {
     .slice(0, 60)
 }
 
-export function LofiVideoView({ id }: { id: string }) {
+export function LofiVideoView({ id, category }: { id: string; category?: string }) {
   const router = useRouter()
   const [data, setData] = useState<VideoStatusResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
+
+  const resolvedCategory = category ?? 'lofi'
+  const isStock = resolvedCategory === 'lofi-stock'
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -189,7 +192,7 @@ export function LofiVideoView({ id }: { id: string }) {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8">
       <div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-0.5 text-[0.7rem] font-semibold text-[var(--text)]">
-          ◈ lofi
+          ◈ {isStock ? 'lofi-stock' : 'lofi'}
         </span>
         <h1 className="mt-2" style={{ fontSize: '1.2rem' }}>
           {data.vibe.slice(0, 60)}
@@ -238,7 +241,7 @@ export function LofiVideoView({ id }: { id: string }) {
             </a>
             <button
               className="inline-flex h-[38px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-[0.85rem] text-[var(--text)] hover:bg-[var(--surface2)]"
-              onClick={() => router.push('/lofi/new')}
+              onClick={() => router.push(`/${isStock ? 'lofi-stock' : 'lofi'}/new`)}
             >
               <RefreshCw size={16} /> Generate similar
             </button>
