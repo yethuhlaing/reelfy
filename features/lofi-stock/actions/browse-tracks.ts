@@ -2,6 +2,7 @@
 
 import {
   browseStockTracksPage,
+  fetchTrackWaveformsByIds,
   searchStockTracksPage,
   type StockTracksPage,
 } from '@/features/lofi-stock/server/fetch-tracks'
@@ -27,4 +28,10 @@ export async function fetchSearchTracksAction(input: {
     query: input.query,
     page: input.page,
   })
+}
+
+export async function fetchTrackWaveformsAction(
+  trackIds: string[],
+): Promise<Record<string, number[]>> {
+  return fetchTrackWaveformsByIds(trackIds)
 }

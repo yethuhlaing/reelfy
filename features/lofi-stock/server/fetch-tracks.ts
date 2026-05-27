@@ -41,6 +41,19 @@ export async function browseStockTracksPage(input: {
   }
 }
 
+export async function fetchTrackWaveformsByIds(
+  trackIds: string[],
+): Promise<Record<string, number[]>> {
+  const uniqueIds = [...new Set(trackIds.filter(Boolean))]
+  const entries = await Promise.all(
+    uniqueIds.map(async (id) => {
+      const track = await freetouseProvider.fetchTrackById(id)
+      return [id, track?.waveform ?? []] as const
+    }),
+  )
+  return Object.fromEntries(entries)
+}
+
 export async function searchStockTracksPage(input: {
   query: string
   page: number

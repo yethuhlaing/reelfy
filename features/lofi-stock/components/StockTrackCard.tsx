@@ -1,8 +1,10 @@
 'use client'
 
 import { AudioPlayerButton, useAudioPlayer } from '@/shared/ui/audio-player'
-import { BarVisualizer } from '@/shared/ui/bar-visualizer'
-import { useMediaStreamFromAudio, isUsableMediaStream } from '@/shared/hooks/use-media-stream-from-audio'
+import {
+  useAudioElementAnalyser,
+  useAnimatedWaveformBands,
+} from '@/shared/hooks/use-audio-element-analyser'
 import {
   formatMmSs,
   getTrackArtistName,
@@ -10,6 +12,8 @@ import {
 } from '@/features/lofi-stock/lib/playlist-utils'
 import { TrackArt } from './TrackArt'
 import type { FreetouseTrack } from '@/shared/lib/providers/audio/music-freetouse'
+
+const BAR_COUNT = 48
 
 export function StockTrackCard({
   track,
@@ -20,19 +24,25 @@ export function StockTrackCard({
   isSelected: boolean
   onToggle: () => void
 }) {
-  const { ref, isItemActive, isPlaying, isBuffering } = useAudioPlayer()
+  const { ref, isItemActive, isPlaying } = useAudioPlayer()
   const isActive = isItemActive(track.id)
   const isTrackPlaying = isActive && isPlaying
-  const mediaStream = useMediaStreamFromAudio(ref, isTrackPlaying, track.id)
-  const visualizerDemo = !isUsableMediaStream(mediaStream)
-  const playerItem = { id: track.id, src: track.files.mp3, data: track }
 
+  const analyserBands = useAudioElementAnalyser(ref, isTrackPlaying, BAR_COUNT)
+  const animatedBands = useAnimatedWaveformBands(isTrackPlaying && !analyserBands, BAR_COUNT)
+  const liveBands =
+    isTrackPlaying && analyserBands && analyserBands.some((v) => v > 0.08)
+      ? analyserBands
+      : isTrackPlaying
+        ? animatedBands
+        : null
+
+  const playerItem = { id: track.id, src: track.files.mp3, data: track }
   const artistName = getTrackArtistName(track)
   const categoryName = getTrackCategoryName(track)
   const durationStr = formatMmSs(track.duration)
 
   const waveform = track.waveform
-  const BAR_COUNT = 80
   const bars = Array.from({ length: BAR_COUNT }, (_, i) => {
     const idx = Math.floor((i / BAR_COUNT) * waveform.length)
     return waveform[idx] ?? 0
@@ -70,32 +80,22 @@ export function StockTrackCard({
           <span>{durationStr}</span>
           <span>{track.downloads.toLocaleString()} downloads</span>
         </div>
-        {isTrackPlaying ? (
-          <BarVisualizer
-            state={isBuffering ? 'connecting' : 'speaking'}
-            demo={visualizerDemo}
-            mediaStream={visualizerDemo ? undefined : mediaStream}
-            barCount={20}
-            minHeight={10}
-            maxHeight={100}
-            className="h-4 w-full text-[var(--accent)]"
-          />
-        ) : (
-          <div className="flex h-4 items-end gap-[1px] overflow-hidden">
-            {bars.map((v, i) => (
+
+        <div className="flex h-4 items-end gap-[1px] overflow-hidden">
+          {(liveBands ?? bars).map((value, i) => {
+            const normalised = liveBands ? value : value / maxBar
+            return (
               <div
                 key={i}
-                className={`flex-1 rounded-[1px] transition-opacity ${
-                  isSelected ? 'bg-[var(--accent)]' : 'bg-[var(--muted)]'
-                }`}
+                className={`flex-1 rounded-[1px] ${liveBands ? 'bg-[var(--accent)] transition-[height] duration-75' : isSelected ? 'bg-[var(--accent)]' : 'bg-[var(--muted)]'}`}
                 style={{
-                  height: `${Math.max(8, (v / maxBar) * 100)}%`,
-                  opacity: 0.35,
+                  height: `${Math.max(8, normalised * 100)}%`,
+                  opacity: liveBands ? 0.55 + normalised * 0.45 : 0.35,
                 }}
               />
-            ))}
-          </div>
-        )}
+            )
+          })}
+        </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

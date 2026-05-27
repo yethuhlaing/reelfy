@@ -62,6 +62,7 @@ export async function GET(
       durationSec: a.durationSec,
       status: a.status,
       resultUrl: a.resultUrl,
+      sourceTrackId: a.sourceTrackId,
     })),
     progress: computeAssetProgress(assets),
   })

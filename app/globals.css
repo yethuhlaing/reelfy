@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:is(.dark *));
+
 :root,
 :root.dark {
   --bg: #0b0b0f;
@@ -8,10 +10,10 @@
   --surface-solid: #14141a;                  /* fallback when glass not OK */
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.14);
-  --accent: #8b5cf6;                         /* violet-500 */
-  --accent-hover: #a78bfa;                   /* violet-400 */
-  --accent-ink: #ffffff;
-  --accent-glow: rgba(139, 92, 246, 0.35);
+  --accent: #D5F70C;
+  --accent-hover: #E8FF3D;
+  --accent-ink: #0b0b0f;
+  --accent-glow: rgba(213, 247, 12, 0.35);
   --text: #f4f4f5;
   --muted: #a1a1aa;
   --danger: #ef4444;
@@ -22,7 +24,7 @@
   --font-mono: var(--font-jb-mono), 'JetBrains Mono', ui-monospace, monospace;
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --gradient-border: linear-gradient(135deg, rgba(139,92,246,0.4), rgba(255,255,255,0.06));
+  --gradient-border: linear-gradient(135deg, rgba(213,247,12,0.4), rgba(255,255,255,0.06));
   /* shadcn / ElevenLabs UI semantic tokens */
   --background: var(--bg);
   --foreground: var(--text);
@@ -45,13 +47,13 @@
   --surface-solid: #ffffff;
   --border: rgba(0, 0, 0, 0.06);
   --border-strong: rgba(0, 0, 0, 0.12);
-  --accent: #7c3aed;                         /* violet-600 deeper for light */
-  --accent-hover: #6d28d9;
-  --accent-ink: #ffffff;
-  --accent-glow: rgba(124, 58, 237, 0.25);
+  --accent: #C4E00A;
+  --accent-hover: #D5F70C;
+  --accent-ink: #0a0a0a;
+  --accent-glow: rgba(196, 224, 10, 0.25);
   --text: #0a0a0a;
   --muted: #525252;
-  --gradient-border: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(0,0,0,0.06));
+  --gradient-border: linear-gradient(135deg, rgba(213,247,12,0.35), rgba(0,0,0,0.06));
   --background: var(--bg);
   --foreground: var(--text);
   --primary: var(--accent);
@@ -154,5 +156,17 @@
   to {
     transform: scale(4);
     opacity: 0;
+  }
+}
+
+@theme inline {
+  --animate-blink-cursor: blink-cursor 1.2s step-end infinite;
+  @keyframes blink-cursor {
+  0%, 49% {
+    opacity: 1;
+    }
+  50%, 100% {
+    opacity: 0;
+    }
   }
 }

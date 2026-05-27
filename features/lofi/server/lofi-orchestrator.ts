@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { after } from 'next/server'
 import { db } from '@/shared/lib/db'
 import { lofiAssets, lofiVideos, stories } from '@/shared/lib/db/schema'
 import { eq, and, sql } from 'drizzle-orm'
@@ -277,6 +278,55 @@ async function logStageTransition(
   console.log(`[lofi] video=${videoId} user=${userId} ${prevStatus}→${newStatus}${detail ? `: ${detail}` : ''}`)
 }
 
+async function submitAssets(
+  videoId: string,
+  storyId: string,
+  assetRows: AssetRow[],
+  isStock: boolean,
+  baseUrl: string,
+) {
+  if (isStock) {
+    await rehostStockMusicAssets(storyId, assetRows)
+  }
+
+  const submittable = assetRows.filter((row) => row.kind !== 'stock-music')
+  await Promise.all(
+    submittable.map(async (row) => {
+      try {
+        if (row.kind === 'music') {
+          const provider = getMusicProvider(row.model)
+          const result = await provider.submit({
+            prompt: row.prompt,
+            durationSec: row.durationSec,
+            webhookUrl: `${baseUrl}/api/webhooks/fal/lofi-asset/${row.id}`,
+          })
+          await updateLofiAsset(row.id, {
+            falJobId: result.jobId,
+            status: 'submitted',
+            costUsd: String(result.estimatedCostUsd),
+          })
+        } else {
+          const result = await submitVisual(row, storyId, baseUrl)
+          await persistVisualSubmit(row, result)
+          if (result.type === 'sync') {
+            await maybeAdvanceVideo(videoId)
+          }
+        }
+      } catch (err) {
+        console.error(`Asset ${row.id} (${row.kind}) submit failed`, err)
+        await updateLofiAsset(row.id, {
+          status: 'failed',
+          errorMessage: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }),
+  )
+
+  if (isStock) {
+    await maybeAdvanceVideo(videoId)
+  }
+}
+
 export async function launchVideo(input: GenerateInput, userId: string) {
   const isStock = input.category === 'lofi-stock'
   const totalCredits = calculateTotalCredits(input.musicModel, input.musicLoopCount, input.visualConfig)
@@ -321,48 +371,15 @@ export async function launchVideo(input: GenerateInput, userId: string) {
   const assetRows = buildAssetRows(videoId, input)
   await db.insert(lofiAssets).values(assetRows)
 
-  if (isStock) {
-    await rehostStockMusicAssets(storyId, assetRows)
-  }
-
   const baseUrl = webhookBaseUrl()
 
-  const submittable = assetRows.filter((row) => row.kind !== 'stock-music')
-  await Promise.all(
-    submittable.map(async (row) => {
-      try {
-        if (row.kind === 'music') {
-          const provider = getMusicProvider(row.model)
-          const result = await provider.submit({
-            prompt: row.prompt,
-            durationSec: row.durationSec,
-            webhookUrl: `${baseUrl}/api/webhooks/fal/lofi-asset/${row.id}`,
-          })
-          await updateLofiAsset(row.id, {
-            falJobId: result.jobId,
-            status: 'submitted',
-            costUsd: String(result.estimatedCostUsd),
-          })
-        } else {
-          const result = await submitVisual(row, storyId, baseUrl)
-          await persistVisualSubmit(row, result)
-          if (result.type === 'sync') {
-            await maybeAdvanceVideo(videoId)
-          }
-        }
-      } catch (err) {
-        console.error(`Asset ${row.id} (${row.kind}) submit failed`, err)
-        await updateLofiAsset(row.id, {
-          status: 'failed',
-          errorMessage: err instanceof Error ? err.message : String(err),
-        })
-      }
-    }),
-  )
-
-  if (isStock) {
-    await maybeAdvanceVideo(videoId)
-  }
+  after(async () => {
+    try {
+      await submitAssets(videoId, storyId, assetRows, isStock, baseUrl)
+    } catch (err) {
+      console.error(`[lofi] background submit failed for ${videoId}`, err)
+    }
+  })
 
   return { videoId, storyId }
 }
@@ -623,17 +640,30 @@ export async function runArrangementAndRender(videoId: string) {
 
   const { musicLoops, visualAssets } = await loadReadyAssets(videoId)
 
+  console.log(`[lofi] render assets: video=${videoId} music=${musicLoops.length} visuals=${visualAssets.length} dbMode=${video.visualMode}`)
+
   if (musicLoops.length === 0) {
     await failVideoAndRefund(videoId, video.userId, 0, 'no_ready_music')
     return
   }
+
+  // Infer mode from actual assets — DB mode may mismatch if user picked an image model
+  // but the LLM suggested a video mode (or vice versa).
+  const isImageAssets = visualAssets.length > 0 && /\.(jpe?g|png|webp|gif)(\?|$)/i.test(visualAssets[0].url)
+  let effectiveVisualMode: VisualMode
+  if (visualAssets.length > 1) {
+    effectiveVisualMode = isImageAssets ? 'multi-image' : 'multi-video'
+  } else {
+    effectiveVisualMode = isImageAssets ? 'single-image' : 'single-video'
+  }
+  console.log(`[lofi] render mode: inferred=${effectiveVisualMode} from ${visualAssets[0]?.url?.split('/').pop() ?? 'none'}`)
 
   const planInput: BuildPlanInput = {
     targetDurationSec: video.targetDurationSec,
     videoId: video.id,
     musicLoops,
     visualAssets,
-    visualMode: video.visualMode as VisualMode,
+    visualMode: effectiveVisualMode,
     ambientBedUrl: null,
   }
 
@@ -767,4 +797,75 @@ export async function retryRender(videoId: string, userId: string) {
   await logStageTransition(videoId, userId, 'failed', 'rendering', 'retry_render')
 
   await runArrangementAndRender(videoId)
+}
+
+export interface RecomposeInput {
+  selectedTracks?: FreetouseTrackRef[]
+  musicModel: string
+  musicLoopCount: number
+  visualPrompts: string[]
+  visualConfig: VisualConfig
+  isStock: boolean
+}
+
+export async function recomposeVideo(
+  videoId: string,
+  userId: string,
+  input: RecomposeInput,
+) {
+  const video = await db.query.lofiVideos.findFirst({
+    where: and(eq(lofiVideos.id, videoId), eq(lofiVideos.userId, userId)),
+  })
+  if (!video) throw new Error('Video not found')
+
+  const terminal = ['complete', 'failed', 'aborted']
+  if (!terminal.includes(video.status)) {
+    throw new Error('Video must be in terminal state to recompose')
+  }
+
+  await db.delete(lofiAssets).where(eq(lofiAssets.videoId, videoId))
+
+  const fakeInput: GenerateInput = {
+    vibe: video.vibe,
+    targetDurationSec: video.targetDurationSec,
+    musicModel: input.musicModel,
+    musicLoopCount: input.musicLoopCount,
+    visualConfig: input.visualConfig,
+    musicPrompts: [],
+    visualPrompts: input.visualPrompts,
+    suggestedTitle: '',
+    suggestedAmbientBed: null,
+    category: input.isStock ? 'lofi-stock' : 'lofi',
+    selectedTracks: input.selectedTracks,
+  }
+
+  const assetRows = buildAssetRows(videoId, fakeInput)
+  await db.insert(lofiAssets).values(assetRows)
+
+  await db.update(lofiVideos)
+    .set({
+      status: 'generating',
+      arrangementJson: null,
+      finalVideoUrl: null,
+      finalDurationSec: null,
+      musicLoopCount: input.selectedTracks?.length ?? input.musicLoopCount,
+      updatedAt: new Date(),
+    })
+    .where(eq(lofiVideos.id, videoId))
+
+  await db.update(stories)
+    .set({ status: 'draft', updatedAt: new Date() })
+    .where(eq(stories.id, video.storyId))
+
+  await logStageTransition(videoId, userId, video.status, 'generating', 'recompose')
+
+  const baseUrl = webhookBaseUrl()
+
+  after(async () => {
+    try {
+      await submitAssets(videoId, video.storyId, assetRows, input.isStock, baseUrl)
+    } catch (err) {
+      console.error(`[lofi] recompose background failed for ${videoId}`, err)
+    }
+  })
 }

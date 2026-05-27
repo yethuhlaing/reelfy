@@ -104,6 +104,19 @@ export class FreetouseProvider implements MusicGenProvider {
     })
     return (data.data ?? []).filter((t) => !t.is_premium)
   }
+
+  async fetchTrackById(trackId: string): Promise<FreetouseTrack | null> {
+    try {
+      const data = await apiFetch<{ ok: boolean; data: FreetouseTrack }>(
+        `/music/tracks/${trackId}`,
+      )
+      const track = data.data
+      if (!track || track.is_premium) return null
+      return track
+    } catch {
+      return null
+    }
+  }
 }
 
 export const freetouseProvider = new FreetouseProvider()

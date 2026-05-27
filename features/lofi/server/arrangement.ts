@@ -135,6 +135,26 @@ export function buildArrangementPlan(input: BuildPlanInput): ArrangementPlan {
         crossfadeInSec: 0,
       })
     }
+  } else if (visualMode === 'multi-image') {
+    // Images can't be crossfaded via simple keyframe overlap — use sequential non-overlapping timing
+    let imageCursor = 0
+    for (let vi = 0; vi < visualAssets.length; vi++) {
+      const asset = visualAssets[vi]
+      clips.push({
+        assetUrl: asset.url,
+        startSec: imageCursor,
+        durationSec: asset.durationSec,
+        crossfadeInSec: 0,
+      })
+      imageCursor += asset.durationSec
+    }
+    if (clips.length > 0) {
+      const lastClip = clips[clips.length - 1]
+      const lastEnd = lastClip.startSec + lastClip.durationSec
+      if (lastEnd > targetDurationSec) {
+        lastClip.durationSec = Math.max(targetDurationSec - lastClip.startSec, 1)
+      }
+    }
   } else {
     for (let vi = 0; vi < visualAssets.length; vi++) {
       const asset = visualAssets[vi]
@@ -190,11 +210,11 @@ export function buildTracksPayload(plan: ArrangementPlan): FalTrack[] {
     tracks.push({ id: 'audio', type: 'audio', keyframes: audioKeyframes })
   }
 
-  const isImage = plan.visual.mode === 'single-image' || plan.visual.mode === 'multi-image'
   if (plan.visual.clips.length > 0) {
+    const isImage = plan.visual.mode === 'single-image' || plan.visual.mode === 'multi-image'
     tracks.push({
       id: 'video',
-      type: isImage ? 'image' : 'video',
+      type: isImage ? 'image' as const : 'video' as const,
       keyframes: plan.visual.clips.map((clip) => ({
         timestamp: Math.round(clip.startSec * 1000),
         duration: Math.round(clip.durationSec * 1000),
