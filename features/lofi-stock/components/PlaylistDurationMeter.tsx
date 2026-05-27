@@ -1,6 +1,10 @@
 'use client'
 
-import { formatMmSs, sumTrackDurationSec } from '@/features/lofi-stock/lib/playlist-utils'
+import {
+  formatMmSs,
+  getPlaylistOverTargetMessage,
+  sumTrackDurationSec,
+} from '@/features/lofi-stock/lib/playlist-utils'
 import { TrackArt } from './TrackArt'
 import type { FreetouseTrack } from '@/shared/lib/providers/audio/music-freetouse'
 
@@ -54,16 +58,18 @@ export function PlaylistDurationMeter({
   }
 
   const targetLabel = formatMmSs(targetDurationSec)
+  const overTargetMessage = getPlaylistOverTargetMessage(tracks, targetDurationSec)
+  const overTarget = overTargetMessage != null
+  const underTarget = selectedSec < targetDurationSec
   const progress = targetDurationSec > 0
     ? Math.min(100, (selectedSec / targetDurationSec) * 100)
     : 0
-  const underTarget = selectedSec < targetDurationSec
 
   return (
     <div className="flex flex-col gap-2.5">
       {artStrip}
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[0.8rem] font-medium text-[var(--text)]">
+        <span className={`text-[0.8rem] font-medium ${overTarget ? 'text-red-500' : 'text-[var(--text)]'}`}>
           {selectedLabel} / {targetLabel}
         </span>
       </div>
@@ -76,15 +82,19 @@ export function PlaylistDurationMeter({
         className="h-1.5 overflow-hidden rounded-full bg-[var(--surface2)]"
       >
         <div
-          className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-300"
+          className={`h-full rounded-full transition-[width] duration-300 ${
+            overTarget ? 'bg-red-500' : 'bg-[var(--accent)]'
+          }`}
           style={{ width: `${progress}%` }}
         />
       </div>
       {tracks.length > 0 && (
-        <p className="text-[0.72rem] leading-snug text-[var(--muted)]">
-          {underTarget
-            ? 'Tracks will loop to fill the video length you chose.'
-            : 'Enough music — extra tracks add variety.'}
+        <p className={`text-[0.72rem] leading-snug ${overTarget ? 'text-red-500' : 'text-[var(--muted)]'}`}>
+          {overTarget
+            ? overTargetMessage
+            : underTarget
+              ? 'Tracks will loop to fill the video length you chose.'
+              : 'Matches your video length.'}
         </p>
       )}
     </div>

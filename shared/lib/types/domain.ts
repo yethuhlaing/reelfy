@@ -60,6 +60,7 @@ export interface GenerateOptions {
   videoModel: VideoModel
   videoQuality: VideoQuality
   textModel: TextModel
+  voiceId?: string
 }
 
 export type StageId =

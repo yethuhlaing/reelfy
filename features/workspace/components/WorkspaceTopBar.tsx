@@ -6,6 +6,7 @@ import { deriveWorkspaceActions } from '@/features/workspace/lib/workspace-state
 import { PlayAllBtn } from './actions/PlayAllBtn'
 import { AnimateAllBtn } from './actions/AnimateAllBtn'
 import { ExportBtn } from './actions/ExportBtn'
+import { VoicePickerPopover } from './media/VoicePickerPopover'
 import { OverflowMenu } from '@/shared/layout/OverflowMenu'
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
   onAnimateAll: () => void
   onToggleThumbnail: () => void
   onToggleDetails: () => void
+  onVoiceChange: (voiceId: string) => void
   onRenamed?: (title: string) => void
   thumbnailOpen?: boolean
 }
@@ -24,10 +26,11 @@ export function WorkspaceTopBar({
   onAnimateAll,
   onToggleThumbnail,
   onToggleDetails,
+  onVoiceChange,
   onRenamed,
   thumbnailOpen,
 }: Props) {
-  const { storyData, storyId, isGenerating, playState, readOnly } = useWorkspace()
+  const { storyData, storyId, isGenerating, playState, readOnly, options } = useWorkspace()
   const actions = deriveWorkspaceActions(
     storyData,
     isGenerating,
@@ -54,6 +57,14 @@ export function WorkspaceTopBar({
         >
           <Info size={14} />
         </button>
+      )}
+      {storyId && !readOnly && (
+        <VoicePickerPopover
+          storyId={storyId}
+          currentVoiceId={options?.voiceId}
+          onVoiceChange={onVoiceChange}
+          disabled={playState.isPlaying}
+        />
       )}
       <PlayAllBtn state={actions.playAll} onClick={onPlayAll} />
       <AnimateAllBtn state={actions.animateAll} onConfirm={onAnimateAll} />

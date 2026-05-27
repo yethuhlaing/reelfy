@@ -12,6 +12,23 @@ export function sumTrackDurationSec(tracks: Pick<FreetouseTrack, 'duration'>[]):
   return tracks.reduce((sum, t) => sum + t.duration, 0)
 }
 
+export function isPlaylistOverTarget(
+  tracks: Pick<FreetouseTrack, 'duration'>[],
+  targetDurationSec: number,
+): boolean {
+  return sumTrackDurationSec(tracks) > targetDurationSec
+}
+
+export function getPlaylistOverTargetMessage(
+  tracks: Pick<FreetouseTrack, 'duration'>[],
+  targetDurationSec: number,
+): string | null {
+  const selectedSec = sumTrackDurationSec(tracks)
+  if (selectedSec <= targetDurationSec) return null
+  const overSec = selectedSec - targetDurationSec
+  return `Playlist is ${formatMmSs(overSec)} longer than your ${formatMmSs(targetDurationSec)} video. Remove tracks or increase duration.`
+}
+
 export function getTrackArtistName(track: FreetouseTrack): string | undefined {
   const artistEntry = track.artists[0] as [number, { name: string }] | undefined
   return artistEntry?.[1]?.name

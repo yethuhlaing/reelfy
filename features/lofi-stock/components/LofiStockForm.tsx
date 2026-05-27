@@ -18,6 +18,9 @@ import type { StockStep } from '@/features/lofi-stock/lib/constants'
 import type { ExpandResult } from '@/features/lofi-stock/lib/expand-types'
 import type { TextModel, VisualAsset } from '@/shared/lib/types'
 import type { FreetouseTrack } from '@/shared/lib/providers/audio/music-freetouse'
+import {
+  getPlaylistOverTargetMessage,
+} from '@/features/lofi-stock/lib/playlist-utils'
 
 const DEFAULT_VISUAL_MODEL = 'flux-schnell-fal'
 const LOFI_STOCK_OPTIONS_STORAGE_KEY = 'new-lofi-stock:options'
@@ -171,12 +174,25 @@ function LofiStockFormInner() {
       toast.error('Vibe needs at least 10 characters.')
       return
     }
+    const overTargetMessage = getPlaylistOverTargetMessage(selectedTracks, duration)
+    if (overTargetMessage) {
+      toast.error(overTargetMessage)
+      return
+    }
     setStep('visuals')
     if (expandResult && editedVisualPrompts.length > 0) {
       return
     }
     await runExpand()
-  }, [vibe, expandResult, editedVisualPrompts.length, runExpand])
+  }, [vibe, duration, selectedTracks, expandResult, editedVisualPrompts.length, runExpand])
+
+  const handleDurationChange = useCallback((sec: number) => {
+    const overTargetMessage = getPlaylistOverTargetMessage(selectedTracks, sec)
+    if (overTargetMessage) {
+      toast.error(overTargetMessage)
+    }
+    setDuration(sec)
+  }, [selectedTracks])
 
   const handleRegenerateVisual = async (index: number) => {
     try {
@@ -325,7 +341,7 @@ function LofiStockFormInner() {
           vibe={vibe}
           onVibeChange={setVibe}
           duration={duration}
-          onDurationChange={setDuration}
+          onDurationChange={handleDurationChange}
           textModel={textModel}
           onTextModelChange={(model) => {
             setTextModel(model)

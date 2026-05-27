@@ -385,6 +385,31 @@ export async function updateStoryMeta(
   return rows.length > 0
 }
 
+export async function updateStoryVoice(
+  storyId: string,
+  userId: string,
+  voiceId: string | null,
+): Promise<boolean> {
+  const row = await db
+    .select({ options: stories.options })
+    .from(stories)
+    .where(and(eq(stories.id, storyId), eq(stories.userId, userId)))
+    .limit(1)
+  if (!row.length) return false
+
+  const current = parseOptions(row[0].options) ?? {}
+  const updated = voiceId === null
+    ? (({ voiceId: _, ...rest }) => rest)(current as typeof current & { voiceId?: string })
+    : { ...current, voiceId }
+
+  const rows = await db
+    .update(stories)
+    .set({ options: JSON.stringify(updated), updatedAt: new Date() })
+    .where(and(eq(stories.id, storyId), eq(stories.userId, userId)))
+    .returning({ id: stories.id })
+  return rows.length > 0
+}
+
 export function rowToStoryData(
   story: StoredStoryRow,
   sceneRows: StoredSceneRow[],

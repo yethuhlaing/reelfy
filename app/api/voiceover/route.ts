@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { generateVoiceover } from '@/shared/lib/integrations/elevenlabs'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
-import { getStoryForUser } from '@/features/stories/server/stories-db'
+import { getStoryForUser, parseOptions } from '@/features/stories/server/stories-db'
 import { completeSceneVoiceover } from '@/features/stories/server/story-assets'
 export async function POST(request: Request) {
   try {
@@ -28,12 +28,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 })
     }
 
+    const storyVoiceId = parseOptions(story.story.options)?.voiceId
+
     const audioBuffer = await generateVoiceover(text, request.signal, {
       userId,
       storyId,
       sceneId,
       operation: 'scene_voiceover',
-    })
+    }, storyVoiceId)
     if (request.signal.aborted) {
       return new Response('cancelled', { status: 499 })
     }

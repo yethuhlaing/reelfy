@@ -8,8 +8,9 @@ export async function generateVoiceover(
   text: string,
   signal?: AbortSignal,
   costContext?: ApiCostContext,
+  selectedVoiceId?: string,
 ): Promise<ArrayBuffer> {
-  const voiceId = env.ELEVENLABS_VOICE_ID ?? DEFAULT_ELEVENLABS_VOICE_ID
+  const voiceId = selectedVoiceId ?? env.ELEVENLABS_VOICE_ID ?? DEFAULT_ELEVENLABS_VOICE_ID
 
   const response = await fetch(`${ELEVENLABS_API_URL}/${voiceId}`, {
     method: 'POST',

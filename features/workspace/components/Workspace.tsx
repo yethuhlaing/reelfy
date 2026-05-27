@@ -610,6 +610,19 @@ function WorkspaceInner({ storyId, category }: Props) {
         onAnimateAll={animateAll}
         onToggleThumbnail={() => setThumbOpen((v) => !v)}
         onToggleDetails={() => setDetailsOpen((v) => !v)}
+        onVoiceChange={async (voiceId) => {
+          await fetch(`/api/stories/${storyId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ voiceId }),
+          })
+          setOptions((prev) => prev ? { ...prev, voiceId } : prev)
+          setStoryData((prev) =>
+            prev
+              ? { ...prev, scenes: prev.scenes.map((s) => ({ ...s, voiceoverUrl: null })) }
+              : prev,
+          )
+        }}
         onRenamed={(t) => setStoryData((prev) => (prev ? { ...prev, title: t } : prev))}
         thumbnailOpen={thumbOpen}
       />

@@ -38,6 +38,14 @@ export async function POST(request: Request) {
   if (!Array.isArray(visualPrompts) || visualPrompts.length === 0) return badRequest('visualPrompts is required')
   if (!Array.isArray(selectedTracks) || selectedTracks.length === 0) return badRequest('selectedTracks is required')
 
+  const playlistDurationSec = (selectedTracks as FreetouseTrackRef[]).reduce(
+    (sum, track) => sum + (typeof track.duration_sec === 'number' ? track.duration_sec : 0),
+    0,
+  )
+  if (playlistDurationSec > targetDurationSec) {
+    return badRequest('Playlist duration exceeds target video length')
+  }
+
   try {
     const result = await launchVideo({
       vibe: vibe.trim(),

@@ -4,6 +4,7 @@ import {
   parseOptions,
   rowToStoryData,
   updateStoryMeta,
+  updateStoryVoice,
 } from '@/features/stories/server/stories-db'
 import { deleteStoryWithAssets } from '@/features/stories/server/story-assets'
 
@@ -51,7 +52,15 @@ export async function PATCH(
     thumbnailUrl?: string | null
     composedVideoUrl?: string | null
     status?: string
+    voiceId?: string | null
   }
+
+  if (body.voiceId !== undefined) {
+    const ok = await updateStoryVoice(storyId, session.user.id, body.voiceId ?? null)
+    if (!ok) return Response.json({ error: 'Not found' }, { status: 404 })
+    return Response.json({ ok: true })
+  }
+
   const ok = await updateStoryMeta(storyId, session.user.id, body)
   if (!ok) return Response.json({ error: 'Not found' }, { status: 404 })
   return Response.json({ ok: true })
