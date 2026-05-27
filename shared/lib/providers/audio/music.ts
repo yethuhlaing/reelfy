@@ -26,7 +26,7 @@ export interface MusicGenProvider {
   submit(input: MusicGenInput): Promise<MusicGenSubmitResult>
 }
 
-export const MUSIC_PROVIDERS: Record<string, MusicGenProvider> = {
+const MUSIC_PROVIDERS: Record<string, MusicGenProvider> = {
   minimax: minimaxProvider,
   'stable-audio': stableAudioProvider,
   cassette: cassetteProvider,
@@ -46,8 +46,4 @@ export function getMusicProvider(key?: string): MusicGenProvider {
     throw new Error('No music providers configured')
   }
   return resolved
-}
-
-export function listMusicProviders() {
-  return Object.values(MUSIC_PROVIDERS)
 }

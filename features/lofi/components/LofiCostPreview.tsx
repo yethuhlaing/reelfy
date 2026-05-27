@@ -12,7 +12,7 @@ interface CostBreakdown {
   totalCost: number
 }
 
-export function calculateCosts(
+function calculateCosts(
   musicModel: string,
   musicLoopCount: number,
   visualModel: string,

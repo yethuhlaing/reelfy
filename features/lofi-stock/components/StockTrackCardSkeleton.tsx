@@ -2,7 +2,7 @@
 
 import { Skeleton } from '@/shared/ui/skeleton'
 
-export function StockTrackCardSkeleton() {
+function StockTrackCardSkeleton() {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5">
       <Skeleton className="h-10 w-10 shrink-0 rounded-lg bg-[var(--surface2)]" />

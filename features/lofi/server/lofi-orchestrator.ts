@@ -83,7 +83,7 @@ export interface GenerateInput {
   selectedTracks?: FreetouseTrackRef[]
 }
 
-export async function preAuthCredits(userId: string, amount: number): Promise<void> {
+async function preAuthCredits(userId: string, amount: number): Promise<void> {
   const balance = await getCredits(userId)
   if (balance < amount) {
     throw new InsufficientCreditsError(balance, amount)
@@ -416,7 +416,7 @@ async function retryBackoff(attempt: number): Promise<void> {
   }
 }
 
-export async function retryAsset(asset: {
+async function retryAsset(asset: {
   id: string
   videoId: string
   kind: string
@@ -568,7 +568,7 @@ async function markFailedAssetsSkipped(videoId: string) {
     .where(and(eq(lofiAssets.videoId, videoId), eq(lofiAssets.status, 'failed')))
 }
 
-export async function maybeAdvanceVideo(videoId: string) {
+async function maybeAdvanceVideo(videoId: string) {
   const counts = await getAssetFanInCounts(videoId)
   if (!counts) return
 
@@ -634,7 +634,7 @@ async function loadReadyAssets(videoId: string) {
   }
 }
 
-export async function runArrangementAndRender(videoId: string) {
+async function runArrangementAndRender(videoId: string) {
   const video = await getLofiVideo(videoId)
   if (!video) throw new Error(`Video ${videoId} not found`)
 

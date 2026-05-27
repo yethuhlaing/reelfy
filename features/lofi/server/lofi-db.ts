@@ -1,72 +1,6 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import { db } from '@/shared/lib/db'
 import { lofiAssets, lofiVideos, stories } from '@/shared/lib/db/schema'
-import type { LofiVideoStatus, LofiAssetStatus, VisualMode } from '@/shared/lib/types'
-
-export interface LofiVideoRow {
-  id: string
-  userId: string
-  storyId: string
-  vibe: string
-  targetDurationSec: number
-  musicModel: string
-  musicLoopCount: number
-  visualMode: string
-  imageModel: string | null
-  videoModel: string | null
-  ambientBed: string | null
-  status: string
-  arrangementJson: string | null
-  finalVideoUrl: string | null
-  finalDurationSec: number | null
-  creditsPreAuth: number
-  creditsSettled: number
-  costUsd: string
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface LofiAssetRow {
-  id: string
-  videoId: string
-  kind: string
-  orderIndex: number
-  prompt: string
-  model: string
-  durationSec: number
-  falJobId: string | null
-  status: string
-  retryCount: number
-  errorMessage: string | null
-  resultUrl: string | null
-  creditsCharged: number
-  costUsd: string
-  createdAt: Date
-}
-
-export interface CreateLofiVideoInput {
-  id: string
-  userId: string
-  storyId: string
-  vibe: string
-  targetDurationSec: number
-  musicModel: string
-  musicLoopCount: number
-  visualMode: VisualMode
-  imageModel: string | null
-  videoModel: string | null
-  ambientBed: string | null
-  creditsPreAuth: number
-}
-
-export async function createLofiVideo(input: CreateLofiVideoInput) {
-  await db.insert(lofiVideos).values({
-    ...input,
-    status: 'generating',
-    costUsd: '0',
-  })
-}
-
 export async function getLofiVideo(videoId: string) {
   const rows = await db
     .select()
@@ -92,24 +26,6 @@ export async function getLofiVideoByStoryId(storyId: string) {
     .where(eq(lofiVideos.storyId, storyId))
     .limit(1)
   return rows[0] ?? null
-}
-
-export async function listUserLofiVideos(userId: string) {
-  return db
-    .select()
-    .from(lofiVideos)
-    .where(eq(lofiVideos.userId, userId))
-    .orderBy(desc(lofiVideos.updatedAt))
-}
-
-export async function updateLofiVideoStatus(
-  videoId: string,
-  status: LofiVideoStatus,
-) {
-  await db
-    .update(lofiVideos)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(lofiVideos.id, videoId))
 }
 
 export async function updateLofiVideo(
@@ -139,34 +55,12 @@ export async function claimVideoForRendering(videoId: string) {
   return rows.length > 0
 }
 
-export async function createLofiAssets(rows: {
-  id: string
-  videoId: string
-  kind: string
-  orderIndex: number
-  prompt: string
-  model: string
-  durationSec: number
-  costUsd: string
-}[]) {
-  await db.insert(lofiAssets).values(rows)
-}
-
 export async function getLofiAssetsForVideo(videoId: string) {
   return db
     .select()
     .from(lofiAssets)
     .where(eq(lofiAssets.videoId, videoId))
     .orderBy(asc(lofiAssets.orderIndex))
-}
-
-export async function getLofiAsset(assetId: string) {
-  const rows = await db
-    .select()
-    .from(lofiAssets)
-    .where(eq(lofiAssets.id, assetId))
-    .limit(1)
-  return rows[0] ?? null
 }
 
 export async function updateLofiAsset(
@@ -197,26 +91,6 @@ export async function getAssetFanInCounts(videoId: string) {
     .from(lofiAssets)
     .where(eq(lofiAssets.videoId, videoId))
   return rows[0]
-}
-
-export async function createLofiStoryMirror(input: {
-  id: string
-  userId: string
-  title: string
-  tagline: string
-}) {
-  await db.insert(stories).values({
-    id: input.id,
-    userId: input.userId,
-    title: input.title,
-    tagline: input.tagline.slice(0, 120),
-    protagonist: '',
-    category: 'lofi',
-    status: 'draft',
-    composedVideoUrl: null,
-    storyInput: input.tagline,
-    options: '{}',
-  })
 }
 
 export async function finalizeLofiVideo(videoId: string, blobUrl: string, durationSec: number) {

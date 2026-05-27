@@ -16,5 +16,3 @@ export function polar(): Polar {
   cached = new Polar({ accessToken, server })
   return cached
 }
-
-export const polarServer = server

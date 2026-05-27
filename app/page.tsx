@@ -11,7 +11,7 @@ import Hero from "@/features/landing/components/Hero";
 
 export default function App() {
   return (
-    <div className="w-full bg-dark text-dark min-h-screen relative font-sans selection:bg-coral selection:text-white">
+    <div className="w-full bg-background text-foreground min-h-screen relative font-sans selection:bg-primary selection:text-primary-foreground">
       {/* 1. Navigation Bar */}
       <Navbar />
 

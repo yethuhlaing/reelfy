@@ -16,7 +16,7 @@ export interface PlanConfig {
 
 import { env } from '@/shared/lib/env'
 
-export const PLANS: Record<ProductSlug, PlanConfig> = {
+const PLANS: Record<ProductSlug, PlanConfig> = {
   free: {
     slug: 'free',
     tier: 'free',
@@ -72,10 +72,6 @@ export const PLANS: Record<ProductSlug, PlanConfig> = {
 
 export const SUBSCRIPTION_PLANS: PlanConfig[] = [PLANS.free, PLANS.starter, PLANS.pro]
 export const CREDIT_PACKS: PlanConfig[] = [PLANS.credits_small, PLANS.credits_large]
-
-export function planBySlug(slug: string): PlanConfig | undefined {
-  return PLANS[slug as ProductSlug]
-}
 
 export function planByProductId(productId: string): PlanConfig | undefined {
   return Object.values(PLANS).find((p) => p.productId === productId)

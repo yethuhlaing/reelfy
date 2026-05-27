@@ -12,13 +12,6 @@ export function sumTrackDurationSec(tracks: Pick<FreetouseTrack, 'duration'>[]):
   return tracks.reduce((sum, t) => sum + t.duration, 0)
 }
 
-export function isPlaylistOverTarget(
-  tracks: Pick<FreetouseTrack, 'duration'>[],
-  targetDurationSec: number,
-): boolean {
-  return sumTrackDurationSec(tracks) > targetDurationSec
-}
-
 export function getPlaylistOverTargetMessage(
   tracks: Pick<FreetouseTrack, 'duration'>[],
   targetDurationSec: number,

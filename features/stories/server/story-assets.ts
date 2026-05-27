@@ -17,7 +17,7 @@ import {
 
 const BLOB_HOST = 'blob.vercel-storage.com'
 
-export interface DeleteAssetsResult {
+interface DeleteAssetsResult {
   deleted: number
   failed: number
 }
@@ -30,7 +30,7 @@ function stripQuery(url: string): string {
   return url.split('?')[0] ?? url
 }
 
-export function isBlobUrl(url: string | null | undefined): url is string {
+function isBlobUrl(url: string | null | undefined): url is string {
   if (!url || url.startsWith('data:')) return false
   try {
     return new URL(url).hostname.includes(BLOB_HOST)
@@ -39,23 +39,23 @@ export function isBlobUrl(url: string | null | undefined): url is string {
   }
 }
 
-export function sceneImagePath(storyId: string, sceneId: string, ext: string): string {
+function sceneImagePath(storyId: string, sceneId: string, ext: string): string {
   return `scenes/${storyId}/${sceneId}/${Date.now()}.${ext}`
 }
 
-export function sceneVoiceoverPath(storyId: string, sceneId: string): string {
+function sceneVoiceoverPath(storyId: string, sceneId: string): string {
   return `voiceovers/${storyId}/${sceneId}.mp3`
 }
 
-export function sceneVideoPath(storyId: string, sceneId: string): string {
+function sceneVideoPath(storyId: string, sceneId: string): string {
   return `animations/${storyId}/${sceneId}.mp4`
 }
 
-export function thumbnailPath(storyId: string, ext: string): string {
+function thumbnailPath(storyId: string, ext: string): string {
   return `thumbnails/${storyId}.${ext}`
 }
 
-export function composedVideoPath(storyId: string): string {
+function composedVideoPath(storyId: string): string {
   return `composed/${storyId}.mp4`
 }
 
@@ -68,7 +68,7 @@ const STICKMAN_ASSET_PREFIXES = (storyId: string) => [
   `composed/${storyId}`,
 ]
 
-export function storyAssetPrefixes(storyId: string, category?: string): string[] {
+function storyAssetPrefixes(storyId: string, category?: string): string[] {
   const prefixes = STICKMAN_ASSET_PREFIXES(storyId)
   if (category === 'lofi' || category === 'lofi-stock') {
     prefixes.push(...lofiAssetPrefixes(storyId))
@@ -76,7 +76,7 @@ export function storyAssetPrefixes(storyId: string, category?: string): string[]
   return prefixes
 }
 
-export function collectStoryAssetUrls(
+function collectStoryAssetUrls(
   story: Pick<StoredStoryRow, 'thumbnailUrl' | 'composedVideoUrl'>,
   sceneRows: Pick<StoredSceneRow, 'imageUrl' | 'voiceoverUrl' | 'videoUrl'>[],
 ): string[] {
@@ -91,7 +91,7 @@ export function collectStoryAssetUrls(
   return [...urls]
 }
 
-export async function deleteBlobUrls(urls: string[]): Promise<DeleteAssetsResult> {
+async function deleteBlobUrls(urls: string[]): Promise<DeleteAssetsResult> {
   const summary: DeleteAssetsResult = { deleted: 0, failed: 0 }
   for (const url of urls) {
     try {
@@ -104,7 +104,7 @@ export async function deleteBlobUrls(urls: string[]): Promise<DeleteAssetsResult
   return summary
 }
 
-export async function deletePrefixSweep(
+async function deletePrefixSweep(
   prefixes: string[],
 ): Promise<DeleteAssetsResult> {
   const summary: DeleteAssetsResult = { deleted: 0, failed: 0 }
@@ -126,7 +126,7 @@ export async function deletePrefixSweep(
   return summary
 }
 
-export async function uploadSceneVideo(
+async function uploadSceneVideo(
   storyId: string,
   sceneId: string,
   data: Buffer,
@@ -143,7 +143,7 @@ export async function uploadSceneVideo(
   return `${blob.url}?v=${Date.now()}`
 }
 
-export async function uploadSceneImage(
+async function uploadSceneImage(
   storyId: string,
   sceneId: string,
   data: Buffer,
@@ -161,7 +161,7 @@ export async function uploadSceneImage(
   return blob.url
 }
 
-export async function uploadSceneVoiceover(
+async function uploadSceneVoiceover(
   storyId: string,
   sceneId: string,
   data: Buffer,
@@ -178,7 +178,7 @@ export async function uploadSceneVoiceover(
   return blob.url
 }
 
-export async function uploadThumbnail(
+async function uploadThumbnail(
   storyId: string,
   data: Buffer,
   mimeType: string,
@@ -209,7 +209,7 @@ export async function uploadComposedVideo(storyId: string, data: Buffer): Promis
   return `${blob.url}?v=${Date.now()}`
 }
 
-export async function persistSceneVideo(
+async function persistSceneVideo(
   storyId: string,
   sceneId: string,
   userId: string,
@@ -299,7 +299,7 @@ export async function completeThumbnail(params: {
   return thumbnailUrl
 }
 
-export async function deleteSceneAssets(
+async function deleteSceneAssets(
   scenes: Pick<StoredSceneRow, 'imageUrl' | 'voiceoverUrl' | 'videoUrl'>[],
 ): Promise<DeleteAssetsResult> {
   const urls: string[] = []

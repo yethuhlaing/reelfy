@@ -46,11 +46,6 @@ export async function patchSceneFields(
   return res.ok
 }
 
-export async function deleteStoryApi(storyId: string): Promise<boolean> {
-  const res = await fetch(`/api/stories/${storyId}`, { method: 'DELETE' })
-  return res.ok
-}
-
 export async function duplicateStoryApi(storyId: string): Promise<string | null> {
   const res = await fetch(`/api/stories/${storyId}/duplicate`, { method: 'POST' })
   if (!res.ok) return null
