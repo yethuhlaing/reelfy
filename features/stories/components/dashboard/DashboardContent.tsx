@@ -21,6 +21,7 @@ export async function DashboardContent({ userId }: DashboardContentProps) {
     totalVoiceoverSeconds: s.totalVoiceoverSeconds,
     savedAt: s.createdAt.getTime(),
     lastUpdated: s.updatedAt.getTime(),
+    lofiVideoId: s.lofiVideoId,
   }))
 
   const stats = {

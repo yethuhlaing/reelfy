@@ -10,6 +10,7 @@ export type ArrangementPlan = {
     bed: { url: string; gainDb: number } | null
     blocks: Array<{
       loopUrl: string
+      loopLengthSec: number
       startSec: number
       durationSec: number
       repeats: number
@@ -25,6 +26,18 @@ export type ArrangementPlan = {
       crossfadeInSec: number
     }>
   }
+}
+
+export interface FalKeyframe {
+  timestamp: number
+  duration: number
+  url: string
+}
+
+export interface FalTrack {
+  id: string
+  type: 'audio' | 'video' | 'image'
+  keyframes: FalKeyframe[]
 }
 
 export interface ReadyMusicAsset {
@@ -89,6 +102,7 @@ export function buildArrangementPlan(input: BuildPlanInput): ArrangementPlan {
 
     blocks.push({
       loopUrl: loop.url,
+      loopLengthSec: loop.lengthSec,
       startSec: Math.max(0, i > 0 ? cursor - MUSIC_CROSSFADE_SEC : 0),
       durationSec: blockDur,
       repeats,
@@ -157,92 +171,45 @@ export function buildArrangementPlan(input: BuildPlanInput): ArrangementPlan {
   }
 }
 
-export function allPlanUrls(plan: ArrangementPlan): string[] {
-  const urls: string[] = []
+export function buildTracksPayload(plan: ArrangementPlan): FalTrack[] {
+  const tracks: FalTrack[] = []
+
+  const audioKeyframes: FalKeyframe[] = []
   for (const block of plan.music.blocks) {
-    urls.push(block.loopUrl)
+    let cursor = block.startSec
+    const blockEnd = block.startSec + block.durationSec
+    for (let r = 0; r < block.repeats; r++) {
+      const remaining = blockEnd - cursor
+      if (remaining <= 0) break
+      const dur = Math.min(block.loopLengthSec, remaining)
+      audioKeyframes.push({ timestamp: Math.round(cursor * 1000), duration: Math.round(dur * 1000), url: block.loopUrl })
+      cursor += dur
+    }
   }
-  for (const clip of plan.visual.clips) {
-    urls.push(clip.assetUrl)
+  if (audioKeyframes.length > 0) {
+    tracks.push({ id: 'audio', type: 'audio', keyframes: audioKeyframes })
   }
+
+  const isImage = plan.visual.mode === 'single-image' || plan.visual.mode === 'multi-image'
+  if (plan.visual.clips.length > 0) {
+    tracks.push({
+      id: 'video',
+      type: isImage ? 'image' : 'video',
+      keyframes: plan.visual.clips.map((clip) => ({
+        timestamp: Math.round(clip.startSec * 1000),
+        duration: Math.round(clip.durationSec * 1000),
+        url: clip.assetUrl,
+      })),
+    })
+  }
+
   if (plan.music.bed) {
-    urls.push(plan.music.bed.url)
-  }
-  return urls
-}
-
-export function buildFilterGraph(plan: ArrangementPlan): string {
-  const numMusicLoops = plan.music.blocks.length
-  const numVisualClips = plan.visual.clips.length
-  const hasBed = plan.music.bed !== null
-
-  const filters: string[] = []
-
-  for (let i = 0; i < numMusicLoops; i++) {
-    const block = plan.music.blocks[i]
-    filters.push(`[${i}:a]aloop=-1:size=1:start=0,atrim=end_sample=${block.durationSec},asetpts=N/SR/TB[l${i}]`)
+    tracks.push({
+      id: 'ambient-bed',
+      type: 'audio',
+      keyframes: [{ timestamp: 0, duration: Math.round(plan.totalDurationSec * 1000), url: plan.music.bed.url }],
+    })
   }
 
-  for (let vi = 0; vi < numVisualClips; vi++) {
-    const clip = plan.visual.clips[vi]
-    const inputIdx = numMusicLoops + vi
-    const isImage = plan.visual.mode === 'single-image' || plan.visual.mode === 'multi-image'
-    if (isImage) {
-      filters.push(`[${inputIdx}:v]loop=-1:size=1:start=0,scale=1920:1080:force_original_aspect_ratio=cover,crop=1920:1080,setsar=1[v${vi}]`)
-    } else {
-      filters.push(`[${inputIdx}:v]trim=0:${clip.durationSec},scale=1920:1080:force_original_aspect_ratio=cover,crop=1920:1080,setsar=1[v${vi}]`)
-    }
-  }
-
-  if (hasBed) {
-    const bedIdx = numMusicLoops + numVisualClips
-    filters.push(`[${bedIdx}:a]aloop=-1:size=1:start=0,atrim=end_sample=${plan.totalDurationSec},volume=${plan.music.bed!.gainDb}dB[bed]`)
-  }
-
-  const audioLabels: string[] = []
-  for (let i = 0; i < numMusicLoops; i++) {
-    audioLabels.push(`l${i}`)
-  }
-
-  let aout: string
-  if (audioLabels.length === 0) {
-    aout = 'anull'
-    filters.push(`anullsink[aout]`)
-  } else if (audioLabels.length === 1) {
-    aout = audioLabels[0]
-    filters.push(`[${aout}]anull[aout]`)
-  } else {
-    let prevLabel = audioLabels[0]
-    for (let ai = 1; ai < audioLabels.length; ai++) {
-      const xfadeLabel = `ac${ai}`
-      filters.push(`[${prevLabel}][${audioLabels[ai]}]acrossfade=d=${MUSIC_CROSSFADE_SEC}[${xfadeLabel}]`)
-      prevLabel = xfadeLabel
-    }
-    aout = prevLabel
-    if (hasBed) {
-      filters.push(`[${aout}][bed]amix=inputs=2:duration=first[aout]`)
-    } else {
-      filters.push(`[${aout}]anull[aout]`)
-    }
-  }
-
-  let vout: string
-  if (numVisualClips === 0) {
-    vout = 'black'
-    filters.push(`color=c=black:s=1920x1080:d=${plan.totalDurationSec}[vout]`)
-  } else if (numVisualClips === 1) {
-    vout = `v0`
-    filters.push(`[${vout}]format=yuv420p[vout]`)
-  } else {
-    let prevLabel = `v0`
-    for (let vi = 1; vi < numVisualClips; vi++) {
-      const xfadeLabel = `vx${vi}`
-      const offset = plan.visual.clips[vi].startSec
-      filters.push(`[${prevLabel}][v${vi}]xfade=transition=fade:duration=${VISUAL_CROSSFADE_SEC}:offset=${offset}[${xfadeLabel}]`)
-      prevLabel = xfadeLabel
-    }
-    filters.push(`[${prevLabel}]format=yuv420p[vout]`)
-  }
-
-  return filters.join(';\n')
+  return tracks
 }

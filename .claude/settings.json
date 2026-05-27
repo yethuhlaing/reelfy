@@ -6,7 +6,11 @@
       "WebFetch(domain:freetouse.com)",
       "WebFetch(domain:api.freetouse.com)",
       "Bash(rtk curl *)",
-      "Bash(xargs ls)"
+      "Bash(xargs ls)",
+      "Bash(mkdir -p /Users/yethuhlaing/projects/stickman/app/api/export/\\\\[jobId\\\\]/stream)"
+    ],
+    "additionalDirectories": [
+      "/Users/yethuhlaing/projects/stickman/app/api/export/[jobId]"
     ]
   }
 }

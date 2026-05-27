@@ -12,4 +12,5 @@ export interface DashboardStory {
   totalVoiceoverSeconds: number
   savedAt: number
   lastUpdated: number
+  lofiVideoId?: string | null
 }

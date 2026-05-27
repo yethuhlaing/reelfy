@@ -23,7 +23,8 @@ import {
   downloadToBuffer,
   type LofiAssetKind,
 } from './lofi-blob-assets'
-import { buildArrangementPlan, buildFilterGraph, allPlanUrls, type BuildPlanInput } from './arrangement'
+import { buildArrangementPlan, buildTracksPayload, type BuildPlanInput } from './arrangement'
+import { redis } from '@/shared/lib/integrations/redis'
 import {
   calculateTotalCredits,
   calculateAssetCredits,
@@ -38,6 +39,16 @@ import { webhookBaseUrl } from '@/shared/lib/env'
 import { getMusicProvider } from '@/shared/lib/providers/audio/music'
 import { getImageProvider } from '@/shared/lib/providers/image/image'
 import { getVideoProvider } from '@/shared/lib/providers/video/video'
+
+const VIDEO_STATUS_TTL = 3600
+
+async function publishVideoStatus(videoId: string, status: string, extra?: Record<string, unknown>) {
+  await redis.set(
+    `lofi:video:${videoId}:status`,
+    JSON.stringify({ status, ts: Date.now(), ...extra }),
+    { ex: VIDEO_STATUS_TTL },
+  )
+}
 
 export const MAX_RETRIES = 3
 
@@ -545,6 +556,7 @@ export async function maybeAdvanceVideo(videoId: string) {
   if (!counts) return
 
   const { total, done } = counts
+  await publishVideoStatus(videoId, 'generating', { done, total })
   if (done < total) return
 
   const video = await getLofiVideo(videoId)
@@ -630,22 +642,19 @@ export async function runArrangementAndRender(videoId: string) {
 
   await updateLofiVideo(videoId, { arrangementJson: planJson } as any)
 
-  const filterComplex = buildFilterGraph(plan)
-  const inputs = allPlanUrls(plan).map(url => ({ url }))
-
+  const tracks = buildTracksPayload(plan)
   const baseUrl = webhookBaseUrl()
 
   try {
     await fal.queue.submit('fal-ai/ffmpeg-api/compose', {
-      input: {
-        inputs,
-        filter_complex: filterComplex,
-      } as any,
+      input: { tracks } as any,
       webhookUrl: `${baseUrl}/api/webhooks/fal/lofi-render/${videoId}`,
     })
+    await publishVideoStatus(videoId, 'rendering')
   } catch (err) {
     console.error('Render submit failed', err)
     await updateLofiVideo(videoId, { status: 'failed' } as any)
+    await publishVideoStatus(videoId, 'failed')
     await logStageTransition(videoId, video.userId, 'rendering', 'failed', String(err))
   }
 }
@@ -668,6 +677,7 @@ export async function handleRenderWebhook(videoId: string, body: FalWebhookPaylo
       )
     }
 
+    await publishVideoStatus(videoId, 'failed', { failStage: 'rendering' })
     await logStageTransition(videoId, video.userId, 'rendering', 'failed', 'render_error')
     return
   }
@@ -675,6 +685,7 @@ export async function handleRenderWebhook(videoId: string, body: FalWebhookPaylo
   const outputUrl = extractResultUrl(body)
   if (!outputUrl) {
     await updateLofiVideo(videoId, { status: 'failed' } as any)
+    await publishVideoStatus(videoId, 'failed', { failStage: 'rendering' })
     await logStageTransition(videoId, video.userId, 'rendering', 'failed', 'no_output_url')
     return
   }
@@ -700,6 +711,7 @@ export async function handleRenderWebhook(videoId: string, body: FalWebhookPaylo
   }
 
   await settleCredits(videoId)
+  await publishVideoStatus(videoId, 'complete', { finalVideoUrl: outputUrl })
   await logStageTransition(videoId, video.userId, 'rendering', 'complete')
 
   await logApiCost({

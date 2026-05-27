@@ -24,6 +24,9 @@ interface AssetStatus {
   status: string
   resultUrl: string | null
   retryCount: number
+  prompt: string
+  model: string
+  durationSec: number
 }
 
 interface VideoStatusResponse {
@@ -111,15 +114,27 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
     const terminal = ['complete', 'failed', 'aborted']
     if (terminal.includes(data.status)) return
 
-    const interval = setInterval(async () => {
-      const result = await fetchStatus()
-      if (result && terminal.includes(result.status)) {
-        clearInterval(interval)
-      }
-    }, 5000)
+    const es = new EventSource(`/api/lofi/videos/${id}/stream`)
 
-    return () => clearInterval(interval)
-  }, [data?.status, fetchStatus])
+    es.onmessage = (event) => {
+      try {
+        const update = JSON.parse(event.data as string) as Partial<VideoStatusResponse> & { finalVideoUrl?: string; ts?: number; done?: number; total?: number }
+        if (update.status) {
+          setData((prev) => prev ? { ...prev, ...update } : prev)
+          if (terminal.includes(update.status!)) {
+            es.close()
+            fetchStatus()
+          } else if (update.done !== undefined) {
+            fetchStatus()
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    }
+
+    es.onerror = () => es.close()
+
+    return () => es.close()
+  }, [data?.status, id, fetchStatus])
 
   const handleCancel = async () => {
     setCancelling(true)
@@ -250,21 +265,12 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
       )}
 
       {isFailed && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 rounded-[10px] border border-[color-mix(in_srgb,var(--danger)_40%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_18%,var(--surface))] px-3.5 py-2.5 text-[0.85rem] text-[var(--text)]">
-            <AlertCircle size={16} />
-            <span>Generation failed</span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              className="inline-flex h-[38px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-[0.85rem] text-[var(--text)] hover:bg-[var(--surface2)]"
-              onClick={handleRetryRender}
-            >
-              <RefreshCw size={16} /> Retry render
-            </button>
-            <DeleteVideoDialog onDelete={handleDelete} />
-          </div>
-        </div>
+        <FailurePanel
+          assets={data.assets}
+          arrangementJson={data.arrangementJson}
+          onRetry={handleRetryRender}
+          onDelete={handleDelete}
+        />
       )}
 
       {isAborted && (
@@ -276,6 +282,73 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
           <DeleteVideoDialog onDelete={handleDelete} />
         </div>
       )}
+
+      <LofiAssetPanel assets={data.assets} isStock={isStock} />
+    </div>
+  )
+}
+
+function FailurePanel({
+  assets,
+  arrangementJson,
+  onRetry,
+  onDelete,
+}: {
+  assets: AssetStatus[]
+  arrangementJson: string | null
+  onRetry: () => void
+  onDelete: () => void
+}) {
+  const music = assets.filter((a) => a.kind === 'music' || a.kind === 'stock-music')
+  const visual = assets.filter((a) => a.kind === 'visual')
+  const musicReady = music.filter((a) => a.status === 'ready' || a.status === 'skipped').length
+  const visualReady = visual.filter((a) => a.status === 'ready' || a.status === 'skipped').length
+  const assetsAllReady = music.length > 0 && musicReady === music.length && visualReady === visual.length
+
+  let headline: string
+  let detail: string
+  let retryLabel: string
+  let retryable = true
+
+  if (!assetsAllReady && assets.length > 0) {
+    headline = 'Asset generation failed'
+    detail = `Music ${musicReady}/${music.length} ready · Visuals ${visualReady}/${visual.length} ready`
+    retryLabel = 'Retry render with ready assets'
+  } else if (assetsAllReady && !arrangementJson) {
+    headline = 'Could not arrange tracks'
+    detail = 'All assets generated but arrangement planning failed'
+    retryLabel = 'Retry render'
+  } else {
+    headline = 'Video rendering failed'
+    detail = 'Assets were ready — rendering service error'
+    retryLabel = 'Retry render'
+  }
+
+  if (music.length > 0 && musicReady === 0) {
+    retryable = false
+    detail = 'No music tracks could be generated. Try a different vibe or track selection.'
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1 rounded-[10px] border border-[color-mix(in_srgb,var(--danger)_40%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_18%,var(--surface))] px-3.5 py-3">
+        <div className="flex items-center gap-2 text-[0.85rem] text-[var(--text)]">
+          <AlertCircle size={16} className="shrink-0 text-[var(--danger)]" />
+          <span className="font-medium">{headline}</span>
+        </div>
+        <p className="pl-6 text-[0.78rem] text-[var(--muted)]">{detail}</p>
+      </div>
+      <div className="flex gap-2">
+        {retryable && (
+          <button
+            className="inline-flex h-[38px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-[0.85rem] text-[var(--text)] hover:bg-[var(--surface2)]"
+            onClick={onRetry}
+          >
+            <RefreshCw size={16} /> {retryLabel}
+          </button>
+        )}
+        <DeleteVideoDialog onDelete={onDelete} />
+      </div>
     </div>
   )
 }
@@ -315,5 +388,97 @@ function DeleteVideoDialog({ onDelete }: { onDelete: () => void }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+function MusicAssetRow({ asset }: { asset: AssetStatus }) {
+  const isReady = asset.status === 'ready' && !!asset.resultUrl
+  const mins = Math.floor(asset.durationSec / 60)
+  const secs = asset.durationSec % 60
+  const duration = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3.5 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-[0.85rem] font-medium text-[var(--text)]">{asset.prompt}</span>
+        <span className="shrink-0 text-[0.72rem] text-[var(--muted)]">{duration}</span>
+      </div>
+      {isReady ? (
+        // eslint-disable-next-line jsx-a11y/media-has-caption
+        <audio controls src={asset.resultUrl!} className="h-8 w-full" style={{ colorScheme: 'dark' }} />
+      ) : (
+        <span className="text-[0.72rem] text-[var(--muted)] capitalize">{asset.status}</span>
+      )}
+    </div>
+  )
+}
+
+function VisualAssetCard({ asset }: { asset: AssetStatus }) {
+  const isImage = /flux|gemini|sdxl/.test(asset.model)
+  const isReady = asset.status === 'ready' && !!asset.resultUrl
+
+  return (
+    <div className="relative aspect-video overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface2)]">
+      {isReady ? (
+        isImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={asset.resultUrl!} alt={asset.prompt} className="h-full w-full object-cover" />
+        ) : (
+          <video
+            src={asset.resultUrl!}
+            muted
+            autoPlay
+            loop
+            playsInline
+            className="h-full w-full object-cover"
+          />
+        )
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-3">
+          <span className="line-clamp-3 text-center text-[0.7rem] text-[var(--muted)]">{asset.prompt}</span>
+          <span className="text-[0.65rem] capitalize text-[var(--muted)] opacity-60">{asset.status}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function LofiAssetPanel({ assets, isStock }: { assets: AssetStatus[]; isStock: boolean }) {
+  const musicAssets = assets
+    .filter((a) => a.kind === 'music' || a.kind === 'stock-music')
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+  const visualAssets = assets
+    .filter((a) => a.kind === 'visual')
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+
+  if (musicAssets.length === 0 && visualAssets.length === 0) return null
+
+  return (
+    <div className="flex flex-col gap-6 border-t border-[var(--border)] pt-6">
+      {musicAssets.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-[0.8rem] font-semibold uppercase tracking-wider text-[var(--muted)]">
+            {isStock ? 'Selected tracks' : 'Music loops'}
+          </h2>
+          <div className="flex flex-col gap-2">
+            {musicAssets.map((asset) => (
+              <MusicAssetRow key={asset.id} asset={asset} />
+            ))}
+          </div>
+        </section>
+      )}
+      {visualAssets.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-[0.8rem] font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Visuals
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {visualAssets.map((asset) => (
+              <VisualAssetCard key={asset.id} asset={asset} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   )
 }

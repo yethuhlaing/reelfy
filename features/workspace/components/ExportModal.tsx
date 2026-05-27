@@ -97,9 +97,7 @@ export function ExportModal({ open, onClose, storyId, scenes }: Props) {
                 <div style={{ fontSize: '0.85rem' }}>
                   {state.status === 'preparing'
                     ? 'Preparing tracks…'
-                    : isStaticMode
-                      ? 'Rendering slideshow in browser…'
-                      : 'Composing video…'}
+                    : 'Composing video on server…'}
                 </div>
                 <div style={{ width: '100%', height: 6, background: 'var(--surface2)', borderRadius: 3 }}>
                   <div style={{ width: `${state.progress}%`, height: '100%', background: 'var(--accent)', borderRadius: 3, transition: 'width 200ms ease' }} />

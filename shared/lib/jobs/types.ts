@@ -1,6 +1,6 @@
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed'
 
-export type JobType = 'animate' | 'compose'
+export type JobType = 'animate' | 'compose' | 'export'
 
 export interface Job<P = unknown, R = unknown> {
   id: string
@@ -42,5 +42,24 @@ export interface ComposePayload {
 }
 
 export interface ComposeResult {
+  videoUrl: string
+}
+
+export interface ExportSceneInput {
+  sceneId: string
+  visualUrl: string
+  isAnimated: boolean
+  voiceoverUrl: string
+  duration: number
+}
+
+export interface ExportPayload {
+  storyId: string
+  scenes: ExportSceneInput[]
+  resolution: '720p' | '1080p'
+  userId: string
+}
+
+export interface ExportResult {
   videoUrl: string
 }

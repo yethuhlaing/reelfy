@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/shared/lib/db'
-import { scenes, stories } from '@/shared/lib/db/schema'
+import { lofiAssets, lofiVideos, scenes, stories } from '@/shared/lib/db/schema'
 import type { GenerateOptions, Scene, StoryData } from '@/shared/lib/types'
 
 export interface StoredStoryRow {
@@ -54,6 +54,7 @@ export interface DashboardStoryRow {
   totalVoiceoverSeconds: number
   createdAt: Date
   updatedAt: Date
+  lofiVideoId: string | null
 }
 
 export async function listUserStories(userId: string, category?: string) {
@@ -64,6 +65,47 @@ export async function listUserStories(userId: string, category?: string) {
   if (storyRows.length === 0) return [] as DashboardStoryRow[]
 
   const storyIds = storyRows.map((s) => s.id)
+
+  const lofiStoryIds = storyRows
+    .filter((s) => s.category === 'lofi' || s.category === 'lofi-stock')
+    .map((s) => s.id)
+
+  const lofiVideoIdByStory = new Map<string, string>()
+  const lofiThumbnailByStory = new Map<string, string>()
+
+  if (lofiStoryIds.length > 0) {
+    const lofiVideoRows = await db
+      .select({ id: lofiVideos.id, storyId: lofiVideos.storyId })
+      .from(lofiVideos)
+      .where(inArray(lofiVideos.storyId, lofiStoryIds))
+
+    const videoIds: string[] = []
+    for (const row of lofiVideoRows) {
+      lofiVideoIdByStory.set(row.storyId, row.id)
+      videoIds.push(row.id)
+    }
+
+    if (videoIds.length > 0) {
+      const visualRows = await db
+        .select({ videoId: lofiAssets.videoId, resultUrl: lofiAssets.resultUrl })
+        .from(lofiAssets)
+        .where(
+          and(
+            inArray(lofiAssets.videoId, videoIds),
+            eq(lofiAssets.kind, 'visual'),
+            eq(lofiAssets.status, 'ready'),
+          ),
+        )
+        .orderBy(asc(lofiAssets.videoId), asc(lofiAssets.orderIndex))
+
+      for (const row of visualRows) {
+        if (!lofiThumbnailByStory.has(row.videoId) && row.resultUrl) {
+          lofiThumbnailByStory.set(row.videoId, row.resultUrl)
+        }
+      }
+    }
+  }
+
   const sceneRows = await db
     .select({
       storyId: scenes.storyId,
@@ -98,18 +140,21 @@ export async function listUserStories(userId: string, category?: string) {
 
   return storyRows.map((story): DashboardStoryRow => {
     const sceneCount = sceneCountByStory.get(story.id) ?? 0
+    const lofiVideoId = lofiVideoIdByStory.get(story.id) ?? null
+    const lofiThumb = lofiVideoId ? (lofiThumbnailByStory.get(lofiVideoId) ?? null) : null
     return {
       id: story.id,
       title: story.title,
       tagline: story.tagline,
       category: story.category,
       status: story.status,
-      thumbnailUrl: story.thumbnailUrl ?? firstSceneImageByStory.get(story.id) ?? null,
+      thumbnailUrl: story.thumbnailUrl ?? lofiThumb ?? firstSceneImageByStory.get(story.id) ?? null,
       sceneCount,
       animatedCount: animatedCountByStory.get(story.id) ?? 0,
       totalVoiceoverSeconds: totalVoiceoverSecondsByStory.get(story.id) ?? 0,
       createdAt: story.createdAt,
       updatedAt: story.updatedAt,
+      lofiVideoId,
     }
   })
 }

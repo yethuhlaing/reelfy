@@ -63,7 +63,7 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
   const total = summary.sceneCount
   const updated = relativeTime(summary.lastUpdated)
 
-  const open = () => router.push(`/${summary.category}/story/${summary.id}`)
+  const open = () => router.push(`/${summary.category}/story/${summary.lofiVideoId ?? summary.id}`)
 
   const handleRenameCommit = () => {
     const next = title.trim()
