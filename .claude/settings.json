@@ -7,7 +7,8 @@
       "WebFetch(domain:api.freetouse.com)",
       "Bash(rtk curl *)",
       "Bash(xargs ls)",
-      "Bash(mkdir -p /Users/yethuhlaing/projects/stickman/app/api/export/\\\\[jobId\\\\]/stream)"
+      "Bash(mkdir -p /Users/yethuhlaing/projects/stickman/app/api/export/\\\\[jobId\\\\]/stream)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|css\\)$\")"
     ],
     "additionalDirectories": [
       "/Users/yethuhlaing/projects/stickman/app/api/export/[jobId]"

@@ -25,25 +25,25 @@ export default function CraftingSection() {
             {/* Coral pill */}
             <motion.div
               whileHover={{ x: 12, scale: 1.02 }}
-              className="bg-[#FF5A3C] text-white text-xs md:text-sm font-semibold uppercase tracking-wider px-5 py-2.5 rounded-full flex items-center gap-2 shadow-sm border border-border cursor-pointer transform transition-all duration-300 translate-x-0"
+              className="bg-coral text-coral-foreground text-xs md:text-sm font-semibold uppercase tracking-wider px-5 py-2.5 rounded-full flex items-center gap-2 shadow-sm border border-border cursor-pointer transform transition-all duration-300 translate-x-0"
             >
-              <Sparkles className="w-4 h-4 text-[#FFB8C8]" />
+              <Sparkles className="w-4 h-4 text-softpink" />
               ✦ Enhanced Flexibility in Post-Production
             </motion.div>
 
             {/* Mint pill */}
             <motion.div
               whileHover={{ x: 12, scale: 1.02 }}
-              className="bg-[#B8D4D0] text-foreground text-xs md:text-sm font-semibold uppercase tracking-wider px-5 py-2.5 rounded-full flex items-center gap-2 shadow-sm border border-border cursor-pointer transform transition-all duration-300 sm:translate-x-6"
+              className="bg-mint text-foreground text-xs md:text-sm font-semibold uppercase tracking-wider px-5 py-2.5 rounded-full flex items-center gap-2 shadow-sm border border-border cursor-pointer transform transition-all duration-300 sm:translate-x-6"
             >
-              <Sparkles className="w-4 h-4 text-[#FF5A3C]" />
+              <Sparkles className="w-4 h-4 text-coral" />
               ✦ Immersive Experiences
             </motion.div>
 
             {/* Pink pill */}
             <motion.div
               whileHover={{ x: 12, scale: 1.02 }}
-              className="bg-[#FFB8C8] text-foreground text-xs md:text-sm font-semibold uppercase tracking-wider px-5 py-2.5 rounded-full flex items-center gap-2 shadow-sm border border-border cursor-pointer transform transition-all duration-300 sm:translate-x-12"
+              className="bg-softpink text-foreground text-xs md:text-sm font-semibold uppercase tracking-wider px-5 py-2.5 rounded-full flex items-center gap-2 shadow-sm border border-border cursor-pointer transform transition-all duration-300 sm:translate-x-12"
             >
               <Sparkles className="w-4 h-4 text-foreground" />
               ✦ Future-Ready Technology

@@ -18,7 +18,7 @@ export default function VideoSection() {
           referrerPolicy="no-referrer"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FF5A3C] via-[#FF5A3C]/85 to-transparent md:w-[75%] lg:w-[60%] z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-coral via-coral/85 to-transparent md:w-[75%] lg:w-[60%] z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent z-10" />
 
         {/* content wrapper */}
@@ -27,7 +27,7 @@ export default function VideoSection() {
           {/* Top Info or Badge */}
           <div className="flex justify-between items-start">
             <span className="glass border border-border text-foreground/90 text-[10px] sm:text-xs font-mono px-4 py-2 rounded-full uppercase tracking-wider flex items-center gap-1.5 leading-none">
-              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+              <Sparkles className="w-3.5 h-3.5 text-softpink animate-pulse" />
               Interactive Demo
             </span>
           </div>
@@ -42,7 +42,7 @@ export default function VideoSection() {
           {/* Footer of card */}
           <div className="flex justify-between items-end">
             <div className="flex items-center gap-3 bg-background/60 backdrop-blur-md px-4 py-2.5 rounded-full border border-border text-foreground shadow-sm leading-none">
-              <Star className="w-4 h-4 fill-primary text-primary" />
+              <Star className="w-4 h-4 fill-coral text-coral" />
               <span className="text-[11px] font-mono tracking-wider uppercase">12P+ Lorem Ipsum</span>
             </div>
           </div>
@@ -53,7 +53,7 @@ export default function VideoSection() {
         <div className="absolute top-1/2 left-[50%] md:left-[75%] -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-3">
           <button
             onClick={() => setIsPlaying(true)}
-            className="w-16 h-16 sm:w-20 sm:h-20 bg-card hover:bg-[#FFB8C8] hover:scale-110 active:scale-95 text-foreground rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,90,60,0.4)] transition-all duration-300 pointer-events-auto cursor-pointer"
+            className="w-16 h-16 sm:w-20 sm:h-20 bg-card hover:bg-softpink hover:scale-110 active:scale-95 text-foreground rounded-full flex items-center justify-center shadow-[0_10px_30px_var(--coral-glow)] transition-all duration-300 pointer-events-auto cursor-pointer"
             aria-label="Play video"
           >
             <Play className="w-6 h-6 sm:w-8 sm:h-8 fill-primary-foreground text-primary-foreground translate-x-0.5" />
@@ -73,14 +73,14 @@ export default function VideoSection() {
             {/* Close Button */}
             <button
                onClick={() => setIsPlaying(false)}
-               className="absolute top-4 right-4 bg-secondary hover:bg-[#FF5A3C] text-foreground hover:text-white p-2.5 rounded-full transition-colors z-50 cursor-pointer"
+               className="absolute top-4 right-4 bg-secondary hover:bg-coral text-foreground hover:text-white p-2.5 rounded-full transition-colors z-50 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* Simulated Live Generation Reel */}
             <div className="p-8 text-center max-w-md flex flex-col items-center">
-              <div className="w-16 h-16 rounded-full bg-[#FF5A3C]/20 flex items-center justify-center text-[#FF5A3C] mb-4 animate-bounce">
+              <div className="w-16 h-16 rounded-full bg-coral/20 flex items-center justify-center text-coral mb-4 animate-bounce">
                 <Sparkles className="w-8 h-8" />
               </div>
               <h3 className="font-display text-3xl font-black text-foreground uppercase tracking-tight mb-2">
@@ -90,9 +90,9 @@ export default function VideoSection() {
                 Connected to the standard super-resolution diffusion node. Generating pixel density parameters...
               </p>
               <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden mb-2">
-                <div className="bg-[#FF5A3C] h-full animate-pulse" style={{ width: "80%" }}></div>
+                <div className="bg-coral h-full animate-pulse" style={{ width: "80%" }}></div>
               </div>
-              <p className="text-[#FF5A3C] text-xs font-mono animate-pulse uppercase tracking-wider">
+              <p className="text-coral text-xs font-mono animate-pulse uppercase tracking-wider">
                 ● LIVE GRAPHICS PIPELINE RUNNING
               </p>
             </div>

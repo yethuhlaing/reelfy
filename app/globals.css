@@ -38,6 +38,27 @@
   --input: var(--border);
   --card: var(--surface-solid);
   --card-foreground: var(--text);
+  /* Landing / marketing palette (secondary & tertiary alongside --accent primary) */
+  --coral: #ff5a3c;
+  --coral-light: #ff8c42;
+  --coral-muted: rgba(255, 140, 66, 0.4);
+  --coral-glow: rgba(255, 90, 60, 0.4);
+  --coral-foreground: #ffffff;
+  --mint: #b8d4d0;
+  --softpink: #ffb8c8;
+  --pink-blush: #feccd6;
+  --pink-rose: #ff8c9f;
+  --pink-border: #ffa6b7;
+  --cream: #f5f0e8;
+  --hero-sunset: radial-gradient(
+    ellipse 75% 75% at 65% 40%,
+    #ffd89b 0%,
+    #ffb066 18%,
+    #f58a3c 38%,
+    #c75a1e 58%,
+    #5a2410 80%,
+    #1a0a05 100%
+  );
 }
 
 :root.light {
@@ -66,6 +87,26 @@
   --input: var(--border);
   --card: var(--surface-solid);
   --card-foreground: var(--text);
+  --coral: #ff5a3c;
+  --coral-light: #ff8c42;
+  --coral-muted: rgba(255, 140, 66, 0.4);
+  --coral-glow: rgba(255, 90, 60, 0.4);
+  --coral-foreground: #ffffff;
+  --mint: #b8d4d0;
+  --softpink: #ffb8c8;
+  --pink-blush: #feccd6;
+  --pink-rose: #ff8c9f;
+  --pink-border: #ffa6b7;
+  --cream: #f5f0e8;
+  --hero-sunset: radial-gradient(
+    ellipse 75% 75% at 65% 40%,
+    #ffd89b 0%,
+    #ffb066 18%,
+    #f58a3c 38%,
+    #c75a1e 58%,
+    #5a2410 80%,
+    #1a0a05 100%
+  );
 }
 
 @layer base {
@@ -159,7 +200,59 @@
   }
 }
 
+@keyframes floatY {
+  0% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  100% { transform: translateY(-18px) rotate(var(--rot, 0deg)); }
+}
+
+@keyframes blobDrift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(60px, -40px) scale(1.1); }
+  66%  { transform: translate(-40px, 50px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.new-blob {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(110px);
+  opacity: 0.45;
+  will-change: transform;
+}
+.new-blob-a {
+  top: -120px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(213,247,12,0.55), transparent 70%);
+  animation: blobDrift 22s ease-in-out infinite;
+}
+.new-blob-b {
+  bottom: -160px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(79,142,247,0.55), transparent 70%);
+  animation: blobDrift 26s ease-in-out 2s infinite reverse;
+}
+.new-blob-c {
+  top: 40%;
+  left: 50%;
+  width: 420px;
+  height: 420px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255,90,60,0.35), transparent 70%);
+  animation: blobDrift 30s ease-in-out 1s infinite;
+}
+
 @theme inline {
+  --color-coral: var(--coral);
+  --color-coral-light: var(--coral-light);
+  --color-coral-foreground: var(--coral-foreground);
+  --color-mint: var(--mint);
+  --color-softpink: var(--softpink);
+  --color-pink-blush: var(--pink-blush);
+  --color-pink-rose: var(--pink-rose);
+  --color-pink-border: var(--pink-border);
+  --color-cream: var(--cream);
   --animate-blink-cursor: blink-cursor 1.2s step-end infinite;
   @keyframes blink-cursor {
   0%, 49% {

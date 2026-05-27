@@ -72,9 +72,9 @@ export default function PortfolioSearch() {
     setSortBy("Features");
   };
 
-  const filterBtnActive = "bg-[#FF5A3C] border-[#FF5A3C] text-white";
+  const filterBtnActive = "bg-coral border-coral text-coral-foreground";
   const filterBtnIdle = "bg-secondary border-border text-foreground hover:bg-secondary/80";
-  const dropdownItemActive = "bg-[#FF5A3C] text-white";
+  const dropdownItemActive = "bg-coral text-coral-foreground";
   const dropdownItemIdle = "text-muted-foreground hover:bg-secondary";
 
   return (
@@ -83,8 +83,8 @@ export default function PortfolioSearch() {
         
         <div className="text-center flex flex-col items-center gap-6">
           
-          <span className="text-xs font-mono tracking-[0.2em] font-semibold text-primary uppercase select-none leading-none flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs font-mono tracking-[0.2em] font-semibold text-coral uppercase select-none leading-none flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-softpink" />
             Vast Creative Assets
           </span>
 
@@ -227,7 +227,7 @@ export default function PortfolioSearch() {
               {(selectedColor !== "All" || selectedCategory !== "All" || selectedAspect !== "All" || searchQuery) && (
                 <button
                   onClick={handleResetFilters}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-[#FF5A3C] text-foreground hover:text-white text-[10px] font-bold uppercase rounded-full transition-colors font-mono"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-coral text-foreground hover:text-white text-[10px] font-bold uppercase rounded-full transition-colors font-mono"
                   title="Reset all filters"
                 >
                   <RefreshCw className="w-3 h-3" />
@@ -286,7 +286,7 @@ export default function PortfolioSearch() {
             </p>
             <button
               onClick={handleResetFilters}
-              className="mt-3 px-6 py-2.5 bg-[#FF5A3C] text-white text-xs font-bold uppercase rounded-full"
+              className="mt-3 px-6 py-2.5 bg-coral text-coral-foreground text-xs font-bold uppercase rounded-full"
             >
               Clear filters
             </button>
@@ -318,7 +318,7 @@ export default function PortfolioSearch() {
                           <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 z-10" />
 
                           <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-20 flex flex-col gap-1.5">
-                            <span className="text-[10px] font-mono font-semibold text-primary uppercase tracking-widest">{img.category}</span>
+                            <span className="text-[10px] font-mono font-semibold text-coral uppercase tracking-widest">{img.category}</span>
                             <h4 className="font-display text-lg font-bold text-foreground uppercase leading-none truncate">{img.title}</h4>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {img.tags.slice(0, 2).map((tag, tIdx) => (
@@ -340,7 +340,7 @@ export default function PortfolioSearch() {
               <div className="w-full flex justify-center mt-12">
                 <button
                   onClick={() => setVisibleCount((prev) => prev + 4)}
-                  className="px-8 py-3.5 bg-[#FF5A3C] hover:bg-card text-white hover:text-foreground font-medium text-xs sm:text-sm uppercase tracking-wider rounded-full transition-all duration-300 shadow-md transform hover:scale-[1.03]"
+                  className="px-8 py-3.5 bg-coral hover:bg-card text-coral-foreground hover:text-foreground font-medium text-xs sm:text-sm uppercase tracking-wider rounded-full transition-all duration-300 shadow-md transform hover:scale-[1.03]"
                 >
                   See More
                 </button>

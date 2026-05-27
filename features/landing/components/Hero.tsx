@@ -4,114 +4,255 @@ import { motion } from "motion/react";
 
 export default function Hero() {
   return (
-    <header className="relative w-full min-h-screen bg-[#F5F0E8] overflow-hidden flex flex-col justify-end pt-32 pb-16 md:pb-24" id="hero-section">
-      {/* Container holding top elements and layout */}
-      <div className="w-full max-w-7xl mx-auto px-6 relative flex flex-col justify-between flex-grow">
-        
-        {/* Top Floating Row - Block 01 */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start z-10 w-full mb-12">
-          {/* Top-Left: "01" block */}
-          <div className="md:col-span-4 max-w-sm flex flex-col gap-1.5 pt-4">
-            <span className="font-mono text-xs font-semibold text-foreground tracking-widest uppercase">
-              01 —
-            </span>
-            <p className="text-muted-foreground text-xs md:text-sm font-normal leading-relaxed">
-              AI image generation uses algorithms and deep learning to create visuals from simple inputs—whether.
-            </p>
-          </div>
+    <header
+      className="relative w-full min-h-screen overflow-hidden flex flex-col"
+      id="hero-section"
+      style={{ background: "var(--hero-sunset)" }}
+    >
+      {/* Portrait — center-right, large, behind content */}
+      <div
+        className="absolute right-[6%] top-[6%] w-[58%] h-[94%] z-0 pointer-events-none select-none"
+        style={{
+          backgroundImage: "url('/images/hero.png')",
+          backgroundPosition: "center top",
+          backgroundSize: "contain",
+          backgroundRepeat: "no-repeat",
+          maskImage:
+            "radial-gradient(ellipse 70% 80% at 50% 40%, black 55%, transparent 90%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 70% 80% at 50% 40%, black 55%, transparent 90%)",
+        }}
+      />
 
-          <div className="hidden md:block md:col-span-4" />
-
-          {/* Top-Right Area for Badge 1 */}
-          <div className="md:col-span-4 flex md:justify-end">
+      {/* Main grid */}
+      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-8 pt-32 pb-12 flex-grow flex flex-col">
+        <div className="grid grid-cols-12 gap-6 flex-grow">
+          {/* LEFT COLUMN — Badge + Headline */}
+          <div className="col-span-12 lg:col-span-7 flex flex-col justify-start">
+            {/* Pill badge */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-[#FFB8C8] text-foreground border border-border px-6 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider shadow-sm hover:scale-105 transition-transform cursor-pointer flex items-center gap-2"
+              transition={{ delay: 0.2 }}
+              className="inline-flex w-fit items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.18em] text-white/90"
             >
-              <span className="text-xs">✦</span> Ultra-High Pixel Density
+              <span className="w-5 h-5 rounded-full bg-gradient-to-br from-coral-light to-coral flex items-center justify-center text-[9px] text-coral-foreground">
+                ✦
+              </span>
+              AI Image Studio
+            </motion.div>
+
+            {/* Headline — left-aligned, multi-line, gradient fade on some lines */}
+            <h1 className="mt-10 font-display font-black uppercase tracking-tighter leading-[0.92] text-[8.5vw] lg:text-[112px]">
+              <span className="block text-white">The Future</span>
+              <span
+                className="block"
+                style={{
+                  background:
+                    "linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 35%, rgba(255,255,255,0.15) 90%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                Of Generated
+              </span>
+              <span
+                className="block"
+                style={{
+                  background:
+                    "linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,240,210,0.95) 40%, rgba(120,40,10,0.5) 95%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                AI Images
+              </span>
+            </h1>
+          </div>
+
+          {/* RIGHT COLUMN — Glass info cards */}
+          <div className="col-span-12 lg:col-span-5 flex flex-col gap-4 lg:items-end">
+            {/* Card 1 — Pixel density / chart */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="w-full lg:w-[300px] rounded-2xl border border-white/15 bg-black/25 backdrop-blur-xl p-5 shadow-2xl"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white/90 text-sm font-semibold">
+                  Pixel Density
+                </span>
+                <span className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 text-xs">
+                  ↗
+                </span>
+              </div>
+              <div className="mt-3">
+                <div className="text-white/60 text-xs">Ultra-high resolution</div>
+                <div className="text-white/80 text-xs mt-1">
+                  Faster output with premium engine.
+                </div>
+              </div>
+              <svg
+                viewBox="0 0 200 50"
+                className="w-full h-10 mt-3"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="chartGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="var(--coral-light)" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="var(--coral)" stopOpacity="1" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M0,40 L30,35 L60,30 L90,28 L120,22 L150,18 L180,8 L200,5"
+                  fill="none"
+                  stroke="url(#chartGrad)"
+                  strokeWidth="2"
+                />
+                <circle cx="180" cy="8" r="3" fill="var(--coral-light)" />
+              </svg>
+            </motion.div>
+
+            {/* Card 2 — Visual realism gauge */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.55 }}
+              className="w-full lg:w-[300px] rounded-2xl border border-white/15 bg-black/25 backdrop-blur-xl p-5 shadow-2xl"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white/90 text-sm font-semibold">
+                  Visual Realism
+                </span>
+                <span className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 text-xs">
+                  ↗
+                </span>
+              </div>
+              <div className="mt-4 flex items-center gap-4">
+                <div className="relative w-20 h-20 flex-shrink-0">
+                  <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="32"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.08)"
+                      strokeWidth="8"
+                    />
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="32"
+                      fill="none"
+                      stroke="var(--coral-light)"
+                      strokeWidth="8"
+                      strokeDasharray={`${0.93 * 2 * Math.PI * 32} ${2 * Math.PI * 32}`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-lg">
+                    93%
+                  </div>
+                </div>
+                <div className="text-white/70 text-xs leading-relaxed">
+                  Exceptional fidelity across generated portraits.
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 3 — Engine response */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+              className="w-full lg:w-[300px] rounded-2xl border border-white/15 bg-black/25 backdrop-blur-xl p-4 shadow-2xl"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white/90 text-sm font-semibold">
+                  Engine Response
+                </span>
+                <span className="text-primary text-xs">▍▍</span>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-primary text-xs">
+                  Response Auto-Optimized
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-white/50 text-xs">Latency</span>
+                <span className="text-white font-semibold text-sm">110ms</span>
+              </div>
             </motion.div>
           </div>
         </div>
 
-        {/* ⚠️ CRITICAL TEXT-BEHIND-IMAGE CONTAINER */}
-        <div className="relative w-full flex flex-col items-center justify-center py-8 my-auto select-none">
-          
-          {/* Layer 1 (bottom): Headline text */}
-          <h1 className="font-display font-black text-center text-[11vw] sm:text-[120px] md:text-[145px] lg:text-[160px] leading-[0.85] tracking-tighter text-foreground select-none pointer-events-none flex flex-col items-center z-0 uppercase">
-            <span>THE FUTURE OF</span>
-            <span>GENERATED AI</span>
-            <span>IMAGES</span>
-          </h1>
+        {/* BOTTOM ROW */}
+        <div className="grid grid-cols-12 gap-6 items-end mt-auto pt-12">
+          {/* Bottom-left: dot pattern + description */}
+          <div className="col-span-12 lg:col-span-5 flex items-start gap-4">
+            <div className="grid grid-cols-3 gap-1 flex-shrink-0">
+              {Array.from({ length: 24 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-sm"
+                  style={{
+                    backgroundColor:
+                      i % 4 === 0 ? "var(--coral-light)" : "var(--coral-muted)",
+                  }}
+                />
+              ))}
+            </div>
+            <p className="text-white/70 text-sm leading-relaxed max-w-xs">
+              An AI image platform that learns from creative intent, adapts in
+              real time, and delivers human-centric visuals at scale.
+            </p>
+          </div>
 
-          {/* Layer 2 (middle): The high-fidelity portrait arched overlay as specified in the Vibrant Palette theme */}
-          <div className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 w-[260px] sm:w-[320px] md:w-[380px] lg:w-[420px] h-[310px] sm:h-[380px] md:h-[450px] lg:h-[490px] z-10 select-none pointer-events-none">
-            {/* The arched portrait container */}
-            <div 
-              className="w-full h-full relative"
-              style={{
-                backgroundImage: "url('/images/hero.png')",
-                backgroundPosition: "center",
-                backgroundSize: "cover",
-                backgroundRepeat: "no-repeat",
-                borderRadius: "210px 210px 0 0",
-                maskImage: "linear-gradient(to bottom, black 82%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to bottom, black 82%, transparent 100%)",
-              }}
-            >
-              {/* Layer 3: Red tracking plus grid overlaid on the face area inside the portrait */}
-              <div className="absolute inset-0 grid grid-cols-6 gap-y-7 gap-x-6 sm:gap-y-9 sm:gap-x-8 px-8 sm:px-12 pt-16 pb-8 opacity-75 pointer-events-none">
-                {Array.from({ length: 36 }).map((_, i) => (
-                  <span key={i} className="text-[#FF5A3C] font-bold text-xs sm:text-sm flex items-center justify-center" style={{ textShadow: "0 0 4px rgba(255, 90, 60, 0.4)" }}>
-                    +
-                  </span>
-                ))}
+          {/* Bottom-center: realism gauge */}
+          <div className="col-span-12 lg:col-span-2 flex justify-center">
+            <div className="relative w-24 h-24">
+              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.1)"
+                  strokeWidth="2"
+                  strokeDasharray="2 3"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="var(--coral-light)"
+                  strokeWidth="2"
+                  strokeDasharray={`${0.69 * 2 * Math.PI * 42} ${2 * Math.PI * 42}`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-white font-bold text-lg">69%</span>
+                <span className="text-white/50 text-[10px] uppercase tracking-wider">
+                  Realism
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Floating badge mid-left */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.8 }}
-            className="absolute left-4 sm:left-12 top-[45%] -translate-y-1/2 z-20 bg-[#FF5A3C] text-white border border-border px-6 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider shadow-lg hover:scale-105 transition-transform cursor-pointer flex items-center gap-2"
-          >
-            <span>✦</span> Exceptional Visual Realism
-          </motion.div>
-        </div>
-
-        {/* Bottom Row - Block 02 & Banner Text */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end w-full mt-8 z-20">
-          
-          {/* Bottom-Left: Dot indicator + Description */}
-          <div className="md:col-span-4 max-w-sm flex items-start gap-4">
-            <div className="relative flex-shrink-0 w-11 h-11 bg-foreground rounded-full flex items-center justify-center border border-border shadow-sm">
-              <span className="w-4 h-4 rounded-full bg-[#FF5A3C] relative">
-                <span className="absolute inset-0 rounded-full bg-white/70 w-2 h-2 m-auto left-0 right-0 top-0 bottom-0 origin-center animate-ping"></span>
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <p className="text-foreground text-xs md:text-sm font-normal leading-relaxed">
-                The Future of AI-Generated Images is a transformative journey where creativity and technology converge.
-              </p>
-            </div>
-          </div>
-
-          <div className="hidden md:block md:col-span-4" />
-
-          {/* Bottom-Right: Block 02 */}
-          <div className="md:col-span-4 max-w-sm flex flex-col gap-1.5 md:ml-auto">
-            <span className="font-mono text-xs font-semibold text-foreground tracking-widest uppercase">
-              02 —
+          {/* Bottom-right: scroll cue */}
+          <div className="col-span-12 lg:col-span-5 flex lg:justify-end items-center gap-2 text-white/50 text-xs uppercase tracking-[0.25em] font-mono">
+            <span>Scroll Down</span>
+            <span className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center">
+              ↓
             </span>
-            <p className="text-muted-foreground text-xs md:text-sm font-normal leading-relaxed">
-              This level of personalization, once a time-consuming process, is now accessible in real-time thanks to AI.
-            </p>
           </div>
         </div>
-
       </div>
     </header>
   );

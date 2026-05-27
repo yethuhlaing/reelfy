@@ -12,11 +12,11 @@ export default function Footer() {
 
         {/* Right Links */}
         <div className="flex items-center gap-6 text-muted-foreground">
-          <a href="#privacy" className="hover:text-primary transition-colors duration-200">
+          <a href="#privacy" className="hover:text-coral transition-colors duration-200">
             Privacy Policy
           </a>
           <span>·</span>
-          <a href="#terms" className="hover:text-primary transition-colors duration-200">
+          <a href="#terms" className="hover:text-coral transition-colors duration-200">
             Term & Conditions
           </a>
         </div>

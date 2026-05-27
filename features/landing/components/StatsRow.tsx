@@ -12,7 +12,7 @@ export default function StatsRow() {
     <section className="w-full bg-background grid grid-cols-1 md:grid-cols-3 border-y border-border" id="stats-section">
       
       {/* CARD 1 — CORAL (#FF5A3C) */}
-      <div className="bg-[#FF5A3C] p-10 min-h-[350px] flex flex-col justify-between group transition-colors duration-300">
+      <div className="bg-coral p-10 min-h-[350px] flex flex-col justify-between group transition-colors duration-300">
         <div>
           <h2 className="font-display text-7xl sm:text-8xl font-black text-white tracking-tighter leading-none select-none">
             12,000
@@ -55,7 +55,7 @@ export default function StatsRow() {
       </div>
 
       {/* CARD 2 — MINT (#B8D4D0) */}
-      <div className="bg-[#B8D4D0] p-10 min-h-[350px] flex flex-col justify-between group transition-colors duration-300 text-foreground">
+      <div className="bg-mint p-10 min-h-[350px] flex flex-col justify-between group transition-colors duration-300 text-foreground">
         <div>
           <label className="text-foreground/60 text-xs font-mono mb-2 block uppercase tracking-wider select-none">
             Recognition Rate — {percent2}%
@@ -77,7 +77,7 @@ export default function StatsRow() {
             
             <div 
               style={{ left: `calc(${percent2}% - 22px)` }}
-              className="absolute top-1/2 -translate-y-1/2 w-9 h-9 bg-foreground rounded-full flex items-center justify-center text-[#B8D4D0] transition-all duration-350 shadow-md group-hover:scale-110 pointer-events-none"
+              className="absolute top-1/2 -translate-y-1/2 w-9 h-9 bg-foreground rounded-full flex items-center justify-center text-mint transition-all duration-350 shadow-md group-hover:scale-110 pointer-events-none"
             >
               <ArrowRight className="w-4 h-4" />
             </div>
@@ -98,7 +98,7 @@ export default function StatsRow() {
       </div>
 
       {/* CARD 3 — PINK (#FFB8C8) */}
-      <div className="bg-[#FFB8C8] p-10 min-h-[350px] flex flex-col justify-between group transition-colors duration-300 text-foreground">
+      <div className="bg-softpink p-10 min-h-[350px] flex flex-col justify-between group transition-colors duration-300 text-foreground">
         <div>
           <h2 className="font-display text-7xl sm:text-8xl font-black text-white tracking-tighter leading-none select-none drop-shadow-sm">
             80
@@ -132,7 +132,7 @@ export default function StatsRow() {
             
             <div 
               style={{ left: `calc(${percent3}% - 22px)` }}
-              className="absolute top-1/2 -translate-y-1/2 w-9 h-9 bg-foreground rounded-full flex items-center justify-center text-[#FFB8C8] transition-all duration-350 shadow-md group-hover:scale-110 pointer-events-none"
+              className="absolute top-1/2 -translate-y-1/2 w-9 h-9 bg-foreground rounded-full flex items-center justify-center text-softpink transition-all duration-350 shadow-md group-hover:scale-110 pointer-events-none"
             >
               <ArrowRight className="w-4 h-4" />
             </div>

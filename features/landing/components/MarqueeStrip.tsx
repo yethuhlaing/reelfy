@@ -26,14 +26,14 @@ export default function MarqueeStrip() {
           {marqueeItems.map((item, index) => (
             <div key={index} className="flex items-center gap-12 font-display text-4xl sm:text-5xl font-black tracking-widest leading-none uppercase">
               <span>{item}</span>
-              <span className="text-primary text-4xl select-none leading-none pt-1">✷</span>
+              <span className="text-coral text-4xl select-none leading-none pt-1">✷</span>
             </div>
           ))}
           {/* Loop duplicate */}
           {marqueeItems.map((item, index) => (
             <div key={`dup-${index}`} className="flex items-center gap-12 font-display text-4xl sm:text-5xl font-black tracking-widest leading-none uppercase">
               <span>{item}</span>
-              <span className="text-primary text-4xl select-none leading-none pt-1">✷</span>
+              <span className="text-coral text-4xl select-none leading-none pt-1">✷</span>
             </div>
           ))}
         </div>

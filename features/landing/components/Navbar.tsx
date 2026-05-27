@@ -40,8 +40,8 @@ export default function Navbar() {
 
         {/* Desktop Get Started Button */}
         <div className="hidden md:block">
-          <button className="bg-foreground hover:bg-[#FF5A3C] text-background hover:text-white font-medium text-sm tracking-wide px-6 py-3 rounded-full transition-all duration-300 transform hover:scale-[1.03] active:scale-[0.98] shadow-sm hover:shadow-[#FF5A3C]/20 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#FFB8C8]" />
+          <button className="bg-foreground hover:bg-coral text-background hover:text-white font-medium text-sm tracking-wide px-6 py-3 rounded-full transition-all duration-300 transform hover:scale-[1.03] active:scale-[0.98] shadow-sm hover:shadow-coral/20 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-softpink" />
             Get Started
           </button>
         </div>
@@ -92,7 +92,7 @@ export default function Navbar() {
             })}
           </div>
           <hr className="border-border" />
-          <button className="bg-[#FF5A3C] text-white font-bold tracking-wide w-full py-3.5 rounded-full flex items-center justify-center gap-2 text-sm shadow-md">
+          <button className="bg-coral text-coral-foreground font-bold tracking-wide w-full py-3.5 rounded-full flex items-center justify-center gap-2 text-sm shadow-md">
             <Sparkles className="w-4 h-4" />
             Get Started
           </button>
