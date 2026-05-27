@@ -1,4 +1,4 @@
-import type { GenerateOptions, Scene, StoryData } from '@/shared/lib/types'
+import type { GenerateOptions, Scene, StoryData, WordTiming } from '@/shared/lib/types'
 
 export async function fetchStory(storyId: string): Promise<{
   storyInput: string
@@ -29,6 +29,7 @@ export async function patchSceneFields(
   sceneId: string,
   body: {
     voiceoverDuration?: number | null
+    voiceoverWordTimings?: WordTiming[] | null
     imagePrompt?: string
     motionPrompt?: string | null
     voiceover?: string

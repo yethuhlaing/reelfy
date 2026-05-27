@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/shared/lib/db'
 import { lofiAssets, lofiVideos, scenes, stories } from '@/shared/lib/db/schema'
-import type { GenerateOptions, Scene, StoryData } from '@/shared/lib/types'
+import type { GenerateOptions, Scene, StoryData, WordTiming } from '@/shared/lib/types'
 
 export interface StoredStoryRow {
   id: string
@@ -38,6 +38,7 @@ export interface StoredSceneRow {
   characters: number
   props: string
   voiceoverDuration: string | null
+  voiceoverWordTimings: unknown
   imageModel: string | null
   videoModel: string | null
 }
@@ -323,6 +324,7 @@ export interface SceneUpdate {
   voiceoverUrl?: string | null
   videoUrl?: string | null
   voiceoverDuration?: number | null
+  voiceoverWordTimings?: WordTiming[] | null
   imagePrompt?: string
   motionPrompt?: string | null
   voiceoverText?: string
@@ -348,6 +350,7 @@ export async function updateSceneForUser(
   if (patch.voiceoverDuration !== undefined) {
     set.voiceoverDuration = patch.voiceoverDuration != null ? String(patch.voiceoverDuration) : null
   }
+  if (patch.voiceoverWordTimings !== undefined) set.voiceoverWordTimings = patch.voiceoverWordTimings ?? null
   if (patch.imagePrompt !== undefined) set.imagePrompt = patch.imagePrompt
   if (patch.motionPrompt !== undefined) set.motionPrompt = patch.motionPrompt
   if (patch.voiceoverText !== undefined) set.voiceoverText = patch.voiceoverText
@@ -446,6 +449,7 @@ export function sceneRowToScene(sc: StoredSceneRow): Scene {
     voiceoverUrl: sc.voiceoverUrl,
     videoUrl: sc.videoUrl,
     voiceoverDuration: sc.voiceoverDuration != null ? Number(sc.voiceoverDuration) : undefined,
+    voiceoverWordTimings: Array.isArray(sc.voiceoverWordTimings) ? (sc.voiceoverWordTimings as WordTiming[]) : null,
   }
 }
 

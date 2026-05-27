@@ -1,5 +1,6 @@
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { updateSceneForUser } from '@/features/stories/server/stories-db'
+import type { WordTiming } from '@/shared/lib/types'
 
 export const runtime = 'nodejs'
 
@@ -19,6 +20,7 @@ export async function PATCH(
     voiceoverUrl?: string | null
     videoUrl?: string | null
     voiceoverDuration?: number | null
+    voiceoverWordTimings?: WordTiming[] | null
     imagePrompt?: string
     motionPrompt?: string | null
     voiceover?: string
@@ -29,6 +31,7 @@ export async function PATCH(
     voiceoverUrl?: string | null
     videoUrl?: string | null
     voiceoverDuration?: number | null
+    voiceoverWordTimings?: WordTiming[] | null
     imagePrompt?: string
     motionPrompt?: string | null
     voiceoverText?: string
@@ -37,6 +40,7 @@ export async function PATCH(
   if ('voiceoverUrl' in body) dbPatch.voiceoverUrl = body.voiceoverUrl ?? null
   if ('videoUrl' in body) dbPatch.videoUrl = body.videoUrl ?? null
   if ('voiceoverDuration' in body) dbPatch.voiceoverDuration = body.voiceoverDuration ?? null
+  if ('voiceoverWordTimings' in body) dbPatch.voiceoverWordTimings = body.voiceoverWordTimings ?? null
   if ('imagePrompt' in body) dbPatch.imagePrompt = body.imagePrompt ?? ''
   if ('motionPrompt' in body) dbPatch.motionPrompt = body.motionPrompt ?? null
   if ('voiceover' in body) dbPatch.voiceoverText = body.voiceover ?? ''

@@ -5,9 +5,16 @@ import { ConfigPill } from '@/features/lofi/components/ConfigPill'
 import { DURATION_OPTIONS } from '@/features/lofi/lib/pricing-constants'
 import { TEXT_MODEL_OPTIONS } from '@/shared/lib/text-model-options'
 import { VISUAL_COUNT_OPTIONS } from '@/features/lofi-stock/lib/visual-count-options'
+import { AiPromptInput } from '@/shared/ui/ai-prompt-input'
 import { PlaylistDurationMeter } from './PlaylistDurationMeter'
 import type { TextModel } from '@/shared/lib/types'
 import type { FreetouseTrack } from '@/shared/lib/providers/audio/music-freetouse'
+
+const STOCK_VIBE_PLACEHOLDERS = [
+  'rainy tokyo cafe after midnight - mellow keys, soft vinyl crackle, distant espresso hiss',
+  'golden-hour city rooftops with lazy drums, warm bass, and nostalgic guitar textures',
+  'quiet mountain cabin in winter, sparse piano, tape hiss, and deep focus atmosphere',
+]
 
 export function StockSetupStep({
   vibe,
@@ -46,19 +53,14 @@ export function StockSetupStep({
         Describe the mood, video length, and generation settings. Scene ideas are created on the next step.
       </p>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="lofi-stock-vibe" className="text-[0.8rem] text-[var(--muted)]">
-          Vibe
-        </label>
-        <textarea
-          id="lofi-stock-vibe"
-          className="min-h-[100px] resize-y rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 font-[var(--font-body)] text-[0.95rem] text-[var(--text)] outline-none focus:border-transparent focus:outline-2 focus:outline-[var(--accent)] focus:outline-offset-[-1px]"
-          placeholder="rainy tokyo café after midnight — mellow keys, soft vinyl crackle, distant espresso hiss"
-          value={vibe}
-          onChange={(e) => onVibeChange(e.target.value)}
-          disabled={pillsDisabled}
-        />
-      </div>
+      <AiPromptInput
+        id="lofi-stock-vibe"
+        label="Vibe"
+        value={vibe}
+        onChange={onVibeChange}
+        placeholders={STOCK_VIBE_PLACEHOLDERS}
+        disabled={pillsDisabled}
+      />
 
       <div className="flex flex-wrap gap-2">
         <ConfigPill

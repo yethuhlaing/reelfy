@@ -370,6 +370,28 @@ function WorkspaceInner({ storyId, category }: Props) {
         }
         if (!url) { setPlayState({ isPlaying: false, currentIndex: -1 }); return }
 
+        // Lazy backfill: fetch word timings for scenes that lack them.
+        // To disable, comment out this block.
+        if (!scene.voiceoverWordTimings) {
+          try {
+            const res = await fetch('/api/voiceover/timings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: scene.voiceover, sceneId: scene.id, storyId }),
+            })
+            if (res.ok) {
+              const { wordTimings } = await res.json() as { wordTimings: import('@/shared/lib/types').WordTiming[] }
+              setStoryData((prev) =>
+                prev
+                  ? { ...prev, scenes: prev.scenes.map((s) => (s.id === scene.id ? { ...s, voiceoverWordTimings: wordTimings } : s)) }
+                  : prev,
+              )
+            }
+          } catch {
+            // non-fatal — karaoke unavailable, falls back to TypingAnimation
+          }
+        }
+
         const item = { id: scene.id, src: url, data: { index } }
 
         return new Promise<void>((resolve, reject) => {

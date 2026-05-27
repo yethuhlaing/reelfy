@@ -43,6 +43,13 @@
       "when": 1779838865188,
       "tag": "0005_motionless_slyde",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779907461052,
+      "tag": "0006_fancy_apocalypse",
+      "breakpoints": true
     }
   ]
 }

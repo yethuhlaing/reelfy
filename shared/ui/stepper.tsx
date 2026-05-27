@@ -10,9 +10,11 @@ export interface StepperStep {
 export function Stepper({
   steps,
   currentStep,
+  onStepClick,
 }: {
   steps: StepperStep[]
   currentStep: string
+  onStepClick?: (id: string) => void
 }) {
   const currentIndex = steps.findIndex((s) => s.id === currentStep)
 
@@ -23,6 +25,7 @@ export function Stepper({
           const isComplete = i < currentIndex
           const isCurrent = s.id === currentStep
           const isLast = i === steps.length - 1
+          const clickable = isComplete && !!onStepClick
 
           return (
             <li
@@ -30,7 +33,12 @@ export function Stepper({
               className={`flex items-center ${isLast ? 'shrink-0' : 'min-w-0 flex-1'}`}
               aria-current={isCurrent ? 'step' : undefined}
             >
-              <div className="flex min-w-0 flex-col items-center gap-1.5">
+              <button
+                type="button"
+                disabled={!clickable}
+                onClick={() => clickable && onStepClick(s.id)}
+                className={`flex min-w-0 flex-col items-center gap-1.5 rounded-lg px-1.5 py-1 transition ${clickable ? 'cursor-pointer hover:bg-[var(--surface2)]' : 'cursor-default'}`}
+              >
                 <span
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-[0.75rem] font-semibold transition ${
                     isComplete
@@ -49,7 +57,7 @@ export function Stepper({
                 >
                   {s.label}
                 </span>
-              </div>
+              </button>
               {!isLast && (
                 <div
                   className="mx-2 h-0.5 min-w-[12px] flex-1 rounded-full bg-[var(--border)]"

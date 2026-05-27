@@ -22,11 +22,18 @@ export interface ScenePlan {
   motionPrompt?: string
 }
 
+export interface WordTiming {
+  word: string
+  startMs: number
+  endMs: number
+}
+
 export interface Scene extends ScenePlan {
   imageUrl: string | null
   voiceoverUrl: string | null
   videoUrl?: string | null
   voiceoverDuration?: number
+  voiceoverWordTimings?: WordTiming[] | null
   pendingJobId?: string
   lastError?: string
 }

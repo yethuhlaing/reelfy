@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
-import { generateVoiceover } from '@/shared/lib/integrations/elevenlabs'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getStoryForUser, parseOptions, updateSceneForUser } from '@/features/stories/server/stories-db'
-import { completeSceneVoiceover } from '@/features/stories/server/story-assets'
+import { generateVoiceover } from '@/shared/lib/integrations/elevenlabs'
+
+// Lazy backfill: fetches word timings for scenes that predate the /with-timestamps migration.
+// To disable backfill entirely, comment out the POST handler body and return early:
+// export async function POST() { return NextResponse.json({ wordTimings: null }) }
 
 export async function POST(request: Request) {
   try {
@@ -18,10 +21,7 @@ export async function POST(request: Request) {
     }
 
     if (!text || !sceneId || !storyId) {
-      return NextResponse.json(
-        { error: 'Missing required fields: text, sceneId, storyId' },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const story = await getStoryForUser(storyId, userId)
@@ -31,27 +31,22 @@ export async function POST(request: Request) {
 
     const storyVoiceId = parseOptions(story.story.options)?.voiceId
 
-    const { audio, wordTimings } = await generateVoiceover(text, request.signal, {
+    // Calls ElevenLabs /with-timestamps — audio is discarded, only timings stored.
+    // One-time credit cost per old scene.
+    const { wordTimings } = await generateVoiceover(text, request.signal, {
       userId,
       storyId,
       sceneId,
-      operation: 'scene_voiceover',
+      operation: 'voiceover_timings_backfill',
     }, storyVoiceId)
 
     if (request.signal.aborted) {
       return new Response('cancelled', { status: 499 })
     }
 
-    const url = await completeSceneVoiceover({
-      storyId,
-      sceneId,
-      userId,
-      data: Buffer.from(audio),
-    })
-
     await updateSceneForUser(storyId, sceneId, userId, { voiceoverWordTimings: wordTimings })
 
-    return NextResponse.json({ url, sceneId, wordTimings })
+    return NextResponse.json({ wordTimings })
   } catch (error) {
     if (
       request.signal.aborted ||
@@ -59,9 +54,9 @@ export async function POST(request: Request) {
     ) {
       return new Response('cancelled', { status: 499 })
     }
-    console.error('Voiceover API error:', error)
+    console.error('Voiceover timings backfill error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate voiceover' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch timings' },
       { status: 500 },
     )
   }

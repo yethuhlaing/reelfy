@@ -8,12 +8,19 @@ import {
   VISUAL_MODEL_OPTIONS,
 } from '@/features/lofi/lib/pricing-constants'
 import { TEXT_MODEL_OPTIONS } from '@/shared/lib/text-model-options'
+import { AiPromptInput } from '@/shared/ui/ai-prompt-input'
 import type { TextModel } from '@/shared/lib/types'
 
 const VISUAL_COUNT_OPTIONS = Array.from({ length: 12 }, (_, i) => {
   const n = i + 1
   return { value: String(n), label: String(n) }
 })
+
+const LOFI_VIBE_PLACEHOLDERS = [
+  'rainy tokyo cafe after midnight - mellow keys, soft vinyl crackle, distant espresso hiss',
+  'sunrise by the sea with gentle piano, warm tape noise, and optimistic morning energy',
+  'late-night coding loft, dusty jazz chords, neon ambience, and calm focus',
+]
 
 interface Props {
   vibe: string
@@ -50,19 +57,14 @@ export function LofiSetupStep({
 }: Props) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <label htmlFor="vibe" style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-          Vibe
-        </label>
-        <textarea
-          id="vibe"
-          className="min-h-[80px] resize-y rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 font-[var(--font-body)] text-[0.95rem] text-[var(--text)] outline-none focus:border-transparent focus:outline-2 focus:outline-[var(--accent)] focus:outline-offset-[-1px]"
-          placeholder="rainy tokyo café after midnight — mellow keys, soft vinyl crackle, distant espresso hiss"
-          value={vibe}
-          onChange={(e) => onVibeChange(e.target.value)}
-          disabled={isExpanding}
-        />
-      </div>
+      <AiPromptInput
+        id="vibe"
+        label="Vibe"
+        value={vibe}
+        onChange={onVibeChange}
+        placeholders={LOFI_VIBE_PLACEHOLDERS}
+        disabled={isExpanding}
+      />
 
       <div className="flex flex-wrap gap-2">
         <ConfigPill
