@@ -310,13 +310,14 @@ function LofiStockFormInner() {
         <h1 style={{ marginTop: 10 }}>New lofi-stock video</h1>
       </div>
 
-      <LofiStockStepHeader
-        step={step}
-        showBack={step !== 'playlist'}
-        onBack={handleBack}
-      />
+      <div className="glass-panel mt-2 flex flex-col gap-5 p-6 md:p-8">
+        <LofiStockStepHeader
+          step={step}
+          showBack={step !== 'playlist'}
+          onBack={handleBack}
+        />
 
-      {step === 'playlist' && (
+        {step === 'playlist' && (
         <>
           <div className="lg:hidden">
             <StockPlaylistPanel {...playlistPanelProps} compact />
@@ -401,6 +402,7 @@ function LofiStockFormInner() {
           />
         </div>
       )}
+      </div>
     </div>
   )
 }

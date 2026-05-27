@@ -3,6 +3,7 @@ import PortfolioSearch from "@/features/landing/components/PortfolioSearch";
 import Footer from "@/features/landing/components/Footer";
 import StatsRow from "@/features/landing/components/StatsRow";
 import MarqueeStrip from "@/features/landing/components/MarqueeStrip";
+import ExploreCardsSection from "@/features/landing/components/ExploreCardsSection";
 import VideoSection from "@/features/landing/components/VideoSection";
 import CraftingSection from "@/features/landing/components/CraftingSection";
 import PinkCard from "@/features/landing/components/PinkCard";
@@ -24,19 +25,22 @@ export default function App() {
       {/* 4. Scrolling Marquee Strip */}
       <MarqueeStrip />
 
-      {/* 5. Cinematic Video Process Section */}
+      {/* 5. Three-card explore section */}
+      <ExploreCardsSection />
+
+      {/* 6. Cinematic Video Process Section */}
       <VideoSection />
 
-      {/* 6. Diagonal Crafting Badges Section */}
+      {/* 7. Diagonal Crafting Badges Section */}
       <CraftingSection />
 
-      {/* 7. Interactive Custom Generator Card */}
+      {/* 8. Interactive Custom Generator Card */}
       <PinkCard />
 
-      {/* 8 & 9. Instant Assets Search Hub & Masonry Portfolio Grid */}
+      {/* 9 & 10. Instant Assets Search Hub & Masonry Portfolio Grid */}
       <PortfolioSearch />
 
-      {/* 10. Styled Corporate Footer */}
+      {/* 11. Styled Corporate Footer */}
       <Footer />
     </div>
   );

@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { Menu, X, Sparkles } from "lucide-react";
+import { useLenis } from "lenis/react";
 
 export default function Navbar() {
   const [activeTab, setActiveTab] = useState("Services");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const lenis = useLenis();
 
   const navLinks = ["Services", "About Us", "Portfolio", "Contact Us"];
 
@@ -50,8 +52,7 @@ export default function Navbar() {
         <div className="flex md:hidden items-center gap-3">
           <button
             onClick={() => {
-              const el = document.getElementById("search-section");
-              if (el) el.scrollIntoView({ behavior: "smooth" });
+              lenis?.scrollTo("#search-section", { offset: -96 });
             }}
             className="bg-foreground text-background px-4 py-2 rounded-full text-xs font-semibold uppercase"
           >

@@ -284,9 +284,9 @@ export function LofiForm() {
         <h1 style={{ marginTop: 10 }}>New lofi video</h1>
       </div>
 
-      <LofiStepHeader step={step} onBack={handleBack} showBack={step !== 'setup'} />
+      <div className="glass-panel mt-2 flex flex-col gap-5 p-6 md:p-8">
+        <LofiStepHeader step={step} onBack={handleBack} showBack={step !== 'setup'} />
 
-      <div className="mt-2">
         {step === 'setup' && (
           <LofiSetupStep
             vibe={vibe}

@@ -179,13 +179,14 @@ export function StoryForm({ category }: { category: string }) {
         <h1 style={{ marginTop: 10 }}>New story</h1>
       </div>
 
-      <Stepper
-        steps={STEPS}
-        currentStep={step}
-        onStepClick={(id) => setStep(id)}
-      />
+      <div className="glass-panel flex flex-col gap-5 p-6 md:p-8">
+        <Stepper
+          steps={STEPS}
+          currentStep={step}
+          onStepClick={(id) => setStep(id)}
+        />
 
-      {/* Step 1 — Prompt */}
+        {/* Step 1 — Prompt */}
       {step === 'prompt' && (
         <div className="flex flex-col gap-3">
           <AiPromptInput
@@ -342,6 +343,7 @@ export function StoryForm({ category }: { category: string }) {
             {submitting ? 'Starting…' : 'Generate Story'}
           </button>
         )}
+      </div>
       </div>
     </div>
   )

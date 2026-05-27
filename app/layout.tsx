@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
+import 'lenis/dist/lenis.css'
 import './globals.css'
 import { Toaster } from '@/shared/ui/sonner'
 import { ThemeProvider } from '@/shared/providers/theme-provider'
+import { LenisProvider } from '@/shared/providers/lenis-provider'
 import { AppShell } from '@/shared/layout/app-shell'
 import { getSessionUser } from '@/features/auth/server/auth-session'
 import { getUserSession } from '@/shared/lib/db/user'
@@ -44,8 +46,10 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AppShell currentUser={currentUser}>{children}</AppShell>
-          <Toaster />
+          <LenisProvider>
+            <AppShell currentUser={currentUser}>{children}</AppShell>
+            <Toaster />
+          </LenisProvider>
         </ThemeProvider>
       </body>
     </html>
