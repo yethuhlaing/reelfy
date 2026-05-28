@@ -36,7 +36,7 @@ export function TopBar({ title, breadcrumb, right, currentUser = null }: TopBarP
   const { collapsed, toggle } = useSidebar()
 
   return (
-    <header className="sticky top-0 z-40 flex items-center gap-3 bg-[color-mix(in_srgb,var(--bg)_85%,transparent)] px-5 py-2.5 backdrop-blur-[10px]">
+    <header className="sticky top-0 z-40 flex items-center gap-3 bg-transparent px-5 py-2.5 backdrop-blur-[10px]">
       <button
         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface2)] text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
         onClick={toggle}

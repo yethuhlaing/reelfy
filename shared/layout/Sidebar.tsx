@@ -43,7 +43,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
   return (
     <aside
       data-lenis-prevent
-      className="sticky top-0 flex h-screen flex-col gap-2 overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] px-2.5 py-3.5"
+      className="relative z-10 sticky top-0 flex h-screen flex-col gap-2 overflow-y-auto border-r border-[var(--border)] bg-[var(--surface)] px-2.5 py-3.5"
     >
       <div className={cn('flex items-center gap-2.5 px-2.5 pb-3.5', collapsed && 'justify-center')}>
         <Link

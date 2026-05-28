@@ -22,7 +22,7 @@ function AutoGrowTextarea({
   return (
     <textarea
       ref={ref}
-      className="min-h-[40px] flex-1 resize-none overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[0.82rem] text-[var(--text)] outline-none focus:border-transparent focus:outline-2 focus:outline-[var(--accent)]"
+      className="min-h-[40px] flex-1 resize-none overflow-hidden rounded-lg border border-[var(--border-strong)] bg-[var(--surface-solid)] px-3 py-2 text-[0.82rem] text-[var(--text)] outline-none focus:border-transparent focus:outline-2 focus:outline-[var(--accent)]"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
@@ -68,7 +68,7 @@ export function LofiPromptList({
             />
             <button
               type="button"
-              className="mt-1 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)]"
+              className="mt-1 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-solid)] text-[var(--muted)] hover:text-[var(--text)]"
               onClick={() => onRegenerate(index)}
               title="Regenerate"
             >
@@ -77,7 +77,7 @@ export function LofiPromptList({
             {onRemove && (
               <button
                 type="button"
-                className="mt-1 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--danger)]"
+                className="mt-1 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-solid)] text-[var(--muted)] hover:text-[var(--danger)]"
                 onClick={() => onRemove(index)}
                 title="Remove"
               >

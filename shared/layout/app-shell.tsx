@@ -93,7 +93,7 @@ export function AppShell({ children, currentUser }: AppShellProps) {
         data-collapsed="false"
       >
         <Sidebar currentUser={currentUser} />
-        <div className="flex min-h-screen min-w-0 flex-col">
+        <div className="relative z-30 flex min-h-screen min-w-0 flex-col">
           {topBar ? <TopBar {...topBar} currentUser={currentUser} /> : null}
           {children}
         </div>

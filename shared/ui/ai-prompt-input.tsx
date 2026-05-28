@@ -30,7 +30,7 @@ export function AiPromptInput({
         value={value}
         onChange={onChange}
         disabled={disabled}
-        inputClassName="h-16"
+        inputClassName="min-h-40"
       />
     </div>
   )

@@ -9,6 +9,9 @@ import CraftingSection from "@/features/landing/components/CraftingSection";
 import PinkCard from "@/features/landing/components/PinkCard";
 import Navbar from "@/features/landing/components/Navbar";
 import Hero from "@/features/landing/components/Hero";
+import FeaturedStackSection from "@/features/landing/components/FeaturedStackSection";
+import VideoTextMaskSection from "@/features/landing/components/VideoTextMaskSection";
+import VideoBentoGridSection from "@/features/landing/components/VideoBentoGridSection";
 
 export default function App() {
   return (
@@ -18,6 +21,15 @@ export default function App() {
 
       {/* 2. Hero Section (with critical text-behind-image portrait layers) */}
       <Hero />
+
+      {/* 2b. Featured stacker scroll showcase */}
+      <FeaturedStackSection />
+
+      {/* 2c. Video through text mask */}
+      <VideoTextMaskSection />
+
+      {/* 2d. Bento video grid */}
+      <VideoBentoGridSection />
 
       {/* 3. Stats Row (3 colored interactive cards) */}
       <StatsRow />

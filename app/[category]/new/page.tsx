@@ -22,7 +22,7 @@ export default async function NewStoryPage({
   const { category } = await params
 
   return (
-    <div className="relative flex min-h-screen flex-1 items-start justify-center overflow-hidden bg-background px-6 py-8">
+    <div className="relative z-30 flex flex-1 items-start justify-center overflow-hidden bg-background px-6 py-8">
       <DecorativeBackground showFloatingChrome={false} />
       <div className="relative z-20 w-full max-w-6xl">
         <NewCategoryForm category={category} />
