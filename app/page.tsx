@@ -10,6 +10,7 @@ import PinkCard from "@/features/landing/components/PinkCard";
 import Navbar from "@/features/landing/components/Navbar";
 import Hero from "@/features/landing/components/Hero";
 import FeaturedStackSection from "@/features/landing/components/FeaturedStackSection";
+import FeaturedStackReversedSection from "@/features/landing/components/FeaturedStackReversedSection";
 import VideoTextMaskSection from "@/features/landing/components/VideoTextMaskSection";
 import VideoBentoGridSection from "@/features/landing/components/VideoBentoGridSection";
 
@@ -24,6 +25,9 @@ export default function App() {
 
       {/* 2b. Featured stacker scroll showcase */}
       <FeaturedStackSection />
+
+      {/* 2b-alt. Featured stack — mirrored layout */}
+      <FeaturedStackReversedSection />
 
       {/* 2c. Video through text mask */}
       <VideoTextMaskSection />

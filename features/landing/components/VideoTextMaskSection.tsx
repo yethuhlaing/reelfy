@@ -1,35 +1,28 @@
 "use client";
 
-import { useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef } from "react";
 
-const VIDEO_SRC = "/videos/2.mp4";
+const VIDEO_SRC = "/videos/video-mask.mp4";
 
 export default function VideoTextMaskSection() {
   const sectionId = useId();
   const maskId = `vcut-${sectionId.replace(/:/g, "")}`;
   const videoRef = useRef<HTMLVideoElement>(null);
-  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const shouldPlay = prefersReducedMotion !== true;
     let cancelled = false;
 
     const play = () => {
-      if (cancelled || !shouldPlay) return;
+      if (cancelled) return;
       video.muted = true;
-      video.play().catch(() => {});
+      video.defaultMuted = true;
+      void video.play().catch(() => {});
     };
 
-    if (shouldPlay) {
-      play();
-    } else {
-      video.pause();
-      return;
-    }
+    play();
 
     const onReady = () => play();
     video.addEventListener("loadeddata", onReady);
@@ -37,10 +30,9 @@ export default function VideoTextMaskSection() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry) return;
-        if (entry.isIntersecting && shouldPlay) {
-          video.muted = true;
-          video.play().catch(() => {});
+        if (!entry || cancelled) return;
+        if (entry.isIntersecting) {
+          play();
         } else {
           video.pause();
         }
@@ -55,7 +47,7 @@ export default function VideoTextMaskSection() {
       video.removeEventListener("canplay", onReady);
       observer.disconnect();
     };
-  }, [prefersReducedMotion]);
+  }, []);
 
   return (
     <section className="relative h-screen w-full overflow-hidden bg-black">
@@ -63,11 +55,11 @@ export default function VideoTextMaskSection() {
         ref={videoRef}
         src={VIDEO_SRC}
         muted
-        autoPlay
         loop
         playsInline
         preload="auto"
         className="absolute inset-0 h-full w-full object-cover"
+        aria-hidden
       />
 
       <div className="absolute inset-0 flex items-center justify-center">
