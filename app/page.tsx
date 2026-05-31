@@ -1,18 +1,19 @@
 
 import PortfolioSearch from "@/features/landing/components/PortfolioSearch";
-import Footer from "@/features/landing/components/Footer";
+import Footer from "@/features/landing/section/Footer";
 import StatsRow from "@/features/landing/components/StatsRow";
 import MarqueeStrip from "@/features/landing/components/MarqueeStrip";
-import ExploreCardsSection from "@/features/landing/components/ExploreCardsSection";
-import VideoSection from "@/features/landing/components/VideoSection";
-import CraftingSection from "@/features/landing/components/CraftingSection";
+import ExploreCardsSection from "@/features/landing/section/ExploreCardsSection";
+import VideoSection from "@/features/landing/section/VideoSection";
+import CraftingSection from "@/features/landing/section/CraftingSection";
 import PinkCard from "@/features/landing/components/PinkCard";
 import Navbar from "@/features/landing/components/Navbar";
-import Hero from "@/features/landing/components/Hero";
-import FeaturedStackSection from "@/features/landing/components/FeaturedStackSection";
-import FeaturedStackReversedSection from "@/features/landing/components/FeaturedStackReversedSection";
-import VideoTextMaskSection from "@/features/landing/components/VideoTextMaskSection";
-import VideoBentoGridSection from "@/features/landing/components/VideoBentoGridSection";
+import Hero from "@/features/landing/section/Hero";
+import FeaturedStackSection from "@/features/landing/section/FeaturedStackSection";
+import FeaturedStackReversedSection from "@/features/landing/section/FeaturedStackReversedSection";
+import VideoTextMaskSection from "@/features/landing/section/VideoTextMaskSection";
+import VideoBentoGridSection from "@/features/landing/section/VideoBentoGridSection";
+import SpeakerSection from "@/features/landing/section/SpeakerSection";
 
 export default function App() {
   return (
@@ -29,6 +30,8 @@ export default function App() {
       {/* 2b-alt. Featured stack — mirrored layout */}
       <FeaturedStackReversedSection />
 
+      {/* 2b-alt. Speaker Section */}
+      <SpeakerSection />
       {/* 2c. Video through text mask */}
       <VideoTextMaskSection />
 

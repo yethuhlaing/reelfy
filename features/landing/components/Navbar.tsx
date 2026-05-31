@@ -14,9 +14,13 @@ export default function Navbar() {
   return (
     <nav className="w-full absolute top-0 left-0 z-50 px-6 py-6 md:px-12" id="aileng-nav">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo Wordmark */}
-        <h1 className="font-display text-4xl font-black tracking-tight text-foreground uppercase select-none cursor-pointer hover:opacity-80 transition-opacity">
-          AILENG
+        {/* Logo */}
+        <h1 className="select-none cursor-pointer hover:opacity-80 transition-opacity">
+          <img
+            src="/logos/logo.png"
+            alt="Reelicy"
+            className="h-40 w-auto md:h-[12.5rem]"
+          />
         </h1>
 
         {/* Desktop Navbar Center Pill */}
