@@ -79,7 +79,7 @@ export default function VideoTextMaskSection() {
                 fill="black"
                 fontSize="280"
                 fontWeight="900"
-                fontFamily="var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif"
+                fontFamily="var(--font-urbanist), 'Urbanist', system-ui, sans-serif"
                 letterSpacing="-0.04em"
               >
                 STORY
@@ -91,7 +91,7 @@ export default function VideoTextMaskSection() {
                 fill="black"
                 fontSize="280"
                 fontWeight="900"
-                fontFamily="var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif"
+                fontFamily="var(--font-urbanist), 'Urbanist', system-ui, sans-serif"
                 letterSpacing="-0.04em"
               >
                 VIDEO

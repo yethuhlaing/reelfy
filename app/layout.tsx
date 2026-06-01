@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
+import { Urbanist, JetBrains_Mono } from 'next/font/google'
 import 'lenis/dist/lenis.css'
 import './globals.css'
 import { Toaster } from '@/shared/ui/sonner'
@@ -10,10 +10,10 @@ import { getSessionUser } from '@/features/auth/server/auth-session'
 import { getUserSession } from '@/shared/lib/db/user'
 import { SEO, flatKeywords } from '@/shared/lib/seo'
 
-const jakartaSans = Plus_Jakarta_Sans({
+const urbanist = Urbanist({
   subsets: ['latin'],
-  variable: '--font-jakarta',
-  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-urbanist',
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
   display: 'swap',
 })
 
@@ -152,7 +152,7 @@ export default async function RootLayout({
   const currentUser = getSessionUser(session)
 
   return (
-    <html lang="en" suppressHydrationWarning className={`${jakartaSans.variable} ${jbMono.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${urbanist.variable} ${jbMono.variable}`}>
       <head>
         <script
           type="application/ld+json"

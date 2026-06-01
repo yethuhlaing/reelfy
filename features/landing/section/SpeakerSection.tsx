@@ -30,30 +30,9 @@ export default function SpeakerSection() {
         aria-hidden
         style={{
           background:
-            "radial-gradient(ellipse 60% 50% at 70% 55%, rgba(213,247,12,0.05) 0%, rgba(255,90,60,0.04) 45%, transparent 75%)",
+            "radial-gradient(ellipse 60% 50% at 50% 55%, rgba(213,247,12,0.05) 0%, rgba(255,90,60,0.04) 45%, transparent 75%)",
         }}
       />
-
-      {/* Transparent portrait — on top of content, faded at edges */}
-      <div
-        className="pointer-events-none absolute bottom-0 left-1/2 z-[20] h-[90%] w-[min(90vw,480px)] -translate-x-[38%] select-none md:h-[95%] md:w-[min(55vw,560px)] lg:w-[min(42vw,580px)]"
-        style={{
-          maskImage:
-            "radial-gradient(ellipse 70% 80% at 50% 40%, black 55%, transparent 90%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 70% 80% at 50% 40%, black 55%, transparent 90%)",
-        }}
-        aria-hidden
-      >
-        <Image
-          src="/transparent/2.png"
-          alt=""
-          fill
-          className="object-contain object-bottom"
-          sizes="(max-width: 768px) 90vw, 50vw"
-          priority={false}
-        />
-      </div>
 
       {/* Decorative corner accent */}
       <div
@@ -68,12 +47,33 @@ export default function SpeakerSection() {
       />
 
       <div className="relative z-[2] mx-auto max-w-[1400px] px-6 md:px-12">
-        <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
+        {/*
+          Desktop: [ portrait | copy | player ] — each in its own column, no overlap.
+          Mobile: copy → portrait → player
+        */}
+        <div className="grid grid-cols-1 items-end gap-12 lg:grid-cols-[minmax(0,26%)_minmax(0,1fr)_minmax(300px,32%)] lg:gap-8 xl:gap-12">
 
-          {/* ── Left column: copy ── */}
-          <div className="flex flex-col lg:col-span-5">
+          {/* ── Column 1: Portrait ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative order-2 mx-auto h-[min(52vh,420px)] w-full max-w-[300px] lg:order-1 lg:mx-0 lg:h-[min(68vh,580px)] lg:max-w-none lg:justify-self-start"
+          >
+            <Image
+              src="/transparent/2.png"
+              alt=""
+              fill
+              className="object-contain object-bottom object-left"
+              sizes="(max-width: 1024px) 300px, 26vw"
+              priority={false}
+            />
+          </motion.div>
 
-            {/* Badge */}
+          {/* ── Column 2: Copy ── */}
+          <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:px-2 xl:px-4">
+
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -85,13 +85,12 @@ export default function SpeakerSection() {
               AI Music Player
             </motion.div>
 
-            {/* Headline */}
             <motion.h2
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="font-display text-[clamp(3.5rem,8vw,6rem)] font-black uppercase leading-[0.88] tracking-tight text-foreground"
+              className="font-display text-[clamp(2.75rem,6vw,5.5rem)] font-black uppercase leading-[0.88] tracking-tight text-foreground xl:text-[clamp(3.5rem,5vw,6rem)]"
             >
               <span className="block">SOUND</span>
               <span
@@ -109,13 +108,12 @@ export default function SpeakerSection() {
               <span className="block">AI</span>
             </motion.h2>
 
-            {/* Stats row */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: 0.25 }}
-              className="mt-10 flex gap-8"
+              className="mt-10 flex flex-wrap gap-6 sm:gap-8"
             >
               {STATS.map((s) => (
                 <div key={s.label} className="flex flex-col">
@@ -129,7 +127,6 @@ export default function SpeakerSection() {
               ))}
             </motion.div>
 
-            {/* Feature pills */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -164,13 +161,12 @@ export default function SpeakerSection() {
               })}
             </motion.div>
 
-            {/* Description */}
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: 0.5 }}
-              className="mt-10 max-w-sm border-t border-border pt-6"
+              className="mt-10 max-w-md border-t border-border pt-6"
             >
               <p className="text-sm font-light leading-relaxed text-muted-foreground">
                 Scrub through AI-generated tracks in real-time, toggle ambience
@@ -180,15 +176,14 @@ export default function SpeakerSection() {
             </motion.div>
           </div>
 
-          {/* ── Right column: Speaker card ── */}
+          {/* ── Column 3: Speaker / playlist ── */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.55, delay: 0.2 }}
-            className="relative flex justify-center lg:col-span-7"
+            className="relative order-3 flex w-full justify-center lg:justify-end"
           >
-            {/* Glow ring behind the card */}
             <div
               className="pointer-events-none absolute inset-[10%] rounded-3xl blur-3xl"
               style={{
@@ -198,32 +193,22 @@ export default function SpeakerSection() {
               aria-hidden
             />
 
-            {/* Decorative label top-left */}
-            <div className="absolute -left-4 top-8 hidden flex-col items-center gap-2 lg:flex">
-              <div className="h-12 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
-              <span className="rotate-[-90deg] whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground/50">
-                Audio Engine
-              </span>
-            </div>
-
-            {/* Speaker card */}
-            <div className="w-full max-w-[420px]">
+            <div className="relative w-full max-w-[420px] lg:max-w-[440px]">
               <Speaker />
-            </div>
 
-            {/* Decorative music note badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: 0.6 }}
-              className="absolute -bottom-6 -right-2 hidden items-center gap-2 rounded-full border border-white/15 bg-black/40 px-4 py-2.5 shadow-2xl backdrop-blur-xl lg:flex"
-            >
-              <Music2 className="h-4 w-4 text-coral-light" />
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
-                ElevenMusic
-              </span>
-            </motion.div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: 0.6 }}
+                className="absolute -bottom-6 right-0 hidden items-center gap-2 rounded-full border border-white/15 bg-black/40 px-4 py-2.5 shadow-2xl backdrop-blur-xl lg:flex"
+              >
+                <Music2 className="h-4 w-4 text-coral-light" />
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
+                  ElevenMusic
+                </span>
+              </motion.div>
+            </div>
           </motion.div>
 
         </div>
