@@ -19,7 +19,7 @@ export default function Navbar() {
           <img
             src="/logos/logo.png"
             alt="Reelicy"
-            className="h-40 w-auto md:h-[12.5rem]"
+            className="h-16 w-auto md:h-20"
           />
         </h1>
 

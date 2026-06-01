@@ -106,13 +106,13 @@ export default function Footer() {
           {/* Image + CTA */}
           <div className="sm:col-span-2 lg:col-span-4 lg:w-full">
             <div className="relative pb-6">
-              <div className="relative min-h-[360px] w-full overflow-hidden rounded-2xl bg-black sm:min-h-[420px]">
+              <div className="relative min-h-[360px] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-coral-light via-coral to-[var(--accent-ink)] sm:min-h-[420px]">
                 <img
-                  src="/logos/logo.png"
-                  alt="Reelicy logo"
+                  src="/images/hero.png"
+                  alt="AILENG creative showcase"
                   width={991}
                   height={1199}
-                  className="absolute inset-0 z-0 h-full w-full object-contain object-center p-8"
+                  className="absolute inset-0 z-0 h-full w-full object-cover object-top"
                   loading="lazy"
                   decoding="async"
                 />

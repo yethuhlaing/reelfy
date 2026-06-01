@@ -9,18 +9,18 @@ export default function Hero() {
       id="hero-section"
       style={{ background: "var(--hero-sunset)" }}
     >
-      {/* Logo — center-right, large, behind content */}
+      {/* Portrait — center-right, large, behind content */}
       <div
-        className="absolute right-[6%] top-[18%] w-[58%] h-[50%] z-0 pointer-events-none select-none"
+        className="absolute right-[6%] top-[6%] w-[58%] h-[94%] z-0 pointer-events-none select-none"
         style={{
-          backgroundImage: "url('/logos/logo.png')",
-          backgroundPosition: "center center",
+          backgroundImage: "url('/images/hero.png')",
+          backgroundPosition: "center top",
           backgroundSize: "contain",
           backgroundRepeat: "no-repeat",
           maskImage:
-            "radial-gradient(ellipse 80% 70% at 50% 50%, black 55%, transparent 90%)",
+            "radial-gradient(ellipse 70% 80% at 50% 40%, black 55%, transparent 90%)",
           WebkitMaskImage:
-            "radial-gradient(ellipse 80% 70% at 50% 50%, black 55%, transparent 90%)",
+            "radial-gradient(ellipse 70% 80% at 50% 40%, black 55%, transparent 90%)",
         }}
       />
 

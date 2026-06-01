@@ -1,3 +1,29 @@
+import { Metadata } from "next";
+import { SEO, flatKeywords, buildCanonical } from "@/shared/lib/seo";
+
+export const metadata: Metadata = {
+  title: "StickStory — AI Video Generator for Creators | Stickman, Lofi, ASMR & Cartoon",
+  description:
+    "StickStory lets creators generate stickman explainer videos, long-hour lofi music, ASMR songs, and cartoon videos with AI — no editing skills needed. Start free.",
+  keywords: flatKeywords("core", "stickman", "lofi", "asmr", "cartoon", "creator"),
+  alternates: {
+    canonical: buildCanonical("/"),
+  },
+  openGraph: {
+    title: "StickStory — AI Video Generator for Creators",
+    description:
+      "Generate stickman videos, lofi music, ASMR & cartoon videos with AI. Built for YouTubers, educators, and digital creators. Start free.",
+    url: SEO.siteUrl,
+    images: [
+      {
+        url: SEO.defaults.ogImage,
+        width: 1200,
+        height: 630,
+        alt: "StickStory — Generate AI Videos, Lofi Music, ASMR & Cartoons",
+      },
+    ],
+  },
+};
 
 import PortfolioSearch from "@/features/landing/components/PortfolioSearch";
 import Footer from "@/features/landing/section/Footer";
