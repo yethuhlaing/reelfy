@@ -23,15 +23,11 @@ function StepBadge({ step }: { step: string }) {
 export default function ExploreCardsSection() {
   return (
     <section
-      className="w-full bg-background"
+    className="grid grid-cols-1 gap-1 lg:grid-cols-12"
+      // className="w-full bg-background"
       id="explore-cards-section"
       aria-labelledby="explore-cards-heading"
     >
-      <h2 id="explore-cards-heading" className="sr-only">
-        Explore features
-      </h2>
-
-      <div className="grid grid-cols-1 gap-[2px] lg:grid-cols-12">
         {/* Card 01 — narrow */}
         <article className="relative min-h-[420px] overflow-hidden lg:col-span-3 lg:min-h-[560px]">
           <img
@@ -119,7 +115,7 @@ export default function ExploreCardsSection() {
             </div>
           </div>
         </article>
-      </div>
+      
     </section>
   );
 }

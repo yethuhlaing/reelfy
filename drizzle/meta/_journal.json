@@ -50,6 +50,13 @@
       "when": 1779907461052,
       "tag": "0006_fancy_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780350652215,
+      "tag": "0007_purple_shen",
+      "breakpoints": true
     }
   ]
 }

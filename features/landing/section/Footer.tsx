@@ -17,7 +17,7 @@ export default function Footer() {
 
   return (
     <footer
-      id="aileng-footer"
+      id="reelify-footer"
       className="relative w-full overflow-hidden bg-cream text-[var(--accent-ink)]"
     >
       {/* Grain + column grid */}
@@ -58,10 +58,10 @@ export default function Footer() {
             </div>
 
             <a
-              href="mailto:info@aileng.com"
+              href="mailto:info@reelify.com"
               className="font-display text-2xl font-black tracking-tight underline decoration-[var(--accent-ink)] decoration-1 underline-offset-[6px] transition-colors hover:text-coral hover:decoration-coral sm:text-3xl md:text-[2rem]"
             >
-              Info@aileng.com
+              Info@reelify.com
             </a>
           </div>
 
@@ -106,13 +106,13 @@ export default function Footer() {
           {/* Image + CTA */}
           <div className="sm:col-span-2 lg:col-span-4 lg:w-full">
             <div className="relative pb-6">
-              <div className="relative min-h-[360px] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-coral-light via-coral to-[var(--accent-ink)] sm:min-h-[420px]">
+              <div className="relative min-h-[360px] w-full overflow-hidden rounded-2xl sm:min-h-[420px]">
                 <img
-                  src="/images/hero.png"
-                  alt="AILENG creative showcase"
+                  src="/transparent/6.png"
+                  alt="Reelify creative showcase"
                   width={991}
                   height={1199}
-                  className="absolute inset-0 z-0 h-full w-full object-cover object-top"
+                  className="absolute inset-0 z-0 h-full w-full object-contain object-top"
                   loading="lazy"
                   decoding="async"
                 />
@@ -137,16 +137,16 @@ export default function Footer() {
               Contact Us
             </p>
             <a
-              href="mailto:hello@aileng.com"
+              href="mailto:hello@reelify.com"
               className="text-sm font-medium transition-colors hover:text-coral md:text-base"
             >
-              Hello@aileng.com
+              Hello@reelify.com
             </a>
           </div>
 
           <div className="relative flex flex-wrap items-start gap-2">
             <h2 className="font-display text-[clamp(3.5rem,18vw,13rem)] font-black uppercase leading-[0.85] tracking-[-0.06em] text-[var(--accent-ink)]">
-              AILENG
+              REELIFY
               <span className="text-[var(--accent-ink)]">.</span>
             </h2>
             <span
@@ -163,7 +163,7 @@ export default function Footer() {
       <div className="relative bg-coral py-4 text-coral-foreground">
         <div className="mx-auto flex w-full max-w-[1400px] flex-col items-center justify-between gap-3 px-4 text-[11px] font-medium tracking-wide sm:flex-row sm:gap-4 sm:px-6 sm:text-xs lg:px-8">
           <p className="text-center sm:text-left">
-            ©{currentYear} AILENG. All Right Reserved.
+            ©{currentYear} Reelify. All Right Reserved.
           </p>
           <p className="text-center opacity-95">
             Sector 7, Metaverse Jakarta Megapolis 12050

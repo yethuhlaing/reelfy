@@ -84,7 +84,7 @@ export default function VideoSection() {
                 <Sparkles className="w-8 h-8" />
               </div>
               <h3 className="font-display text-3xl font-black text-foreground uppercase tracking-tight mb-2">
-                AILENG ENGINE v4
+                REELIFY ENGINE v4
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed mb-6">
                 Connected to the standard super-resolution diffusion node. Generating pixel density parameters...

@@ -1,101 +1,109 @@
 'use client'
 
 import { useState } from "react";
+import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useLenis } from "lenis/react";
+import { cn } from "@/shared/lib/utils";
+import { AnimatedMobileMenu } from "@/shared/components/af";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("Services");
   const lenis = useLenis();
 
   const navLinks = ["Services", "About Us", "Portfolio", "Contact Us"];
 
-  const linkClass =
-    "text-sm font-bold text-black hover:text-black/70 transition-colors";
+  const desktopLinkClass = (isActive: boolean) =>
+    cn(
+      "rounded-full px-4 py-2 text-xs font-semibold transition-all duration-300",
+      isActive
+        ? "bg-white/15 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+        : "text-white/70 hover:bg-white/10 hover:text-white",
+    );
 
   return (
-    <nav className="w-full absolute top-0 left-0 z-50 px-6 py-6 md:px-12" id="aileng-nav">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo */}
-        <h1 className="select-none cursor-pointer hover:opacity-80 transition-opacity">
+    <nav className="absolute top-0 left-0 z-50 w-full px-8 py-6 md:px-16 lg:px-20" id="reelify-nav">
+      <div className="flex w-full items-center justify-between">
+        <Link
+          href="/"
+          className="cursor-pointer select-none transition-opacity hover:opacity-80"
+        >
           <img
             src="/logos/logo.png"
-            alt="Reelicy"
-            className="h-11 w-auto md:h-14"
+            alt="Reelify"
+            className="h-6 w-auto md:h-8"
           />
-        </h1>
+        </Link>
 
-        {/* Desktop nav links */}
-        <div className="hidden md:flex items-center gap-5">
-          {navLinks.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              className={linkClass}
-              id={`nav-link-${tab.toLowerCase().replace(" ", "-")}`}
-            >
-              {tab}
-            </button>
-          ))}
+        {/* Desktop — glass pill nav (matches hero cards) */}
+        <div className="hidden md:flex items-center rounded-full border border-white/15 bg-black/25 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+          {navLinks.map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={desktopLinkClass(isActive)}
+                id={`nav-link-${tab.toLowerCase().replace(" ", "-")}`}
+              >
+                {tab}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Desktop Get Started */}
         <div className="hidden md:block">
-          <button
-            type="button"
-            className="bg-black text-white font-extrabold text-sm tracking-wide px-6 py-3 rounded-full"
+          <Link
+            href="/waitlist"
+            className="inline-block rounded-full bg-black px-6 py-3 text-sm font-extrabold tracking-wide text-white shadow-[0_4px_24px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]"
           >
             Get Started
-          </button>
+          </Link>
         </div>
 
-        {/* Mobile */}
-        <div className="flex md:hidden items-center gap-3">
+        <div className="flex items-center gap-3 md:hidden">
           <button
             type="button"
             onClick={() => {
               lenis?.scrollTo("#search-section", { offset: -96 });
             }}
-            className="bg-black text-white px-4 py-2 rounded-full text-xs font-bold uppercase"
+            className="rounded-full border border-white/20 bg-black/30 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white backdrop-blur-md"
           >
             Explore
           </button>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-black hover:text-black/70 transition-colors"
+            className="rounded-full border border-white/15 bg-black/25 p-2 text-white/90 backdrop-blur-md transition-colors hover:bg-white/10"
             id="mobile-menu-toggle"
             aria-expanded={mobileMenuOpen}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div className="absolute top-[80px] left-6 right-6 bg-white/95 backdrop-blur-sm rounded-2xl p-6 flex flex-col gap-4 z-50 md:hidden animate-in fade-in duration-300">
-          <div className="flex flex-col gap-4">
-            {navLinks.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`w-full text-left text-base ${linkClass}`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="bg-black text-white font-medium tracking-wide w-full py-3.5 rounded-full text-sm"
+      <AnimatedMobileMenu
+        open={mobileMenuOpen}
+        onOpenChange={setMobileMenuOpen}
+        links={navLinks.map((label, index) => ({
+          label,
+          shape: String((index % 5) + 1),
+          onClick: () => setActiveTab(label),
+        }))}
+        footer={
+          <Link
+            href="/waitlist"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block w-full rounded-full bg-black py-3.5 text-center text-sm font-extrabold tracking-wide text-white shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
           >
             Get Started
-          </button>
-        </div>
-      )}
+          </Link>
+        }
+      />
     </nav>
   );
 }

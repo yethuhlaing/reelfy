@@ -1,17 +1,17 @@
-const SITE_URL = process.env.PUBLIC_BASE_URL || 'https://stickstory.ai'
+const SITE_URL = process.env.PUBLIC_BASE_URL || 'https://reelify.me'
 
 export const SEO = {
   siteUrl: SITE_URL,
-  siteName: 'StickStory',
-  twitterHandle: '@stickstoryai',
+  siteName: 'Reelify',
+  twitterHandle: '@reelify',
 
   // Primary product keywords
   primaryKeyword: 'AI video generator for creators',
 
   defaults: {
-    title: 'StickStory — AI Video Generator for Creators',
+    title: 'Reelify — AI Video Generator for Creators',
     description:
-      'Create stickman explainer videos, lofi music, ASMR songs, and cartoon videos with AI in seconds. StickStory is the all-in-one AI content creation platform built for YouTubers, educators, and digital creators.',
+      'Create explainer videos, lofi music, ASMR songs, and cartoon videos with AI in seconds. Reelify is the all-in-one AI content creation platform built for YouTubers, educators, and digital creators.',
     ogImage: `${SITE_URL}/og-image.png`,
   },
 

@@ -302,6 +302,16 @@ export const appConfig = pgTable('app_config', {
   value: text('value').notNull(),
 })
 
+export const waitlist = pgTable(
+  'waitlist',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    createdAt,
+  },
+  (table) => [uniqueIndex('waitlist_email_unique').on(table.email)],
+)
+
 export const schema = {
   user,
   session,
@@ -317,6 +327,7 @@ export const schema = {
   apiUsageEvents,
   apiCostLogs,
   appConfig,
+  waitlist,
 }
 
 export type DatabaseSchema = typeof schema

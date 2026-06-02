@@ -32,8 +32,14 @@ function isWebhookPath(pathname: string) {
   return /^\/api\/webhooks(?:\/|$)/.test(pathname)
 }
 
+function isPublicApiPath(pathname: string) {
+  return /^\/api\/waitlist(?:\/|$)/.test(pathname)
+}
+
 function requiresSession(pathname: string) {
-  if (isAuthApiPath(pathname) || isWebhookPath(pathname)) return false
+  if (isAuthApiPath(pathname) || isWebhookPath(pathname) || isPublicApiPath(pathname)) {
+    return false
+  }
   if (isApiPath(pathname)) return true
   return isProtectedPath(pathname) || isAdminPath(pathname)
 }
