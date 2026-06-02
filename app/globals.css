@@ -51,13 +51,13 @@
   --pink-border: #ffa6b7;
   --cream: #f5f0e8;
   --hero-sunset: radial-gradient(
-    ellipse 75% 75% at 65% 40%,
+    ellipse 95% 90% at 62% 32%,
     #ffd89b 0%,
     #ffb066 18%,
     #f58a3c 38%,
-    #c75a1e 58%,
-    #5a2410 80%,
-    #1a0a05 100%
+    #e87838 62%,
+    #d46830 82%,
+    #c75a1e 100%
   );
 }
 
@@ -99,13 +99,13 @@
   --pink-border: #ffa6b7;
   --cream: #f5f0e8;
   --hero-sunset: radial-gradient(
-    ellipse 75% 75% at 65% 40%,
+    ellipse 95% 90% at 62% 32%,
     #ffd89b 0%,
     #ffb066 18%,
     #f58a3c 38%,
-    #c75a1e 58%,
-    #5a2410 80%,
-    #1a0a05 100%
+    #e87838 62%,
+    #d46830 82%,
+    #c75a1e 100%
   );
 }
 

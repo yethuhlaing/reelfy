@@ -39,7 +39,7 @@ export default function App() {
       {/* 1. Navigation Bar */}
       <Navbar />
 
-      {/* 2. Hero Section (with critical text-behind-image portrait layers) */}
+      {/* 2. Hero — headline, stats, value pitch & CTAs */}
       <Hero />
 
       {/* 5. Three-card explore section */}

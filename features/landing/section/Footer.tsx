@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useRef } from "react";
 import { motion } from "motion/react";
 import { TimelineContent } from "@/shared/components/timeline-animation";
+import Image from "next/image";
 
 const homeLinks = [
   { label: "About Us", href: "#crafting-section" },
@@ -194,28 +195,22 @@ export default function Footer() {
             className="sm:col-span-2 lg:col-span-4 lg:w-full"
           >
             <div className="relative pb-6">
-              <div className="relative min-h-[360px] w-full overflow-hidden rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.06] sm:min-h-[420px]">
-                <motion.img
-                  src="/transparent/6.png"
+              <div className="relative min-h-[360px] w-full overflow-hidden rounded-2xl sm:min-h-[420px]">
+                <Image
+                  src="/transparent/4.png"
                   alt="Reelify creative showcase"
                   width={991}
                   height={1199}
                   className="absolute inset-0 z-0 h-full w-full object-contain object-top"
                   loading="lazy"
                   decoding="async"
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
                 />
               </div>
               <Link
                 href="/new"
-                className="group absolute -bottom-4 left-4 right-4 z-10 flex items-center justify-between gap-3 rounded-full bg-foreground px-5 py-3.5 text-sm font-semibold text-background shadow-[0_8px_32px_rgba(0,0,0,0.35)] ring-1 ring-white/10 transition-all hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(255,90,60,0.25)] active:scale-[0.98] sm:left-6 sm:right-6"
+                className="group absolute left-4 right-4 flex items-center justify-between gap-3 rounded-full bg-background/90 px-5 py-3.5 text-sm font-semibold text-foreground shadow-[0_8px_32px_rgba(0,0,0,0.35)] ring-1 ring-white/10 backdrop-blur-xl transition-all shadow-[0_12px_40px_rgba(255,90,60,0.25)] active:scale-[0.98] sm:left-6 sm:right-6"
               >
-                <span>Get Product</span>
+                <span>Get Started</span>
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-coral text-coral-foreground transition-transform group-hover:rotate-[-8deg]">
                   <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
                 </span>
@@ -289,9 +284,9 @@ export default function Footer() {
           <p className="text-center sm:text-left">
             ©{currentYear} Reelify. All Right Reserved.
           </p>
-          <p className="text-center opacity-95">
+          {/* <p className="text-center opacity-95">
             Sector 7, Metaverse Jakarta Megapolis 12050
-          </p>
+          </p> */}
           <div className="flex items-center gap-8 sm:gap-12">
             <a
               href="https://instagram.com"

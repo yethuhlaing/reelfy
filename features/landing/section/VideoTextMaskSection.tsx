@@ -21,27 +21,27 @@ export default function VideoTextMaskSection() {
   });
 
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 80,
-    damping: 20,
-    mass: 0.5,
+    stiffness: 140,
+    damping: 28,
+    mass: 0.35,
   });
 
   // Text scale: 1 → 11 (letters expand to cover full viewport)
-  const textScale = useTransform(smoothProgress, [0, 0.7], [1, 11]);
+  const textScale = useTransform(smoothProgress, [0, 0.55], [1, 11]);
 
   // Caption reveal
   const captionOpacity = useTransform(
     smoothProgress,
-    [0.65, 0.8, 0.92, 1],
+    [0.5, 0.62, 0.88, 1],
     [0, 1, 1, 0],
   );
-  const captionY = useTransform(smoothProgress, [0.65, 0.82], [24, 0]);
+  const captionY = useTransform(smoothProgress, [0.5, 0.65], [24, 0]);
 
   // Scroll indicator fades out early
-  const scrollHintOpacity = useTransform(smoothProgress, [0, 0.12], [1, 0]);
+  const scrollHintOpacity = useTransform(smoothProgress, [0, 0.1], [1, 0]);
 
   // Keep overlay fully opaque until reveal completes — avoids gray wash (#686879) from partial black
-  const maskOverlayOpacity = useTransform(smoothProgress, [0.82, 0.84], [1, 0]);
+  const maskOverlayOpacity = useTransform(smoothProgress, [0.68, 0.72], [1, 0]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -77,7 +77,7 @@ export default function VideoTextMaskSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative h-[300vh]">
+    <section ref={sectionRef} className="relative h-[180vh]">
       {/* ── sticky viewport ── */}
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-background">
         {/* Video layer */}
