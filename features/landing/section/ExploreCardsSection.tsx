@@ -1,12 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { newCategoryHref } from "@/shared/lib/categories";
 
 const LIST_ITEMS = [
-  "Free Edit",
-  "Interactive",
-  "Easy Interface",
-  "Compare to other tools",
+  { label: "Stickman Explainers", href: newCategoryHref("stickman") },
+  { label: "Lofi Music", href: newCategoryHref("lofi") },
+  { label: "ASMR Videos", href: "#search-section" },
+  { label: "Cartoon Animation", href: "#search-section" },
 ] as const;
 
 function StepBadge({ step }: { step: string }) {
@@ -23,13 +25,32 @@ function StepBadge({ step }: { step: string }) {
 export default function ExploreCardsSection() {
   return (
     <section
-    className="grid grid-cols-1 gap-1 lg:grid-cols-12"
-      // className="w-full bg-background"
+      className="flex h-screen w-full flex-col bg-background"
       id="explore-cards-section"
       aria-labelledby="explore-cards-heading"
     >
-        {/* Card 01 — narrow */}
-        <article className="relative min-h-[420px] overflow-hidden lg:col-span-3 lg:min-h-[560px]">
+      <div className="shrink-0 px-6 py-10 md:px-12 md:py-12">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-coral">
+              Explore
+            </p>
+            <h2
+              id="explore-cards-heading"
+              className="mt-2 font-display text-3xl font-black uppercase tracking-tight text-foreground md:text-4xl"
+            >
+              One studio, every format
+            </h2>
+          </div>
+          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Reelify helps creators produce explainers, lofi, ASMR, and cartoons
+            — no editing skills needed.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-1 md:grid-cols-3">
+        <article className="relative h-full min-h-0 overflow-hidden">
           <img
             src="/images/1.png"
             alt=""
@@ -37,13 +58,13 @@ export default function ExploreCardsSection() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
 
-          <div className="relative z-10 flex h-full min-h-[420px] flex-col justify-between p-8 lg:min-h-[560px] lg:p-10">
+          <div className="relative z-10 flex h-full flex-col justify-between p-8 lg:p-10">
             <StepBadge step="01" />
 
             <div className="space-y-5">
               <p className="max-w-[240px] text-sm font-medium leading-relaxed text-white sm:text-[15px]">
-                Discover how to shape emotion through music with hands-on audio
-                creation techniques.
+                Turn ideas into scroll-stopping videos with AI — explainers, lofi,
+                ASMR, and cartoons in minutes.
               </p>
               <a
                 href="#search-section"
@@ -59,8 +80,7 @@ export default function ExploreCardsSection() {
           </div>
         </article>
 
-        {/* Card 02 — narrow */}
-        <article className="relative min-h-[420px] overflow-hidden lg:col-span-3 lg:min-h-[560px]">
+        <article className="relative h-full min-h-0 overflow-hidden">
           <img
             src="/images/2.png"
             alt=""
@@ -68,22 +88,22 @@ export default function ExploreCardsSection() {
           />
           <div className="absolute inset-0 bg-black/55" />
 
-          <div className="relative z-10 flex h-full min-h-[420px] flex-col p-8 lg:min-h-[560px] lg:p-10">
+          <div className="relative z-10 flex h-full flex-col p-8 lg:p-10">
             <StepBadge step="02" />
 
             <ul className="flex flex-1 flex-col justify-center">
               {LIST_ITEMS.map((item, index) => (
-                <li key={item}>
-                  <a
-                    href="#"
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
                     className="group flex items-center justify-between gap-4 py-4 text-sm font-medium text-white transition-opacity hover:opacity-80"
                   >
-                    <span>{item}</span>
+                    <span>{item.label}</span>
                     <ArrowUpRight
                       className="h-4 w-4 shrink-0 opacity-90 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                       strokeWidth={1.5}
                     />
-                  </a>
+                  </Link>
                   {index < LIST_ITEMS.length - 1 && (
                     <div className="h-px w-full bg-white/20" />
                   )}
@@ -93,8 +113,7 @@ export default function ExploreCardsSection() {
           </div>
         </article>
 
-        {/* Card 03 — wide */}
-        <article className="relative min-h-[420px] overflow-hidden lg:col-span-6 lg:min-h-[560px]">
+        <article className="relative h-full min-h-0 overflow-hidden">
           <img
             src="/images/3.png"
             alt=""
@@ -102,20 +121,21 @@ export default function ExploreCardsSection() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-          <div className="relative z-10 flex h-full min-h-[420px] flex-col justify-between p-8 lg:min-h-[560px] lg:p-10">
+          <div className="relative z-10 flex h-full flex-col justify-between p-8 lg:p-10">
             <StepBadge step="03" />
 
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:gap-6">
               <p className="font-display text-6xl font-black leading-none tracking-tight text-white sm:text-7xl lg:text-[5.5rem]">
-                +20K
+                +10K
               </p>
               <p className="max-w-[200px] text-sm font-medium leading-snug text-white/95 sm:pb-1 sm:text-[15px]">
-                Tracks &amp; loops generated this week using AI-powered tools.
+                Videos generated this month using Reelify&apos;s AI-powered
+                studio.
               </p>
             </div>
           </div>
         </article>
-      
+      </div>
     </section>
   );
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useLenis } from "lenis/react";
 import { cn } from "@/shared/lib/utils";
-import { AnimatedMobileMenu } from "@/shared/components/af";
+import { AnimatedMobileMenu } from "@/shared/components/animated-mobile-navbar";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

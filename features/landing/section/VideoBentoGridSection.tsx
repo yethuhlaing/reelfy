@@ -246,7 +246,7 @@ export default function VideoBentoGridSection() {
   return (
     <section
       id="video-bento-grid"
-      className="w-full bg-black px-4 py-16 md:px-8 md:py-24 lg:px-12"
+      className="w-full bg-background px-4 py-16 md:px-8 md:py-24 lg:px-12"
       aria-labelledby="video-bento-heading"
     >
       <div className="mx-auto max-w-[1680px]">

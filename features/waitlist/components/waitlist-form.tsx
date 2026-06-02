@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-import { Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/shared/ui/button";
 
 interface EyeBallProps {
   size?: number;
@@ -134,7 +136,6 @@ const Pupil = ({ size = 12, maxDistance = 5, pupilColor = "black" }: PupilProps)
 export default function WaitlistForm() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mouseX, setMouseX] = useState<number>(0);
   const [mouseY, setMouseY] = useState<number>(0);
@@ -200,7 +201,6 @@ export default function WaitlistForm() {
   const joinWaitlist = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
     setIsLoading(true);
     try {
       const res = await fetch("/api/waitlist", {
@@ -213,7 +213,9 @@ export default function WaitlistForm() {
         setError(data?.error ?? "Something went wrong. Please try again.");
         return;
       }
-      setSuccess("You're on the list! We'll be in touch.");
+      toast.success("You're on the list!", {
+        description: "We'll be in touch.",
+      });
       setEmail("");
     } catch {
       setError("Something went wrong. Please try again.");
@@ -227,12 +229,9 @@ export default function WaitlistForm() {
       {/* Left Content Section */}
       <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary/90 via-primary to-primary/80 p-12 text-primary-foreground">
         <div className="relative z-20">
-          <div className="flex items-center gap-2 text-lg font-semibold">
-            <div className="size-8 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
-              <Sparkles className="size-4" />
-            </div>
-            <span>YourBrand</span>
-          </div>
+          <Link href="/" className="inline-block transition-opacity hover:opacity-80">
+            <img src="/logos/logo.png" alt="Reelify" className="h-8 w-auto" />
+          </Link>
         </div>
 
         <div className="relative z-20 flex items-end justify-center h-[500px]">
@@ -374,11 +373,10 @@ export default function WaitlistForm() {
       {/* Right Waitlist Section */}
       <div className="flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-[420px]">
-          <div className="lg:hidden flex items-center justify-center gap-2 text-lg font-semibold mb-12">
-            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Sparkles className="size-4 text-primary" />
-            </div>
-            <span>YourBrand</span>
+          <div className="mb-12 flex justify-center lg:hidden">
+            <Link href="/" className="transition-opacity hover:opacity-80">
+              <img src="/logos/logo.png" alt="Reelify" className="h-8 w-auto" />
+            </Link>
           </div>
 
           <div className="text-center mb-10">
@@ -392,12 +390,6 @@ export default function WaitlistForm() {
             </div>
           )}
 
-          {success && (
-            <div className="mb-5 p-3 text-sm text-green-400 bg-green-950/20 border border-green-900/30 rounded-lg">
-              {success}
-            </div>
-          )}
-
           <form onSubmit={(e) => void joinWaitlist(e)} className="space-y-4">
             <input
               type="email"
@@ -408,13 +400,21 @@ export default function WaitlistForm() {
               autoComplete="email"
               className="w-full h-12 px-4 rounded-lg border border-border bg-background text-base text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
             />
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 h-12 px-6 rounded-lg bg-primary text-primary-foreground text-base font-medium shadow-sm hover:shadow-md hover:bg-primary/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              size="lg"
+              className="w-full"
             >
-              {isLoading ? "Joining…" : "Join waitlist"}
-            </button>
+              {isLoading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  Joining…
+                </>
+              ) : (
+                "Join waitlist"
+              )}
+            </Button>
           </form>
         </div>
       </div>

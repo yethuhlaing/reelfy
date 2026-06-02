@@ -79,7 +79,7 @@ export default function VideoTextMaskSection() {
   return (
     <section ref={sectionRef} className="relative h-[300vh]">
       {/* ── sticky viewport ── */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-background">
         {/* Video layer */}
         <video
           ref={videoRef}

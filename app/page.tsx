@@ -24,14 +24,9 @@ export const metadata: Metadata = {
     ],
   },
 };
-
-import PortfolioSearch from "@/features/landing/components/PortfolioSearch";
 import Footer from "@/features/landing/section/Footer";
-import MarqueeStrip from "@/features/landing/components/MarqueeStrip";
 import ExploreCardsSection from "@/features/landing/section/ExploreCardsSection";
 import VideoSection from "@/features/landing/section/VideoSection";
-import CraftingSection from "@/features/landing/section/CraftingSection";
-import PinkCard from "@/features/landing/components/PinkCard";
 import Navbar from "@/features/landing/components/Navbar";
 import Hero from "@/features/landing/section/Hero";
 import VideoTextMaskSection from "@/features/landing/section/VideoTextMaskSection";
@@ -47,9 +42,6 @@ export default function App() {
       {/* 2. Hero Section (with critical text-behind-image portrait layers) */}
       <Hero />
 
-      {/* 4. Scrolling Marquee Strip */}
-      <MarqueeStrip />
-
       {/* 5. Three-card explore section */}
       <ExploreCardsSection />
 
@@ -59,19 +51,10 @@ export default function App() {
       {/* 2d. Bento video grid */}
       <VideoBentoGridSection />
 
-      {/* 6. Cinematic Video Process Section */}
+      {/* 6. Pipeline + sample output */}
       <VideoSection />
 
-      {/* 7. Diagonal Crafting Badges Section */}
-      <CraftingSection />
-
       <PricingSection />
-
-      {/* 8. Interactive Custom Generator Card */}
-      <PinkCard />
-
-      {/* 9 & 10. Instant Assets Search Hub & Masonry Portfolio Grid */}
-      <PortfolioSearch />
 
       {/* 11. Styled Corporate Footer */}
       <Footer />
