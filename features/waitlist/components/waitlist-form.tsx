@@ -1,202 +1,124 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/button";
 
-interface EyeBallProps {
-  size?: number;
-  pupilSize?: number;
-  maxDistance?: number;
-  eyeColor?: string;
-  pupilColor?: string;
-  isBlinking?: boolean;
+const WAITLIST_VIDEOS = ["/videos/14.mp4", "/videos/15.mp4", "/videos/11.mp4"] as const;
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "I shipped a full explainer in an afternoon. Reelify cut my production time from days to minutes.",
+    name: "Sarah Chen",
+    role: "YouTube Creator",
+  },
+  {
+    quote:
+      "Our team uses it for launch videos and social clips. The AI actually understands the story we want to tell.",
+    name: "Marcus Rivera",
+    role: "Startup Founder",
+  },
+  {
+    quote:
+      "I teach online and needed quick concept videos. Reelify is the first tool that feels built for educators.",
+    name: "Dr. Amara Okafor",
+    role: "Course Creator",
+  },
+] as const;
+
+function TestimonialCard({
+  quote,
+  name,
+  role,
+}: {
+  quote: string;
+  name: string;
+  role: string;
+}) {
+  return (
+    <figure className="w-[280px] max-w-full shrink-0 rounded-2xl border border-border/80 lg:border-none bg-background/70 p-4 backdrop-blur-md">
+      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-coral">
+        {role}
+      </span>
+      <p className="mt-1 font-display text-sm font-black uppercase tracking-tight text-foreground">
+        {name}
+      </p>
+      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{quote}</p>
+    </figure>
+  );
 }
 
-const EyeBall = ({
-  size = 48,
-  pupilSize = 16,
-  maxDistance = 10,
-  eyeColor = "white",
-  pupilColor = "black",
-  isBlinking = false,
-}: EyeBallProps) => {
-  const [mouseX, setMouseX] = useState<number>(0);
-  const [mouseY, setMouseY] = useState<number>(0);
-  const eyeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMouseX(e.clientX);
-      setMouseY(e.clientY);
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  const calculatePupilPosition = () => {
-    if (!eyeRef.current) return { x: 0, y: 0 };
-    const eye = eyeRef.current.getBoundingClientRect();
-    const eyeCenterX = eye.left + eye.width / 2;
-    const eyeCenterY = eye.top + eye.height / 2;
-    const deltaX = mouseX - eyeCenterX;
-    const deltaY = mouseY - eyeCenterY;
-    const distance = Math.min(Math.sqrt(deltaX ** 2 + deltaY ** 2), maxDistance);
-    const angle = Math.atan2(deltaY, deltaX);
-    return {
-      x: Math.cos(angle) * distance,
-      y: Math.sin(angle) * distance,
-    };
-  };
-
-  const pupilPosition = calculatePupilPosition();
+function TestimonialMarquee() {
+  const items = [...TESTIMONIALS, ...TESTIMONIALS];
 
   return (
-    <div
-      ref={eyeRef}
-      className="rounded-full flex items-center justify-center transition-all duration-150"
-      style={{
-        width: `${size}px`,
-        height: isBlinking ? "2px" : `${size}px`,
-        backgroundColor: eyeColor,
-        overflow: "hidden",
-      }}
-    >
-      {!isBlinking && (
-        <div
-          className="rounded-full"
-          style={{
-            width: `${pupilSize}px`,
-            height: `${pupilSize}px`,
-            backgroundColor: pupilColor,
-            transform: `translate(${pupilPosition.x}px, ${pupilPosition.y}px)`,
-            transition: "transform 0.1s ease-out",
-          }}
-        />
-      )}
+    <div className="w-full min-w-0 overflow-hidden">
+      <div className="flex w-max gap-4 animate-marquee-slow">
+        {items.map((item, index) => (
+          <TestimonialCard key={`${item.name}-${index}`} {...item} />
+        ))}
+      </div>
     </div>
   );
-};
-
-interface PupilProps {
-  size?: number;
-  maxDistance?: number;
-  pupilColor?: string;
 }
 
-const Pupil = ({ size = 12, maxDistance = 5, pupilColor = "black" }: PupilProps) => {
-  const [mouseX, setMouseX] = useState<number>(0);
-  const [mouseY, setMouseY] = useState<number>(0);
-  const pupilRef = useRef<HTMLDivElement>(null);
+function WaitlistVideoPanel({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const indexRef = useRef(0);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMouseX(e.clientX);
-      setMouseY(e.clientY);
+    const video = videoRef.current;
+    if (!video) return;
+
+    const playCurrent = () => {
+      video.src = WAITLIST_VIDEOS[indexRef.current];
+      video.muted = true;
+      video.load();
+      void video.play().catch(() => {});
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+
+    const onEnded = () => {
+      indexRef.current = (indexRef.current + 1) % WAITLIST_VIDEOS.length;
+      playCurrent();
+    };
+
+    video.addEventListener("ended", onEnded);
+    playCurrent();
+
+    return () => video.removeEventListener("ended", onEnded);
   }, []);
 
-  const calculatePupilPosition = () => {
-    if (!pupilRef.current) return { x: 0, y: 0 };
-    const pupil = pupilRef.current.getBoundingClientRect();
-    const pupilCenterX = pupil.left + pupil.width / 2;
-    const pupilCenterY = pupil.top + pupil.height / 2;
-    const deltaX = mouseX - pupilCenterX;
-    const deltaY = mouseY - pupilCenterY;
-    const distance = Math.min(Math.sqrt(deltaX ** 2 + deltaY ** 2), maxDistance);
-    const angle = Math.atan2(deltaY, deltaX);
-    return {
-      x: Math.cos(angle) * distance,
-      y: Math.sin(angle) * distance,
-    };
-  };
-
-  const pupilPosition = calculatePupilPosition();
-
   return (
-    <div
-      ref={pupilRef}
-      className="rounded-full"
-      style={{
-        width: `${size}px`,
-        height: `${size}px`,
-        backgroundColor: pupilColor,
-        transform: `translate(${pupilPosition.x}px, ${pupilPosition.y}px)`,
-        transition: "transform 0.1s ease-out",
-      }}
-    />
+    <div className={`relative overflow-hidden bg-black ${className ?? ""}`}>
+      <video
+        ref={videoRef}
+        muted
+        playsInline
+        preload="metadata"
+        className="absolute inset-0 h-full w-full object-cover object-center"
+        aria-hidden
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/35 to-background/10" />
+      <div className="absolute inset-0 bg-gradient-to-r from-background/20 via-transparent to-background/30" />
+      {children}
+    </div>
   );
-};
+}
 
 export default function WaitlistForm() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [mouseX, setMouseX] = useState<number>(0);
-  const [mouseY, setMouseY] = useState<number>(0);
-  const [isPurpleBlinking, setIsPurpleBlinking] = useState(false);
-  const [isBlackBlinking, setIsBlackBlinking] = useState(false);
-  const purpleRef = useRef<HTMLDivElement>(null);
-  const blackRef = useRef<HTMLDivElement>(null);
-  const yellowRef = useRef<HTMLDivElement>(null);
-  const orangeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMouseX(e.clientX);
-      setMouseY(e.clientY);
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  useEffect(() => {
-    const scheduleBlink = () => {
-      const t = setTimeout(() => {
-        setIsPurpleBlinking(true);
-        setTimeout(() => { setIsPurpleBlinking(false); scheduleBlink(); }, 150);
-      }, Math.random() * 4000 + 3000);
-      return t;
-    };
-    const t = scheduleBlink();
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    const scheduleBlink = () => {
-      const t = setTimeout(() => {
-        setIsBlackBlinking(true);
-        setTimeout(() => { setIsBlackBlinking(false); scheduleBlink(); }, 150);
-      }, Math.random() * 4000 + 3000);
-      return t;
-    };
-    const t = scheduleBlink();
-    return () => clearTimeout(t);
-  }, []);
-
-  const calculatePosition = (ref: React.RefObject<HTMLDivElement | null>) => {
-    if (!ref.current) return { faceX: 0, faceY: 0, bodySkew: 0 };
-    const rect = ref.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 3;
-    const deltaX = mouseX - centerX;
-    const deltaY = mouseY - centerY;
-    return {
-      faceX: Math.max(-15, Math.min(15, deltaX / 20)),
-      faceY: Math.max(-10, Math.min(10, deltaY / 30)),
-      bodySkew: Math.max(-6, Math.min(6, -deltaX / 120)),
-    };
-  };
-
-  const purplePos = calculatePosition(purpleRef);
-  const blackPos = calculatePosition(blackRef);
-  const yellowPos = calculatePosition(yellowRef);
-  const orangePos = calculatePosition(orangeRef);
 
   const joinWaitlist = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,199 +147,90 @@ export default function WaitlistForm() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left Content Section */}
-      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary/90 via-primary to-primary/80 p-12 text-primary-foreground">
-        <div className="relative z-20">
+    <div className="relative min-h-screen w-full overflow-x-clip bg-background lg:grid lg:grid-cols-2">
+      {/* Mobile — full-screen video background */}
+      <WaitlistVideoPanel className="absolute inset-0 lg:hidden" />
+
+      {/* Left — Waitlist form */}
+      <div className="relative z-10 flex min-h-screen min-w-0 flex-col p-8 lg:justify-between lg:bg-background lg:p-12">
+        <div>
           <Link href="/" className="inline-block transition-opacity hover:opacity-80">
             <img src="/logos/logo.png" alt="Reelify" className="h-8 w-auto" />
           </Link>
         </div>
 
-        <div className="relative z-20 flex items-end justify-center h-[500px]">
-          <div className="relative" style={{ width: "550px", height: "400px" }}>
-            {/* Purple tall rectangle character */}
-            <div
-              ref={purpleRef}
-              className="absolute bottom-0 transition-all duration-700 ease-in-out"
-              style={{
-                left: "70px",
-                width: "180px",
-                height: "400px",
-                backgroundColor: "#6C3FF5",
-                borderRadius: "10px 10px 0 0",
-                zIndex: 1,
-                transform: `skewX(${purplePos.bodySkew}deg)`,
-                transformOrigin: "bottom center",
-              }}
-            >
-              <div
-                className="absolute flex gap-8 transition-all duration-200 ease-out"
-                style={{
-                  left: `${45 + purplePos.faceX}px`,
-                  top: `${40 + purplePos.faceY}px`,
-                }}
-              >
-                <EyeBall size={18} pupilSize={7} maxDistance={5} eyeColor="white" pupilColor="#2D2D2D" isBlinking={isPurpleBlinking} />
-                <EyeBall size={18} pupilSize={7} maxDistance={5} eyeColor="white" pupilColor="#2D2D2D" isBlinking={isPurpleBlinking} />
-              </div>
+        <div className="flex flex-1 items-center justify-center py-8 lg:block lg:flex-none lg:py-0">
+          <div className="mx-auto w-full max-w-[420px] rounded-2xl bg-background/70 p-6 backdrop-blur-md lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+            <div className="mb-10 text-center lg:text-left">
+              <h1 className="mb-2 text-3xl font-bold tracking-tight">Join the waitlist</h1>
+              <p className="text-sm text-muted-foreground">
+                Be the first to know when we launch.
+              </p>
             </div>
 
-            {/* Black tall rectangle character */}
-            <div
-              ref={blackRef}
-              className="absolute bottom-0 transition-all duration-700 ease-in-out"
-              style={{
-                left: "240px",
-                width: "120px",
-                height: "310px",
-                backgroundColor: "#2D2D2D",
-                borderRadius: "8px 8px 0 0",
-                zIndex: 2,
-                transform: `skewX(${blackPos.bodySkew}deg)`,
-                transformOrigin: "bottom center",
-              }}
-            >
-              <div
-                className="absolute flex gap-6 transition-all duration-200 ease-out"
-                style={{
-                  left: `${26 + blackPos.faceX}px`,
-                  top: `${32 + blackPos.faceY}px`,
-                }}
-              >
-                <EyeBall size={16} pupilSize={6} maxDistance={4} eyeColor="white" pupilColor="#2D2D2D" isBlinking={isBlackBlinking} />
-                <EyeBall size={16} pupilSize={6} maxDistance={4} eyeColor="white" pupilColor="#2D2D2D" isBlinking={isBlackBlinking} />
+            {error && (
+              <div className="mb-5 rounded-lg border border-red-900/30 bg-red-950/20 p-3 text-sm text-red-400">
+                {error}
               </div>
-            </div>
+            )}
 
-            {/* Orange semi-circle character */}
-            <div
-              ref={orangeRef}
-              className="absolute bottom-0 transition-all duration-700 ease-in-out"
-              style={{
-                left: "0px",
-                width: "240px",
-                height: "200px",
-                zIndex: 3,
-                backgroundColor: "#FF9B6B",
-                borderRadius: "120px 120px 0 0",
-                transform: `skewX(${orangePos.bodySkew}deg)`,
-                transformOrigin: "bottom center",
-              }}
-            >
-              <div
-                className="absolute flex gap-8 transition-all duration-200 ease-out"
-                style={{
-                  left: `${82 + orangePos.faceX}px`,
-                  top: `${90 + orangePos.faceY}px`,
-                }}
-              >
-                <Pupil size={12} maxDistance={5} pupilColor="#2D2D2D" />
-                <Pupil size={12} maxDistance={5} pupilColor="#2D2D2D" />
-              </div>
-            </div>
-
-            {/* Yellow tall rectangle character */}
-            <div
-              ref={yellowRef}
-              className="absolute bottom-0 transition-all duration-700 ease-in-out"
-              style={{
-                left: "310px",
-                width: "140px",
-                height: "230px",
-                backgroundColor: "#E8D754",
-                borderRadius: "70px 70px 0 0",
-                zIndex: 4,
-                transform: `skewX(${yellowPos.bodySkew}deg)`,
-                transformOrigin: "bottom center",
-              }}
-            >
-              <div
-                className="absolute flex gap-6 transition-all duration-200 ease-out"
-                style={{
-                  left: `${52 + yellowPos.faceX}px`,
-                  top: `${40 + yellowPos.faceY}px`,
-                }}
-              >
-                <Pupil size={12} maxDistance={5} pupilColor="#2D2D2D" />
-                <Pupil size={12} maxDistance={5} pupilColor="#2D2D2D" />
-              </div>
-              <div
-                className="absolute w-20 h-[4px] bg-[#2D2D2D] rounded-full transition-all duration-200 ease-out"
-                style={{
-                  left: `${40 + yellowPos.faceX}px`,
-                  top: `${88 + yellowPos.faceY}px`,
-                }}
+            <form onSubmit={(e) => void joinWaitlist(e)} className="space-y-4">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className="h-12 w-full rounded-lg border border-border bg-background px-4 text-base text-foreground shadow-sm transition-all placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
-            </div>
+              <Button type="submit" disabled={isLoading} size="lg" className="w-full">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                    Joining…
+                  </>
+                ) : (
+                  "Join waitlist"
+                )}
+              </Button>
+            </form>
           </div>
         </div>
 
-        <div className="relative z-20 flex items-center gap-8 text-sm text-primary-foreground/60">
-          <Link href="/settings" className="hover:text-primary-foreground transition-colors">
+        {/* Mobile — testimonials pinned to bottom */}
+        <div className="min-w-0 shrink-0 pb-2 lg:hidden">
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-coral">
+            What creators are saying
+          </p>
+          <TestimonialMarquee />
+        </div>
+
+        <div className="hidden items-center gap-8 text-sm text-muted-foreground lg:flex">
+          <Link href="/settings" className="transition-colors hover:text-foreground">
             Privacy Policy
           </Link>
-          <Link href="/settings" className="hover:text-primary-foreground transition-colors">
+          <Link href="/settings" className="transition-colors hover:text-foreground">
             Terms of Service
           </Link>
-          <a href="mailto:support@stickstory.app" className="hover:text-primary-foreground transition-colors">
+          <a
+            href="mailto:support@stickstory.app"
+            className="transition-colors hover:text-foreground"
+          >
             Contact
           </a>
         </div>
-
-        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
-        <div className="absolute top-1/4 right-1/4 size-64 bg-primary-foreground/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/4 size-96 bg-primary-foreground/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Right Waitlist Section */}
-      <div className="flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-[420px]">
-          <div className="mb-12 flex justify-center lg:hidden">
-            <Link href="/" className="transition-opacity hover:opacity-80">
-              <img src="/logos/logo.png" alt="Reelify" className="h-8 w-auto" />
-            </Link>
-          </div>
-
-          <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Join the waitlist</h1>
-            <p className="text-muted-foreground text-sm">Be the first to know when we launch.</p>
-          </div>
-
-          {error && (
-            <div className="mb-5 p-3 text-sm text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={(e) => void joinWaitlist(e)} className="space-y-4">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              className="w-full h-12 px-4 rounded-lg border border-border bg-background text-base text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
-            />
-            <Button
-              type="submit"
-              disabled={isLoading}
-              size="lg"
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" aria-hidden />
-                  Joining…
-                </>
-              ) : (
-                "Join waitlist"
-              )}
-            </Button>
-          </form>
+      {/* Right — Videos + bottom marquee */}
+      <WaitlistVideoPanel className="hidden min-w-0 lg:block">
+        <div className="absolute inset-x-0 bottom-0 z-10 min-w-0 w-full overflow-hidden pb-8 xl:pb-10">
+          <p className="mb-4 px-8 text-xs font-bold uppercase tracking-[0.22em] text-p xl:px-10">
+            What creators are saying
+          </p>
+          <TestimonialMarquee />
         </div>
-      </div>
+      </WaitlistVideoPanel>
     </div>
   );
 }

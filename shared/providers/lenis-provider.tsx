@@ -12,8 +12,11 @@ const LENIS_OPTIONS = {
   lerp: 0.1,
   wheelMultiplier: 1.15,
   smoothWheel: true,
-  autoRaf: false,
-  anchors: true,
+  autoRaf: true,
+  anchors: {
+    offset: -96,
+    duration: 1.2,
+  },
   stopInertiaOnNavigate: true,
 } as const
 
@@ -24,12 +27,8 @@ function LenisScrollTriggerBridge() {
     if (!lenis) return
     const onScroll = () => ScrollTrigger.update()
     lenis.on('scroll', onScroll)
-    const rafCb = (time: number) => lenis.raf(time * 1000)
-    gsap.ticker.add(rafCb)
-    gsap.ticker.lagSmoothing(0)
     return () => {
       lenis.off('scroll', onScroll)
-      gsap.ticker.remove(rafCb)
     }
   }, [lenis])
 

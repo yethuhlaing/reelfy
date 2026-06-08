@@ -150,7 +150,7 @@ export default function PricingSection() {
       ref={pricingRef}
       id="pricing-section"
       aria-labelledby={headingId}
-      className="relative w-full h-screen overflow-hidden bg-background px-4 py-12 md:px-12 md:py-16"
+      className="relative z-10 w-full min-h-screen overflow-visible bg-background px-4 py-12 pb-32 md:h-screen md:overflow-hidden md:px-12 md:py-16 md:pb-16"
     >
       {/* Soft fades so the section reads as one surface with neighbors */}
       <div

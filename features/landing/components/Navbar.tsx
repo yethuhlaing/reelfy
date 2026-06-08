@@ -1,18 +1,51 @@
 'use client'
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useLenis } from "lenis/react";
 import { cn } from "@/shared/lib/utils";
+import { scrollToSection } from "@/shared/lib/scroll-to-section";
 import { AnimatedMobileMenu } from "@/shared/components/animated-mobile-navbar";
+
+const NAV_LINKS = [
+  { label: "Explore", href: "#explore-cards-section" },
+  { label: "Showcase", href: "#video-bento-grid" },
+  { label: "How it works", href: "#video-section" },
+  { label: "Pricing", href: "#pricing-section" },
+] as const;
+
+const SCROLL_OFFSET = -96;
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("Services");
+  const [activeTab, setActiveTab] = useState<string>(NAV_LINKS[0].label);
   const lenis = useLenis();
 
-  const navLinks = ["Services", "About Us", "Portfolio", "Contact Us"];
+  const handleScrollToSection = useCallback(
+    (href: string, label: string, closeMenu = false) => {
+      setActiveTab(label);
+
+      if (closeMenu) {
+        setMobileMenuOpen(false);
+      }
+
+      const runScroll = () => {
+        scrollToSection(href, lenis, SCROLL_OFFSET);
+      };
+
+      if (closeMenu) {
+        // Let the mobile menu restore body scroll before Lenis animates.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(runScroll);
+        });
+        return;
+      }
+
+      runScroll();
+    },
+    [lenis],
+  );
 
   const desktopLinkClass = (isActive: boolean) =>
     cn(
@@ -38,17 +71,17 @@ export default function Navbar() {
 
         {/* Desktop — glass pill nav (matches hero cards) */}
         <div className="hidden md:flex items-center rounded-full border border-white/15 bg-black/25 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-          {navLinks.map((tab) => {
-            const isActive = activeTab === tab;
+          {NAV_LINKS.map(({ label, href }) => {
+            const isActive = activeTab === label;
             return (
               <button
-                key={tab}
+                key={label}
                 type="button"
-                onClick={() => setActiveTab(tab)}
+                onClick={() => handleScrollToSection(href, label)}
                 className={desktopLinkClass(isActive)}
-                id={`nav-link-${tab.toLowerCase().replace(" ", "-")}`}
+                id={`nav-link-${label.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                {tab}
+                {label}
               </button>
             );
           })}
@@ -66,9 +99,7 @@ export default function Navbar() {
         <div className="flex items-center gap-3 md:hidden">
           <button
             type="button"
-            onClick={() => {
-              lenis?.scrollTo("#search-section", { offset: -96 });
-            }}
+            onClick={() => handleScrollToSection(NAV_LINKS[0].href, NAV_LINKS[0].label)}
             className="rounded-full border border-white/20 bg-black/30 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white backdrop-blur-md"
           >
             Explore
@@ -89,10 +120,10 @@ export default function Navbar() {
       <AnimatedMobileMenu
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
-        links={navLinks.map((label, index) => ({
+        links={NAV_LINKS.map(({ label, href }, index) => ({
           label,
           shape: String((index % 5) + 1),
-          onClick: () => setActiveTab(label),
+          onClick: () => handleScrollToSection(href, label, true),
         }))}
         footer={
           <Link

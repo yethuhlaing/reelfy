@@ -8,9 +8,9 @@ import { TimelineContent } from "@/shared/components/timeline-animation";
 import Image from "next/image";
 
 const homeLinks = [
-  { label: "About Us", href: "#crafting-section" },
+  { label: "How it works", href: "#video-section" },
   { label: "Featured", href: "#explore-cards-section" },
-  { label: "Gallery", href: "#search-section" },
+  { label: "Gallery", href: "#video-bento-grid" },
 ];
 
 const resourceLinks = [
@@ -44,7 +44,7 @@ export default function Footer() {
     <footer
       ref={footerRef}
       id="reelify-footer"
-      className="relative -mt-28 flex w-full flex-col overflow-hidden bg-transparent pt-28 text-foreground md:-mt-36 md:pt-36"
+      className="relative -mt-8 flex w-full flex-col overflow-hidden bg-transparent pt-8 text-foreground md:-mt-36 md:pt-36"
     >
       {/* Top blend — transparent into page background (overlaps pricing) */}
       <div
@@ -167,6 +167,7 @@ export default function Footer() {
           {/* Resource links */}
           <TimelineContent
             as="nav"
+            id="terms"
             animationNum={2}
             timelineRef={footerRef}
             customVariants={revealVariants}
@@ -280,7 +281,10 @@ export default function Footer() {
             animation: "footer-shimmer 6s linear infinite",
           }}
         />
-        <div className="relative mx-auto flex w-full max-w-[1400px] flex-col items-center justify-between gap-3 px-4 text-[11px] font-medium tracking-wide sm:flex-row sm:gap-4 sm:px-6 sm:text-xs lg:px-8">
+        <div
+          id="privacy"
+          className="relative mx-auto flex w-full max-w-[1400px] flex-col items-center justify-between gap-3 px-4 text-[11px] font-medium tracking-wide sm:flex-row sm:gap-4 sm:px-6 sm:text-xs lg:px-8"
+        >
           <p className="text-center sm:text-left">
             ©{currentYear} Reelify. All Right Reserved.
           </p>

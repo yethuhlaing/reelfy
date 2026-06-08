@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform, useSpring } from "motion/react";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 const VIDEO_SRC = "/videos/video-mask.mp4";
 
@@ -14,6 +14,15 @@ export default function VideoTextMaskSection() {
   const maskId = `vcut-${sectionId.replace(/:/g, "")}`;
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -26,22 +35,30 @@ export default function VideoTextMaskSection() {
     mass: 0.35,
   });
 
-  // Text scale: 1 → 11 (letters expand to cover full viewport)
-  const textScale = useTransform(smoothProgress, [0, 0.55], [1, 11]);
+  const maskFontSize = isMobile ? 88 : 285;
+  const scriptY = isMobile ? "46%" : "44%";
+  const screenY = isMobile ? "62%" : "76%";
 
-  // Caption reveal
+  // Text scale: 1 → maxScale (letters expand to cover full viewport)
+  const textScale = useTransform(smoothProgress, (progress) => {
+    const t = Math.min(Math.max(progress / 0.48, 0), 1);
+    const max = isMobile ? 4.5 : 11;
+    return 1 + t * (max - 1);
+  });
+
+  // Caption — only after mask is gone; long dwell before fade-out
   const captionOpacity = useTransform(
     smoothProgress,
-    [0.5, 0.62, 0.88, 1],
-    [0, 1, 1, 0],
+    [0, 0.62, 0.68, 0.94, 1],
+    [0, 0, 1, 1, 0],
   );
-  const captionY = useTransform(smoothProgress, [0.5, 0.65], [24, 0]);
+  const captionY = useTransform(smoothProgress, [0.62, 0.72], [28, 0]);
 
   // Scroll indicator fades out early
   const scrollHintOpacity = useTransform(smoothProgress, [0, 0.1], [1, 0]);
 
-  // Keep overlay fully opaque until reveal completes — avoids gray wash (#686879) from partial black
-  const maskOverlayOpacity = useTransform(smoothProgress, [0.68, 0.72], [1, 0]);
+  // Keep overlay fully opaque until reveal completes — avoids gray wash from partial black
+  const maskOverlayOpacity = useTransform(smoothProgress, [0.48, 0.62], [1, 0]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -77,7 +94,7 @@ export default function VideoTextMaskSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative h-[180vh]">
+    <section ref={sectionRef} className="relative h-[280vh]">
       {/* ── sticky viewport ── */}
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-background">
         {/* Video layer */}
@@ -125,27 +142,27 @@ export default function VideoTextMaskSection() {
                 >
                   <text
                     x="50%"
-                    y="44%"
+                    y={scriptY}
                     textAnchor="middle"
                     fill="black"
-                    fontSize="285"
+                    fontSize={maskFontSize}
                     fontWeight="900"
                     fontFamily="var(--font-urbanist), 'Urbanist', system-ui, sans-serif"
-                    letterSpacing="-0.04em"
+                    letterSpacing={isMobile ? "-0.06em" : "-0.04em"}
                   >
-                    STORY
+                    SCRIPT
                   </text>
                   <text
                     x="50%"
-                    y="76%"
+                    y={screenY}
                     textAnchor="middle"
                     fill="black"
-                    fontSize="285"
+                    fontSize={maskFontSize}
                     fontWeight="900"
                     fontFamily="var(--font-urbanist), 'Urbanist', system-ui, sans-serif"
                     letterSpacing="-0.04em"
                   >
-                    VIDEO
+                    SCREEN
                   </text>
                 </motion.g>
               </mask>
@@ -159,32 +176,23 @@ export default function VideoTextMaskSection() {
           </svg>
         </motion.div>
 
-        {/* Caption — fades in after reveal */}
+        {/* Caption — fades in only after mask reveal, then holds through extra scroll */}
         <motion.div
-          className="absolute bottom-16 inset-x-0 z-40 flex flex-col items-center gap-3 pointer-events-none"
+          className="absolute inset-x-0 bottom-20 z-40 flex flex-col items-center gap-3 px-6 pointer-events-none md:bottom-24"
           style={{ opacity: captionOpacity, y: captionY }}
         >
-          <p className="text-white/50 text-xs uppercase tracking-[0.3em] font-mono">
-            Powered by AI
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-white/50">
+            Reelify studio
           </p>
-          <h2 className="text-white text-4xl md:text-6xl font-black tracking-tight text-center leading-tight">
-            Your story,
-            <br />
-            <span
-              style={{
-                background:
-                  "linear-gradient(90deg, #818cf8 0%, #f472b6 50%, #fb923c 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }}
-            >
-              beautifully told.
+          <h2 className="text-center font-display text-2xl font-black leading-[1.05] tracking-tight sm:text-4xl md:text-6xl">
+            <span className="block text-white">Idea to MP4,</span>
+            <span className="mt-1 block bg-gradient-to-r from-coral-light via-softpink to-coral bg-clip-text text-transparent">
+              no edit bay.
             </span>
           </h2>
-          <p className="text-white/60 text-sm max-w-xs text-center leading-relaxed">
-            Generate cinematic visuals from a single prompt. No crew. No
-            timeline. Just vision.
+          <p className="max-w-sm text-center text-sm leading-relaxed text-white/60">
+            Stickman explainers, lofi streams, and more — AI plans scenes,
+            voiceover, and motion, then hands you a publish-ready download.
           </p>
         </motion.div>
 

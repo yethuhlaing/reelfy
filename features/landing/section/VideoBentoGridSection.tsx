@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type BentoTile = {
   id: string;
@@ -122,6 +122,7 @@ const TILES: BentoTile[] = [
 
 function BentoVideoCard({ tile }: { tile: BentoTile }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -130,7 +131,7 @@ function BentoVideoCard({ tile }: { tile: BentoTile }) {
     video.currentTime = 0;
   }, []);
 
-  const playOnHover = useCallback(() => {
+  const playVideo = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
 
@@ -138,7 +139,7 @@ function BentoVideoCard({ tile }: { tile: BentoTile }) {
     video.defaultMuted = true;
 
     const start = () => {
-      void video.play().catch(() => {});
+      void video.play().then(() => setIsPlaying(true)).catch(() => {});
     };
 
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
@@ -157,12 +158,33 @@ function BentoVideoCard({ tile }: { tile: BentoTile }) {
     }
   }, []);
 
-  const pauseOnLeave = useCallback(() => {
+  const pauseVideo = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     video.pause();
     video.currentTime = 0;
+    setIsPlaying(false);
   }, []);
+
+  const handleClick = useCallback(() => {
+    if (isPlaying) {
+      pauseVideo();
+    } else {
+      playVideo();
+    }
+  }, [isPlaying, pauseVideo, playVideo]);
+
+  const playOnHover = useCallback(() => {
+    if (window.matchMedia("(hover: hover)").matches) {
+      playVideo();
+    }
+  }, [playVideo]);
+
+  const pauseOnHover = useCallback(() => {
+    if (window.matchMedia("(hover: hover)").matches) {
+      pauseVideo();
+    }
+  }, [pauseVideo]);
 
   const overlayClass =
     tile.overlay === "light"
@@ -210,33 +232,30 @@ function BentoVideoCard({ tile }: { tile: BentoTile }) {
           )}
 
           {tile.href && (
-            <span className="pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-md transition-colors group-hover:bg-coral group-hover:border-coral">
+            <Link
+              href={tile.href}
+              className="pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-md transition-colors group-hover:bg-coral group-hover:border-coral"
+              onClick={(e) => e.stopPropagation()}
+            >
               <ArrowUpRight className="h-4 w-4" strokeWidth={2} />
-            </span>
+            </Link>
           )}
         </div>
       </div>
     </>
   );
 
-  const className = `video-bento-card group relative overflow-hidden rounded-2xl bg-[#0a0a0a] md:rounded-3xl ${tile.className}`;
-  const hoverHandlers = {
+  const className = `video-bento-card group relative cursor-pointer overflow-hidden rounded-2xl bg-[#0a0a0a] md:rounded-3xl ${tile.className}`;
+  const interactionHandlers = {
+    onClick: handleClick,
     onPointerEnter: playOnHover,
-    onPointerLeave: pauseOnLeave,
+    onPointerLeave: pauseOnHover,
     onFocus: playOnHover,
-    onBlur: pauseOnLeave,
+    onBlur: pauseOnHover,
   };
 
-  if (tile.href) {
-    return (
-      <Link href={tile.href} className={className} {...hoverHandlers}>
-        {inner}
-      </Link>
-    );
-  }
-
   return (
-    <article className={className} {...hoverHandlers}>
+    <article className={className} {...interactionHandlers}>
       {inner}
     </article>
   );

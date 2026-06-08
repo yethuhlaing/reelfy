@@ -7,8 +7,8 @@ import { newCategoryHref } from "@/shared/lib/categories";
 const LIST_ITEMS = [
   { label: "Stickman Explainers", href: newCategoryHref("stickman") },
   { label: "Lofi Music", href: newCategoryHref("lofi") },
-  { label: "ASMR Videos", href: "#search-section" },
-  { label: "Cartoon Animation", href: "#search-section" },
+  { label: "ASMR Videos", href: "#video-bento-grid" },
+  { label: "Cartoon Animation", href: "#video-bento-grid" },
 ] as const;
 
 function StepBadge({ step }: { step: string }) {
@@ -25,11 +25,11 @@ function StepBadge({ step }: { step: string }) {
 export default function ExploreCardsSection() {
   return (
     <section
-      className="flex h-screen w-full flex-col bg-background"
+      className="flex w-full flex-col bg-background md:h-screen"
       id="explore-cards-section"
       aria-labelledby="explore-cards-heading"
     >
-      <div className="shrink-0 px-6 py-10 md:px-12 md:py-12">
+      <div className="shrink-0 px-6 py-8 md:px-12 md:py-12">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-coral">
@@ -49,8 +49,8 @@ export default function ExploreCardsSection() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-1 md:grid-cols-3">
-        <article className="relative h-full min-h-0 overflow-hidden">
+      <div className="grid grid-cols-1 gap-1 md:min-h-0 md:flex-1 md:auto-rows-fr md:grid-cols-3">
+        <article className="relative min-h-[300px] overflow-hidden sm:min-h-[340px] md:h-full md:min-h-0">
           <img
             src="/images/1.png"
             alt=""
@@ -58,7 +58,7 @@ export default function ExploreCardsSection() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
 
-          <div className="relative z-10 flex h-full flex-col justify-between p-8 lg:p-10">
+          <div className="relative z-10 flex h-full min-h-[inherit] flex-col justify-between p-6 sm:p-8 lg:p-10">
             <StepBadge step="01" />
 
             <div className="space-y-5">
@@ -67,7 +67,7 @@ export default function ExploreCardsSection() {
                 ASMR, and cartoons in minutes.
               </p>
               <a
-                href="#search-section"
+                href="#video-bento-grid"
                 className="group inline-flex items-center gap-3 text-sm font-medium text-white transition-opacity hover:opacity-80"
               >
                 Start Exploring
@@ -80,7 +80,7 @@ export default function ExploreCardsSection() {
           </div>
         </article>
 
-        <article className="relative h-full min-h-0 overflow-hidden">
+        <article className="relative min-h-[300px] overflow-hidden sm:min-h-[340px] md:h-full md:min-h-0">
           <img
             src="/images/2.png"
             alt=""
@@ -88,15 +88,15 @@ export default function ExploreCardsSection() {
           />
           <div className="absolute inset-0 bg-black/55" />
 
-          <div className="relative z-10 flex h-full flex-col p-8 lg:p-10">
+          <div className="relative z-10 flex h-full min-h-[inherit] flex-col p-6 sm:p-8 lg:p-10">
             <StepBadge step="02" />
 
-            <ul className="flex flex-1 flex-col justify-center">
+            <ul className="mt-4 flex flex-1 flex-col justify-center md:mt-0">
               {LIST_ITEMS.map((item, index) => (
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="group flex items-center justify-between gap-4 py-4 text-sm font-medium text-white transition-opacity hover:opacity-80"
+                    className="group flex items-center justify-between gap-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-80 sm:py-4"
                   >
                     <span>{item.label}</span>
                     <ArrowUpRight
@@ -113,7 +113,7 @@ export default function ExploreCardsSection() {
           </div>
         </article>
 
-        <article className="relative h-full min-h-0 overflow-hidden">
+        <article className="relative min-h-[300px] overflow-hidden sm:min-h-[340px] md:h-full md:min-h-0">
           <img
             src="/images/3.png"
             alt=""
@@ -121,14 +121,14 @@ export default function ExploreCardsSection() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-          <div className="relative z-10 flex h-full flex-col justify-between p-8 lg:p-10">
+          <div className="relative z-10 flex h-full min-h-[inherit] flex-col justify-between p-6 pb-8 sm:p-8 lg:p-10">
             <StepBadge step="03" />
 
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:gap-6">
-              <p className="font-display text-6xl font-black leading-none tracking-tight text-white sm:text-7xl lg:text-[5.5rem]">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:gap-6">
+              <p className="font-display text-5xl font-black leading-none tracking-tight text-white sm:text-7xl lg:text-[5.5rem]">
                 +10K
               </p>
-              <p className="max-w-[200px] text-sm font-medium leading-snug text-white/95 sm:pb-1 sm:text-[15px]">
+              <p className="max-w-[220px] text-sm font-medium leading-snug text-white/95 sm:pb-1 sm:text-[15px]">
                 Videos generated this month using Reelify&apos;s AI-powered
                 studio.
               </p>
