@@ -12,6 +12,7 @@ import { LofiSetupStep } from './LofiSetupStep'
 import { LofiPromptsStep } from './LofiPromptsStep'
 import { LofiReviewStep } from './LofiReviewStep'
 import type { LofiStep } from '@/features/lofi/lib/constants'
+import { storyHref } from '@/shared/lib/categories'
 import type { TextModel, VisualMode, VisualAsset } from '@/shared/lib/types'
 
 const DEFAULT_MUSIC_MODEL = 'minimax'
@@ -52,6 +53,16 @@ export function LofiForm() {
       const parsed = JSON.parse(raw) as { textModel?: TextModel }
       if (parsed.textModel && TEXT_MODEL_OPTIONS.some((o) => o.value === parsed.textModel)) {
         setTextModel(parsed.textModel)
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    try {
+      const pending = localStorage.getItem('new:pending-prompt')
+      if (pending) {
+        setVibe(pending)
+        localStorage.removeItem('new:pending-prompt')
       }
     } catch { /* ignore */ }
   }, [])
@@ -256,14 +267,14 @@ export function LofiForm() {
         }),
       })
 
-      const data = await res.json() as { videoId?: string; error?: string }
+      const data = await res.json() as { storyId?: string; error?: string }
 
-      if (!res.ok || !data.videoId) {
+      if (!res.ok || !data.storyId) {
         throw new Error(data.error ?? 'Failed to generate video')
       }
 
       toast.success('Generation started!')
-      router.push(`/lofi/story/${data.videoId}`)
+      router.push(storyHref(data.storyId))
     } catch (err) {
       toast.error(toUserErrorMessage(err, 'Could not start generation. Please try again.'))
       setIsSubmitting(false)

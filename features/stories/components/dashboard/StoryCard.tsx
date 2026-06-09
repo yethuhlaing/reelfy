@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { storyHref } from '@/shared/lib/categories'
 import { useState } from 'react'
 import { MoreHorizontal, Copy, Pencil, Trash2, Download } from 'lucide-react'
 import { toast } from 'sonner'
@@ -63,7 +64,7 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
   const total = summary.sceneCount
   const updated = relativeTime(summary.lastUpdated)
 
-  const open = () => router.push(`/${summary.category}/story/${summary.lofiVideoId ?? summary.id}`)
+  const open = () => router.push(storyHref(summary.id))
 
   const handleRenameCommit = () => {
     const next = title.trim()

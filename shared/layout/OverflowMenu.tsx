@@ -12,6 +12,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { duplicateStoryApi, patchStoryMeta } from '@/features/stories/client/stories-client'
+import { storyHref } from '@/shared/lib/categories'
 
 interface Props {
   storyId: string
@@ -31,7 +32,7 @@ export function OverflowMenu({ storyId, category, title, onRenamed, readOnly }: 
     const id = await duplicateStoryApi(storyId)
     if (id) {
       toast.success('Duplicated')
-      router.push(`/${category}/story/${id}`)
+      router.push(storyHref(id))
     }
   }
 

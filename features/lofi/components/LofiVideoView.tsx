@@ -23,6 +23,7 @@ import { SoundtrackPanel } from './SoundtrackPanel'
 import { VisualGalleryViewer } from './VisualGalleryViewer'
 import { AudioPlayerProvider } from '@/shared/ui/audio-player'
 import { formatMmSs } from '@/features/lofi-stock/lib/playlist-utils'
+import { newCategoryHref } from '@/shared/lib/categories'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -402,7 +403,7 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
             <div className="flex flex-wrap gap-2 border-t border-[var(--border)] p-4">
               <button
                 className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-[0.8rem] text-[var(--text)] hover:bg-[var(--surface2)]"
-                onClick={() => router.push(`/${isStock ? 'lofi-stock' : 'lofi'}/new`)}
+                onClick={() => router.push(newCategoryHref(isStock ? 'lofi-stock' : 'lofi'))}
               >
                 <RefreshCw size={14} /> Generate similar
               </button>

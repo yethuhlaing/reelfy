@@ -10,6 +10,7 @@ import { savePendingStory } from '@/features/stories/server/pending-story'
 import { Stepper } from '@/shared/ui/stepper'
 import { AiPromptInput } from '@/shared/ui/ai-prompt-input'
 import type { ElevenLabsVoice } from '@/app/api/voices/route'
+import { storyHref } from '@/shared/lib/categories'
 
 const STEPS = [
   { id: 'prompt', label: 'Story' },
@@ -96,6 +97,16 @@ export function StoryForm({ category }: { category: string }) {
 
   useEffect(() => {
     try {
+      const pending = localStorage.getItem('new:pending-prompt')
+      if (pending) {
+        setText(pending)
+        localStorage.removeItem('new:pending-prompt')
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    try {
       localStorage.setItem(STORAGE_PREFIX + category, JSON.stringify(options))
     } catch { /* ignore */ }
   }, [options, category])
@@ -160,7 +171,7 @@ export function StoryForm({ category }: { category: string }) {
       const id = newStoryId()
       savePendingStory({ id, category, storyInput: trimmed, options, createdAt: Date.now() })
       toast.success('Cooking your story…')
-      router.push(`/${category}/story/${id}?starting=1`)
+      router.push(storyHref(id, { starting: true }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start')
       setSubmitting(false)

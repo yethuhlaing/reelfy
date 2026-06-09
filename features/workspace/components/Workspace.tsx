@@ -25,6 +25,7 @@ import { usePathname } from 'next/navigation'
 import { useJobPoller, type PendingJob } from '@/features/workspace/hooks/use-poller'
 import type { AnimateResult, Job } from '@/shared/lib/jobs/types'
 import type { GenerateOptions, Stage, StageId, StoryData } from '@/shared/lib/types'
+import { storyHref } from '@/shared/lib/categories'
 
 const INITIAL_STAGES: Stage[] = [
   { id: 'analyze', label: 'Analyze story', status: 'pending' },
@@ -114,7 +115,7 @@ function WorkspaceInner({ storyId, category }: Props) {
     startedRef.current = true
     void runGenerate(pending.storyInput, pending.options)
     clearPendingStory(storyId)
-    router.replace(`/${category}/story/${storyId}`)
+    router.replace(storyHref(storyId))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startingFlag, storyId])
 
@@ -157,7 +158,7 @@ function WorkspaceInner({ storyId, category }: Props) {
           : prev,
       )
       const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
-      const link = `/${category}/story/${storyId}`
+      const link = storyHref(storyId)
       notifications.add({
         type: 'scene-animated',
         storyId,
@@ -183,7 +184,7 @@ function WorkspaceInner({ storyId, category }: Props) {
           : prev,
       )
       const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
-      const link = `/${category}/story/${storyId}`
+      const link = storyHref(storyId)
       notifications.add({
         type: 'scene-failed',
         storyId,
@@ -288,7 +289,7 @@ function WorkspaceInner({ storyId, category }: Props) {
 
       const finalData = storyDataRef.current
       if (finalData && !ctrl.signal.aborted) {
-        const link = `/${category}/story/${storyId}`
+        const link = storyHref(storyId)
         notifications.add({
           type: 'generation-complete',
           storyId,
@@ -315,7 +316,7 @@ function WorkspaceInner({ storyId, category }: Props) {
           type: 'generation-failed',
           storyId,
           message: `Generation failed: ${msg.slice(0, 80)}`,
-          link: `/${category}/story/${storyId}`,
+          link: storyHref(storyId),
         })
       }
     } finally {

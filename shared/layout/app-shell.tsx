@@ -8,6 +8,7 @@ import { SidebarProvider } from '@/shared/layout/sidebar-context'
 import { TopBar } from '@/shared/layout/TopBar'
 import { Button } from '@/shared/ui/button'
 import type { SessionUser } from '@/features/auth/server/auth-session'
+import { isPublicLocalePath } from '@/i18n/locale-path'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -18,8 +19,7 @@ export function AppShell({ children, currentUser }: AppShellProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const isAuthRoute = pathname?.startsWith('/auth/')
-  const isWaitlistRoute = pathname === '/waitlist'
-  const isPublicHomeRoute = pathname === '/'
+  const isPublicLocaleRoute = pathname ? isPublicLocalePath(pathname) : false
 
   const resolveTopBar = () => {
     if (!pathname) return null
@@ -70,11 +70,9 @@ export function AppShell({ children, currentUser }: AppShellProps) {
       return { breadcrumb: [{ label: 'New' }] }
     }
 
-    const categoryMatch = pathname.match(/^\/([^/]+)\/new$/)
-    if (categoryMatch) {
-      const category = categoryMatch[1]
+    if (pathname.startsWith('/dashboard/story/')) {
       return {
-        breadcrumb: [{ label: category, href: `/${category}` }, { label: 'new' }],
+        breadcrumb: [{ label: 'Dashboard', href: '/dashboard' }, { label: 'Story' }],
       }
     }
 
@@ -83,7 +81,7 @@ export function AppShell({ children, currentUser }: AppShellProps) {
 
   const topBar = resolveTopBar()
 
-  if (isAuthRoute || isWaitlistRoute || isPublicHomeRoute) {
+  if (isAuthRoute || isPublicLocaleRoute) {
     return <div className="flex min-h-screen min-w-0 flex-col">{children}</div>
   }
 

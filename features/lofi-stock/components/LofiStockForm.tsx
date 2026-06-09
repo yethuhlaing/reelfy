@@ -13,6 +13,7 @@ import { StockTrackBrowser } from './StockTrackBrowser'
 import { StockPlaylistPanel } from './StockPlaylistPanel'
 import { StockSetupStep } from './StockSetupStep'
 import { StockVisualsStep } from './StockVisualsStep'
+import { storyHref } from '@/shared/lib/categories'
 import { StockReviewStep } from './StockReviewStep'
 import type { StockStep } from '@/features/lofi-stock/lib/constants'
 import type { ExpandResult } from '@/features/lofi-stock/lib/expand-types'
@@ -77,6 +78,16 @@ function LofiStockFormInner() {
       }
       if (parsed.visualModel && VISUAL_MODEL_OPTIONS.some((o) => o.value === parsed.visualModel)) {
         setVisualModel(parsed.visualModel)
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    try {
+      const pending = localStorage.getItem('new:pending-prompt')
+      if (pending) {
+        setVibe(pending)
+        localStorage.removeItem('new:pending-prompt')
       }
     } catch { /* ignore */ }
   }, [])
@@ -275,10 +286,10 @@ function LofiStockFormInner() {
           suggestedAmbientBed: expandResult.suggestedAmbientBed,
         }),
       })
-      const data = await res.json() as { videoId?: string; storyId?: string; error?: string }
-      if (!res.ok || !data.videoId) throw new Error(data.error ?? 'Failed to generate video')
+      const data = await res.json() as { storyId?: string; error?: string }
+      if (!res.ok || !data.storyId) throw new Error(data.error ?? 'Failed to generate video')
       toast.success('Generation started!')
-      router.push(`/lofi-stock/story/${data.videoId}`)
+      router.push(storyHref(data.storyId))
     } catch (err) {
       toast.error(toUserErrorMessage(err, 'Could not start generation. Please try again.'))
       setPhase('idle')
