@@ -74,7 +74,7 @@ function newStoryId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-export function StoryForm({ category }: { category: string }) {
+export function StoryForm({ category, onBackToStart }: { category: string; onBackToStart?: () => void }) {
   const router = useRouter()
   const [step, setStep] = useState<string>('prompt')
   const [text, setText] = useState('')
@@ -326,6 +326,15 @@ export function StoryForm({ category }: { category: string }) {
             type="button"
             className="inline-flex h-[40px] items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 text-[0.85rem] font-medium text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
             onClick={goBack}
+            disabled={submitting}
+          >
+            <ChevronLeft size={15} /> Back
+          </button>
+        ) : onBackToStart ? (
+          <button
+            type="button"
+            className="inline-flex h-[40px] items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 text-[0.85rem] font-medium text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
+            onClick={onBackToStart}
             disabled={submitting}
           >
             <ChevronLeft size={15} /> Back

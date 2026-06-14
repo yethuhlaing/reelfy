@@ -626,7 +626,7 @@ function WorkspaceInner({ storyId, category }: Props) {
       retryImage={retryImage}
     >
       <ExportStateProvider>
-      <TopBar />
+      <TopBar showLocalePicker={false} />
       <WorkspaceTopBar
         category={category}
         onPlayAll={playAll}

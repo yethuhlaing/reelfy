@@ -1,6 +1,5 @@
 'use client'
 
-import { ChevronLeft } from 'lucide-react'
 import { LofiStepper } from './LofiStepper'
 import type { LofiStep } from '@/features/lofi/lib/constants'
 
@@ -21,12 +20,8 @@ const STEP_HEADINGS: Record<LofiStep, { title: string; subtitle: string }> = {
 
 export function LofiStepHeader({
   step,
-  onBack,
-  showBack,
 }: {
   step: LofiStep
-  onBack?: () => void
-  showBack: boolean
 }) {
   const heading = STEP_HEADINGS[step]
 
@@ -42,16 +37,6 @@ export function LofiStepHeader({
             {heading.subtitle}
           </p>
         </div>
-        {showBack && onBack && (
-          <button
-            type="button"
-            className="inline-flex w-fit shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--text)] transition hover:bg-[var(--surface2)]"
-            onClick={onBack}
-          >
-            <ChevronLeft size={16} />
-            Back
-          </button>
-        )}
       </div>
     </header>
   )

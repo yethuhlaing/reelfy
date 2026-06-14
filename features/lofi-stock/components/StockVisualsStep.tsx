@@ -1,6 +1,6 @@
 'use client'
 
-import { Sparkles, Loader2 } from 'lucide-react'
+import { ChevronLeft, Sparkles, Loader2 } from 'lucide-react'
 import { ConfigPill } from '@/features/lofi/components/ConfigPill'
 import { LofiPromptList } from '@/features/lofi/components/LofiPromptList'
 import { VISUAL_MODEL_OPTIONS } from '@/features/lofi/lib/pricing-constants'
@@ -22,6 +22,7 @@ export function StockVisualsStep({
   isExpanding,
   onContinue,
   continueDisabled,
+  onBack,
 }: {
   expandResult: ExpandResult | null
   editedVisualPrompts: string[]
@@ -37,6 +38,7 @@ export function StockVisualsStep({
   isExpanding: boolean
   onContinue: () => void
   continueDisabled: boolean
+  onBack?: () => void
 }) {
   const isSingle = expandResult
     ? expandResult.visualMode === 'single-image' || expandResult.visualMode === 'single-video'
@@ -111,14 +113,28 @@ export function StockVisualsStep({
         )}
       </div>
 
-      <button
-        type="button"
-        className="inline-flex h-[46px] w-full items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] text-[0.95rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
-        onClick={onContinue}
-        disabled={continueDisabled || disabled}
-      >
-        Continue to review
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        {onBack ? (
+          <button
+            type="button"
+            className="inline-flex h-[46px] items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 text-[0.85rem] font-medium text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
+            onClick={onBack}
+            disabled={disabled}
+          >
+            <ChevronLeft size={15} /> Back
+          </button>
+        ) : (
+          <div />
+        )}
+        <button
+          type="button"
+          className="inline-flex h-[46px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-4 text-[0.95rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+          onClick={onContinue}
+          disabled={continueDisabled || disabled}
+        >
+          Continue to review
+        </button>
+      </div>
     </div>
   )
 }

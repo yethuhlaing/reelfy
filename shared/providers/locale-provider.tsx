@@ -6,7 +6,6 @@ import type { Locale } from '@/i18n/config'
 
 type LocaleContextValue = {
   locale: Locale
-  dictionary: Dictionary
   t: (key: string) => string
 }
 
@@ -35,7 +34,6 @@ export function LocaleProvider({
   const value = useMemo(
     () => ({
       locale,
-      dictionary,
       t: (key: string) => translate(dictionary, key),
     }),
     [locale, dictionary],

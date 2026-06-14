@@ -1,50 +1,20 @@
 {
   "common": {
-    "appName": "StickStory",
-    "siteName": "Reelify",
-    "loading": "Loading...",
-    "save": "Save",
-    "cancel": "Cancel",
-    "back": "Back",
     "new": "New",
-    "account": "Account",
-    "user": "User"
+    "account": "Account"
   },
   "nav": {
     "dashboard": "Dashboard",
+    "story": "Story",
     "settings": "Settings",
     "usageAndBilling": "Usage & Billing",
+    "admin": "Admin",
     "adminDashboard": "Admin Dashboard",
     "viewAllUsers": "View all users",
     "unprofitableUsers": "Unprofitable Users",
     "userSpend": "User Spend",
     "backToAdmin": "Back to admin",
     "buyCredits": "Buy credits",
-    "signOut": "Sign out",
-    "signingOut": "Signing out...",
-    "explore": "Explore",
-    "showcase": "Showcase",
-    "howItWorks": "How it works",
-    "pricing": "Pricing",
-    "joinWaitlist": "Join Waitlist"
-  },
-  "auth": {
-    "login": "Log in",
-    "signup": "Sign up",
-    "email": "Email",
-    "password": "Password",
-    "forgotPassword": "Forgot password?"
-  },
-  "settings": {
-    "title": "Settings",
-    "profile": "Profile",
-    "credits": "Credits",
-    "connectedAccounts": "Connected accounts",
-    "saved": "Saved",
-    "saveFailed": "Save failed"
-  },
-  "meta": {
-    "title": "Reelify — AI Video Generator for Creators",
-    "description": "Create explainer videos, lofi music, ASMR songs, and cartoon videos with AI in seconds. Reelify is the all-in-one AI content creation platform built for YouTubers, educators, and digital creators."
+    "signOut": "Sign out"
   }
 }

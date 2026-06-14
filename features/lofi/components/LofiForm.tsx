@@ -28,7 +28,7 @@ interface ExpandResult {
   suggestedAmbientBed: string | null
 }
 
-export function LofiForm() {
+export function LofiForm({ onBackToStart }: { onBackToStart?: () => void }) {
   const router = useRouter()
 
   const [vibe, setVibe] = useState('')
@@ -284,6 +284,7 @@ export function LofiForm() {
   const handleBack = () => {
     if (step === 'prompts') setStep('setup')
     else if (step === 'review') setStep('prompts')
+    else if (step === 'setup') onBackToStart?.()
   }
 
   return (
@@ -296,7 +297,7 @@ export function LofiForm() {
       </div>
 
       <div className="glass-panel mt-2 flex flex-col gap-5 p-6 md:p-8">
-        <LofiStepHeader step={step} onBack={handleBack} showBack={step !== 'setup'} />
+        <LofiStepHeader step={step} />
 
         {step === 'setup' && (
           <LofiSetupStep
@@ -314,6 +315,7 @@ export function LofiForm() {
             onVisualCountChange={setVisualCount}
             isExpanding={isExpanding}
             onNext={handleExpand}
+            onBack={onBackToStart}
           />
         )}
 
@@ -334,6 +336,7 @@ export function LofiForm() {
               fetchBalance()
               setStep('review')
             }}
+            onBack={handleBack}
           />
         )}
 
@@ -346,6 +349,7 @@ export function LofiForm() {
             balance={balance}
             isSubmitting={isSubmitting}
             onGenerate={handleSubmit}
+            onBack={handleBack}
           />
         )}
       </div>

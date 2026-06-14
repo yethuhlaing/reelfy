@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2, ListMusic } from 'lucide-react'
+import { ChevronLeft, Loader2, ListMusic } from 'lucide-react'
 import { PlaylistDurationMeter } from './PlaylistDurationMeter'
 import { PlaylistTrackRow } from './PlaylistTrackRow'
 import type { FreetouseTrack } from '@/shared/lib/providers/audio/music-freetouse'
@@ -16,6 +16,7 @@ export function StockPlaylistPanel({
   isContinuing,
   continueLabel = 'Continue',
   compact,
+  onBack,
 }: {
   tracks: FreetouseTrack[]
   targetDurationSec?: number
@@ -27,6 +28,7 @@ export function StockPlaylistPanel({
   isContinuing?: boolean
   continueLabel?: string
   compact?: boolean
+  onBack?: () => void
 }) {
   return (
     <div
@@ -69,21 +71,34 @@ export function StockPlaylistPanel({
           )}
         </div>
 
-        <button
-          type="button"
-          className="inline-flex h-[42px] w-full items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] text-[0.9rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
-          onClick={onContinue}
-          disabled={continueDisabled || isContinuing}
-        >
-          {isContinuing ? (
-            <>
-              <Loader2 size={16} className="animate-spin" />
-              Please wait…
-            </>
+        <div className="flex items-center justify-between gap-2">
+          {onBack ? (
+            <button
+              type="button"
+              className="inline-flex h-[42px] items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-3 text-[0.82rem] font-medium text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
+              onClick={onBack}
+            >
+              <ChevronLeft size={14} /> Back
+            </button>
           ) : (
-            continueLabel
+            <div />
           )}
-        </button>
+          <button
+            type="button"
+            className="inline-flex h-[42px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] text-[0.9rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={onContinue}
+            disabled={continueDisabled || isContinuing}
+          >
+            {isContinuing ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Please wait…
+              </>
+            ) : (
+              continueLabel
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )

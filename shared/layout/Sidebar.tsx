@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { useSidebar } from '@/shared/layout/sidebar-context'
 import { usePathname } from 'next/navigation'
 import { SidebarCategories } from '@/shared/layout/SidebarCategories'
+import { useLocale } from '@/shared/providers/locale-provider'
 
 interface SidebarProps {
   currentUser: SessionUser | null
@@ -18,11 +19,12 @@ interface SidebarProps {
 export function Sidebar({ currentUser }: SidebarProps) {
   const { collapsed } = useSidebar()
   const pathname = usePathname()
+  const { t } = useLocale()
   const user = currentUser
   const isAdmin = user?.role === 'admin'
   const [isSigningOut, setIsSigningOut] = useState(false)
 
-  const name = user?.name || user?.email || 'Account'
+  const name = user?.name || user?.email || t('common.account')
   const initials = name.slice(0, 1).toUpperCase()
 
   const handleSignOut = async () => {
@@ -67,7 +69,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
         )}
       >
         <LayoutDashboard size={16} />
-        {!collapsed && <span>Dashboard</span>}
+        {!collapsed && <span>{t('nav.dashboard')}</span>}
       </Link>
 
       <SidebarCategories collapsed={collapsed} />
@@ -83,7 +85,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
         )}
       >
         <ChartNoAxesCombined size={16} />
-        {!collapsed && <span>Usage & Billing</span>}
+        {!collapsed && <span>{t('nav.usageAndBilling')}</span>}
       </Link>
 
       {isAdmin ? (
@@ -96,7 +98,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
           )}
         >
           <Shield size={16} />
-          {!collapsed && <span>Admin</span>}
+          {!collapsed && <span>{t('nav.admin')}</span>}
         </Link>
       ) : null}
 
@@ -109,7 +111,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
         )}
       >
         <Settings size={16} />
-        {!collapsed && <span>Settings</span>}
+        {!collapsed && <span>{t('nav.settings')}</span>}
       </Link>
 
       {/* Spacer to push avatar to bottom */}
@@ -119,7 +121,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
       {user ? (
         <div className={cn('flex items-center gap-2.5 rounded-lg px-3 py-2', collapsed && 'justify-center')}>
           <button
-            aria-label="Account"
+            aria-label={t('common.account')}
             className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-transparent bg-[var(--accent)] p-0 text-[var(--accent-ink)] transition hover:brightness-105"
             onClick={() => {}}
           >
@@ -138,7 +140,7 @@ export function Sidebar({ currentUser }: SidebarProps) {
                 onClick={() => void handleSignOut()}
                 disabled={isSigningOut}
                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--muted)] transition hover:text-[var(--danger)] hover:bg-[var(--surface2)]"
-                title="Sign out"
+                title={t('nav.signOut')}
               >
                 <LogOut size={14} />
               </button>

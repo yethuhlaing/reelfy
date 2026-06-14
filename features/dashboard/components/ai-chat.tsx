@@ -67,7 +67,11 @@ function useAutoResizeTextarea({ minHeight, maxHeight }: AutoResizeProps) {
   return { textareaRef, adjustHeight };
 }
 
-export default function RuixenMoonChat() {
+interface RuixenMoonChatProps {
+  onCategorySelect?: (category: string) => void
+}
+
+export default function RuixenMoonChat({ onCategorySelect }: RuixenMoonChatProps) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
@@ -81,7 +85,11 @@ export default function RuixenMoonChat() {
         localStorage.setItem(PENDING_PROMPT_KEY, message.trim());
       } catch {}
     }
-    router.push(`/new?category=${categoryId}`);
+    if (onCategorySelect) {
+      onCategorySelect(categoryId);
+    } else {
+      router.push(`/new?category=${categoryId}`);
+    }
   };
 
   return (

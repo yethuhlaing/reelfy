@@ -34,15 +34,15 @@ type StoredLofiStockOptions = {
   visualModel?: string
 }
 
-export function LofiStockForm() {
+export function LofiStockForm({ onBackToStart }: { onBackToStart?: () => void }) {
   return (
     <AudioPlayerProvider>
-      <LofiStockFormInner />
+      <LofiStockFormInner onBackToStart={onBackToStart} />
     </AudioPlayerProvider>
   )
 }
 
-function LofiStockFormInner() {
+function LofiStockFormInner({ onBackToStart }: { onBackToStart?: () => void }) {
   const router = useRouter()
   const { pause, isItemActive } = useAudioPlayer()
 
@@ -300,6 +300,7 @@ function LofiStockFormInner() {
     if (step === 'setup') setStep('playlist')
     else if (step === 'visuals') setStep('setup')
     else if (step === 'review') setStep('visuals')
+    else if (step === 'playlist') onBackToStart?.()
   }
 
   const playlistPanelProps = {
@@ -310,6 +311,7 @@ function LofiStockFormInner() {
     onContinue: handleContinueFromPlaylist,
     continueDisabled: selectedTracks.length === 0 || isBusy,
     continueLabel: 'Continue',
+    onBack: onBackToStart,
   }
 
   return (
@@ -324,8 +326,6 @@ function LofiStockFormInner() {
       <div className="glass-panel mt-2 flex flex-col gap-5 p-6 md:p-8">
         <LofiStockStepHeader
           step={step}
-          showBack={step !== 'playlist'}
-          onBack={handleBack}
         />
 
         {step === 'playlist' && (
@@ -371,6 +371,7 @@ function LofiStockFormInner() {
           isContinuing={phase === 'expanding'}
           onContinue={() => void handleContinueFromSetup()}
           continueDisabled={vibe.trim().length < 10 || isBusy}
+          onBack={handleBack}
         />
       )}
 
@@ -394,6 +395,7 @@ function LofiStockFormInner() {
               setStep('review')
             }}
             continueDisabled={!expandResult || editedVisualPrompts.length === 0 || isBusy}
+            onBack={handleBack}
           />
         </div>
       )}
@@ -410,6 +412,7 @@ function LofiStockFormInner() {
             onEditPlaylist={() => setStep('playlist')}
             onGenerate={() => void handleSubmit()}
             isSubmitting={phase === 'submitting'}
+            onBack={handleBack}
           />
         </div>
       )}

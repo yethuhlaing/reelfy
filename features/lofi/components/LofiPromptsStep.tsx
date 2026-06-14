@@ -1,6 +1,6 @@
 'use client'
 
-import { Sparkles } from 'lucide-react'
+import { ChevronLeft, Sparkles } from 'lucide-react'
 import { LofiPromptList } from './LofiPromptList'
 import { calcVisualDuration } from '@/features/lofi/lib/visual-duration'
 import type { VisualMode } from '@/shared/lib/types'
@@ -18,6 +18,7 @@ interface Props {
   duration: number
   onRegenerateAll: () => void
   onNext: () => void
+  onBack?: () => void
 }
 
 export function LofiPromptsStep({
@@ -33,6 +34,7 @@ export function LofiPromptsStep({
   duration,
   onRegenerateAll,
   onNext,
+  onBack,
 }: Props) {
   const isSingle = visualMode === 'single-image' || visualMode === 'single-video'
 
@@ -102,13 +104,26 @@ export function LofiPromptsStep({
         </div>
       </div>
 
-      <button
-        className="inline-flex h-[46px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-4 text-[0.95rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
-        onClick={onNext}
-        disabled={musicPrompts.length === 0 || visualPrompts.length === 0}
-      >
-        Next →
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        {onBack ? (
+          <button
+            type="button"
+            className="inline-flex h-[46px] items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 text-[0.85rem] font-medium text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
+            onClick={onBack}
+          >
+            <ChevronLeft size={15} /> Back
+          </button>
+        ) : (
+          <div />
+        )}
+        <button
+          className="inline-flex h-[46px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-4 text-[0.95rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+          onClick={onNext}
+          disabled={musicPrompts.length === 0 || visualPrompts.length === 0}
+        >
+          Next →
+        </button>
+      </div>
     </div>
   )
 }

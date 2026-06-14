@@ -9,6 +9,8 @@ import { AppShell } from '@/shared/layout/app-shell'
 import { getSessionUser } from '@/features/auth/server/auth-session'
 import { getUserSession } from '@/shared/lib/db/user'
 import { SEO, flatKeywords } from '@/shared/lib/seo'
+import { getLocale } from '@/i18n/locale-actions'
+import { getDictionary } from '@/i18n/get-dictionary'
 
 const urbanist = Urbanist({
   subsets: ['latin'],
@@ -150,9 +152,11 @@ export default async function RootLayout({
 }>) {
   const session = await getUserSession()
   const currentUser = getSessionUser(session)
+  const locale = await getLocale()
+  const dictionary = await getDictionary(locale)
 
   return (
-    <html lang="en" suppressHydrationWarning className={`${urbanist.variable} ${jbMono.variable}`}>
+    <html lang={locale} suppressHydrationWarning className={`${urbanist.variable} ${jbMono.variable}`}>
       <head>
         <script
           type="application/ld+json"
@@ -162,7 +166,9 @@ export default async function RootLayout({
       <body suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <LenisProvider>
-            <AppShell currentUser={currentUser}>{children}</AppShell>
+            <AppShell currentUser={currentUser} locale={locale} dictionary={dictionary}>
+              {children}
+            </AppShell>
             <Toaster />
           </LenisProvider>
         </ThemeProvider>

@@ -1,39 +1,47 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Sidebar } from '@/shared/layout/Sidebar'
 import { SidebarProvider } from '@/shared/layout/sidebar-context'
 import { TopBar } from '@/shared/layout/TopBar'
 import { Button } from '@/shared/ui/button'
 import type { SessionUser } from '@/features/auth/server/auth-session'
-import { isPublicLocalePath } from '@/i18n/locale-path'
+import type { Dictionary } from '@/i18n/get-dictionary'
+import type { Locale } from '@/i18n/config'
+import { LocaleProvider, useLocale } from '@/shared/providers/locale-provider'
 
 interface AppShellProps {
   children: React.ReactNode
   currentUser: SessionUser | null
+  locale: Locale
+  dictionary: Dictionary
 }
 
-export function AppShell({ children, currentUser }: AppShellProps) {
+function DashboardShell({
+  children,
+  currentUser,
+}: {
+  children: React.ReactNode
+  currentUser: SessionUser | null
+}) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const isAuthRoute = pathname?.startsWith('/auth/')
-  const isPublicLocaleRoute = pathname ? isPublicLocalePath(pathname) : false
+  const { t } = useLocale()
 
   const resolveTopBar = () => {
     if (!pathname) return null
 
     if (pathname === '/dashboard') {
-      return { breadcrumb: [{ label: 'Dashboard' }] }
+      return { breadcrumb: [{ label: t('nav.dashboard') }] }
     }
 
     if (pathname === '/usage') {
       return {
-        breadcrumb: [{ label: 'Usage & Billing' }],
+        breadcrumb: [{ label: t('nav.usageAndBilling') }],
         right: (
           <Button asChild size="sm">
-            <Link href="/pricing">Buy credits</Link>
+            <Link href="/pricing">{t('nav.buyCredits')}</Link>
           </Button>
         ),
       }
@@ -41,10 +49,10 @@ export function AppShell({ children, currentUser }: AppShellProps) {
 
     if (pathname === '/admin') {
       return {
-        breadcrumb: [{ label: 'Admin Dashboard' }],
+        breadcrumb: [{ label: t('nav.adminDashboard') }],
         right: (
           <Button asChild size="sm" variant="outline">
-            <Link href="/admin/users">View all users</Link>
+            <Link href="/admin/users">{t('nav.viewAllUsers')}</Link>
           </Button>
         ),
       }
@@ -53,26 +61,26 @@ export function AppShell({ children, currentUser }: AppShellProps) {
     if (pathname === '/admin/users') {
       const state = searchParams.get('state')
       return {
-        title: state === 'unprofitable' ? 'Unprofitable Users' : 'User Spend',
+        title: state === 'unprofitable' ? t('nav.unprofitableUsers') : t('nav.userSpend'),
         right: (
           <Button asChild size="sm" variant="outline">
-            <Link href="/admin">Back to admin</Link>
+            <Link href="/admin">{t('nav.backToAdmin')}</Link>
           </Button>
         ),
       }
     }
 
     if (pathname === '/settings') {
-      return { breadcrumb: [{ label: 'Settings' }] }
+      return { breadcrumb: [{ label: t('nav.settings') }] }
     }
 
     if (pathname === '/new') {
-      return { breadcrumb: [{ label: 'New' }] }
+      return { breadcrumb: [{ label: t('common.new') }] }
     }
 
     if (pathname.startsWith('/dashboard/story/')) {
       return {
-        breadcrumb: [{ label: 'Dashboard', href: '/dashboard' }, { label: 'Story' }],
+        breadcrumb: [{ label: t('nav.dashboard'), href: '/dashboard' }, { label: t('nav.story') }],
       }
     }
 
@@ -80,10 +88,6 @@ export function AppShell({ children, currentUser }: AppShellProps) {
   }
 
   const topBar = resolveTopBar()
-
-  if (isAuthRoute || isPublicLocaleRoute) {
-    return <div className="flex min-h-screen min-w-0 flex-col">{children}</div>
-  }
 
   return (
     <SidebarProvider>
@@ -93,10 +97,27 @@ export function AppShell({ children, currentUser }: AppShellProps) {
       >
         <Sidebar currentUser={currentUser} />
         <div className="relative z-30 flex min-h-screen min-w-0 flex-col">
-          {topBar ? <TopBar {...topBar} currentUser={currentUser} /> : null}
+          <TopBar {...(topBar ?? {})} currentUser={currentUser} />
           {children}
         </div>
       </div>
     </SidebarProvider>
+  )
+}
+
+export function AppShell({ children, currentUser, locale, dictionary }: AppShellProps) {
+  const pathname = usePathname()
+  const isAuthRoute = pathname?.startsWith('/auth/')
+  const isWaitlistRoute = pathname === '/waitlist'
+  const isPublicHomeRoute = pathname === '/'
+
+  if (isAuthRoute || isWaitlistRoute || isPublicHomeRoute) {
+    return <div className="flex min-h-screen min-w-0 flex-col">{children}</div>
+  }
+
+  return (
+    <LocaleProvider locale={locale} dictionary={dictionary}>
+      <DashboardShell currentUser={currentUser}>{children}</DashboardShell>
+    </LocaleProvider>
   )
 }

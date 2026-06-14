@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import { ChevronLeft, Loader2 } from 'lucide-react'
 import { ConfigPill } from '@/features/lofi/components/ConfigPill'
 import { DURATION_OPTIONS } from '@/features/lofi/lib/pricing-constants'
 import { TEXT_MODEL_OPTIONS } from '@/shared/lib/text-model-options'
@@ -30,6 +30,7 @@ export function StockSetupStep({
   isContinuing,
   onContinue,
   continueDisabled,
+  onBack,
 }: {
   vibe: string
   onVibeChange: (value: string) => void
@@ -44,6 +45,7 @@ export function StockSetupStep({
   isContinuing: boolean
   onContinue: () => void
   continueDisabled: boolean
+  onBack?: () => void
 }) {
   const pillsDisabled = disabled || isContinuing
 
@@ -96,21 +98,35 @@ export function StockSetupStep({
         </div>
       )}
 
-      <button
-        type="button"
-        className="inline-flex h-[46px] w-full items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] text-[0.95rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
-        onClick={onContinue}
-        disabled={continueDisabled || isContinuing}
-      >
-        {isContinuing ? (
-          <>
-            <Loader2 size={16} className="animate-spin" />
-            Planning visuals…
-          </>
+      <div className="flex items-center justify-between gap-3">
+        {onBack ? (
+          <button
+            type="button"
+            className="inline-flex h-[46px] items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 text-[0.85rem] font-medium text-[var(--text)] transition hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)]"
+            onClick={onBack}
+            disabled={isContinuing}
+          >
+            <ChevronLeft size={15} /> Back
+          </button>
         ) : (
-          'Continue to visuals'
+          <div />
         )}
-      </button>
+        <button
+          type="button"
+          className="inline-flex h-[46px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-4 text-[0.95rem] font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+          onClick={onContinue}
+          disabled={continueDisabled || isContinuing}
+        >
+          {isContinuing ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Planning visuals…
+            </>
+          ) : (
+            'Continue to visuals'
+          )}
+        </button>
+      </div>
     </div>
   )
 }

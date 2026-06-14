@@ -16,6 +16,7 @@ import {
   BreadcrumbSeparator,
 } from '@/shared/ui/breadcrumb'
 import type { SessionUser } from '@/features/auth/server/auth-session'
+import { LocalePicker } from '@/shared/components/locale-picker'
 import { useSidebar } from '@/shared/layout/sidebar-context'
 
 interface Crumb {
@@ -28,9 +29,16 @@ interface TopBarProps {
   breadcrumb?: Crumb[]
   right?: ReactNode
   currentUser?: SessionUser | null
+  showLocalePicker?: boolean
 }
 
-export function TopBar({ title, breadcrumb, right, currentUser = null }: TopBarProps) {
+export function TopBar({
+  title,
+  breadcrumb,
+  right,
+  currentUser = null,
+  showLocalePicker = true,
+}: TopBarProps) {
   const user = currentUser
   const isSignedIn = Boolean(user?.id || user?.email)
   const { collapsed, toggle } = useSidebar()
@@ -69,6 +77,7 @@ export function TopBar({ title, breadcrumb, right, currentUser = null }: TopBarP
       </div>
       <div className="flex items-center gap-2">
         {right}
+        {showLocalePicker ? <LocalePicker /> : null}
         {isSignedIn ? (
           <>
             <NotificationBell />

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from './features/auth/server/auth'
-import { defaultLocale } from './i18n/config'
-
 
 const protectedPathMatchers = [
   /^\/dashboard(?:\/|$)/,
@@ -45,14 +43,6 @@ function requiresSession(pathname: string) {
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
-
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL(`/${defaultLocale}`, request.url))
-  }
-
-  if (pathname === '/waitlist') {
-    return NextResponse.redirect(new URL(`/${defaultLocale}/waitlist`, request.url))
-  }
 
   if (!requiresSession(pathname)) {
     return NextResponse.next()
