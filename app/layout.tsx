@@ -158,6 +158,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning className={`${urbanist.variable} ${jbMono.variable}`}>
       <head>
+        <meta name="apple-mobile-web-app-title" content="Reelfy" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

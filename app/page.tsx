@@ -5,7 +5,7 @@ import ExploreCardsSection from '@/features/landing/section/ExploreCardsSection'
 import VideoSection from '@/features/landing/section/VideoSection'
 import Navbar from '@/features/landing/components/Navbar'
 import Hero from '@/features/landing/section/Hero'
-import VideoTextMaskSection from '@/features/landing/section/VideoTextMaskSection'
+import ModelStackSection from '@/features/landing/section/ModelStackSection'
 import VideoBentoGridSection from '@/features/landing/section/VideoBentoGridSection'
 import PricingSection from '@/features/landing/section/pricingSection'
 
@@ -39,7 +39,7 @@ export default function HomePage() {
       <Navbar />
       <Hero />
       <ExploreCardsSection />
-      <VideoTextMaskSection />
+      <ModelStackSection />
       <VideoBentoGridSection />
       <VideoSection />
       <PricingSection />
