@@ -81,15 +81,24 @@ const TOTAL_MODELS =
 const GRAIN_URL =
   "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")";
 
+type CompoundedIcon = IconType & { Color?: IconType };
+
+function coloredIcon(icon: IconType): IconType {
+  const compounded = icon as CompoundedIcon;
+  return compounded.Color ?? icon;
+}
+
 function ModelLogo({ model, size = 28 }: { model: Model; size?: number }) {
   const Icon = model.Icon;
 
   if (Icon) {
+    const IconComponent = coloredIcon(Icon);
+
     return (
-      <Icon
+      <IconComponent
         size={size}
         aria-label={`${model.name} logo`}
-        className="shrink-0 opacity-70 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0"
+        className="shrink-0 opacity-80 transition duration-300 group-hover:opacity-100 group-hover:brightness-110"
       />
     );
   }
