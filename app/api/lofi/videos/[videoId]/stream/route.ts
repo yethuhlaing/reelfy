@@ -3,10 +3,10 @@ import { getLofiVideoForUser } from '@/features/lofi/server/lofi-db'
 import { redis } from '@/shared/lib/integrations/redis'
 
 export const runtime = 'nodejs'
-export const maxDuration = 310
+export const maxDuration = 300
 
 const POLL_MS = 1500
-const TIMEOUT_MS = 5 * 60 * 1000
+const TIMEOUT_MS = 290 * 1000
 const TERMINAL = new Set(['complete', 'failed', 'aborted'])
 
 export async function GET(

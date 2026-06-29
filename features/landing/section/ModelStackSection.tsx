@@ -1,13 +1,24 @@
 "use client";
 
-import Image from "next/image";
+import {
+  DeepSeek,
+  ElevenLabs,
+  Flux,
+  Gemini,
+  Kling,
+  Lightricks,
+  LongCat,
+  Meta,
+  Minimax,
+  Nvidia,
+  Stability,
+  type IconType,
+} from "@lobehub/icons";
 import { motion } from "motion/react";
-import { useState } from "react";
 
 type Model = {
   name: string;
-  /** Path under /public; if logo missing/fails it falls back to a text wordmark chip. */
-  logo?: string;
+  Icon?: IconType;
   role: string;
 };
 
@@ -18,16 +29,14 @@ type Bucket = {
   models: Model[];
 };
 
-const LOGO_BASE = "/logos/models";
-
 const VIDEO_BUCKET: Bucket = {
   id: "video",
   label: "Video",
   tagline: "Image-to-video & motion",
   models: [
-    { name: "Kling 2.6 Pro", logo: `${LOGO_BASE}/kling.svg`, role: "Cinematic image-to-video" },
-    { name: "LTX-Video", logo: `${LOGO_BASE}/ltx.svg`, role: "Fast motion synthesis" },
-    { name: "LongCat", logo: `${LOGO_BASE}/longcat.svg`, role: "Long-form video" },
+    { name: "Kling 2.6 Pro", Icon: Kling, role: "Cinematic image-to-video" },
+    { name: "LTX-Video", Icon: Lightricks, role: "Fast motion synthesis" },
+    { name: "LongCat", Icon: LongCat, role: "Long-form video" },
   ],
 };
 
@@ -37,8 +46,8 @@ const SIDE_BUCKETS: Bucket[] = [
     label: "Image",
     tagline: "Frames & keyart",
     models: [
-      { name: "FLUX", logo: `${LOGO_BASE}/flux.svg`, role: "High-fidelity frames" },
-      { name: "SDXL Lightning", logo: `${LOGO_BASE}/sdxl.svg`, role: "Instant draft frames" },
+      { name: "FLUX", Icon: Flux, role: "High-fidelity frames" },
+      { name: "SDXL Lightning", Icon: Stability, role: "Instant draft frames" },
     ],
   },
   {
@@ -46,10 +55,10 @@ const SIDE_BUCKETS: Bucket[] = [
     label: "Brains",
     tagline: "Script & scene planning",
     models: [
-      { name: "Gemini 2.5 Flash", logo: `${LOGO_BASE}/gemini.svg`, role: "Story & scene planning" },
-      { name: "Llama 3.3 70B", logo: `${LOGO_BASE}/llama.svg`, role: "Script writing" },
-      { name: "DeepSeek R1", logo: `${LOGO_BASE}/deepseek.svg`, role: "Reasoning & structure" },
-      { name: "Nemotron Ultra", logo: `${LOGO_BASE}/nemotron.svg`, role: "253B heavy lifting" },
+      { name: "Gemini 2.5 Flash", Icon: Gemini, role: "Story & scene planning" },
+      { name: "Llama 3.3 70B", Icon: Meta, role: "Script writing" },
+      { name: "DeepSeek R1", Icon: DeepSeek, role: "Reasoning & structure" },
+      { name: "Nemotron Ultra", Icon: Nvidia, role: "253B heavy lifting" },
     ],
   },
   {
@@ -57,10 +66,10 @@ const SIDE_BUCKETS: Bucket[] = [
     label: "Audio & Voice",
     tagline: "Voiceover & soundtrack",
     models: [
-      { name: "ElevenLabs", logo: `${LOGO_BASE}/elevenlabs.svg`, role: "Realistic voiceover" },
-      { name: "MiniMax Music", logo: `${LOGO_BASE}/minimax.svg`, role: "Original soundtracks" },
-      { name: "Stable Audio", logo: `${LOGO_BASE}/stable-audio.svg`, role: "Sound design" },
-      { name: "CassetteAI", logo: `${LOGO_BASE}/cassetteai.svg`, role: "Lofi & loops" },
+      { name: "ElevenLabs", Icon: ElevenLabs, role: "Realistic voiceover" },
+      { name: "MiniMax Music", Icon: Minimax, role: "Original soundtracks" },
+      { name: "Stable Audio", Icon: Stability, role: "Sound design" },
+      { name: "CassetteAI", role: "Lofi & loops" },
     ],
   },
 ];
@@ -73,19 +82,14 @@ const GRAIN_URL =
   "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")";
 
 function ModelLogo({ model, size = 28 }: { model: Model; size?: number }) {
-  const [failed, setFailed] = useState(false);
-  const showImage = model.logo && !failed;
+  const Icon = model.Icon;
 
-  if (showImage) {
+  if (Icon) {
     return (
-      <Image
-        src={model.logo as string}
-        alt={`${model.name} logo`}
-        width={size}
-        height={size}
-        style={{ width: size, height: size }}
-        className="object-contain opacity-70 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0"
-        onError={() => setFailed(true)}
+      <Icon
+        size={size}
+        aria-label={`${model.name} logo`}
+        className="shrink-0 opacity-70 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0"
       />
     );
   }

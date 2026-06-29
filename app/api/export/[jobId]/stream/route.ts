@@ -2,10 +2,10 @@ import { getJob } from '@/shared/lib/jobs/store'
 import type { ExportResult } from '@/shared/lib/jobs/types'
 
 export const runtime = 'nodejs'
-export const maxDuration = 310
+export const maxDuration = 300
 
 const POLL_MS = 1500
-const TIMEOUT_MS = 5 * 60 * 1000
+const TIMEOUT_MS = 290 * 1000
 
 export async function GET(
   _req: Request,

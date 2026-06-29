@@ -17,7 +17,7 @@ const nextConfig = {
     unoptimized: true,
   },
   output: 'standalone',
-  transpilePackages: ['@t3-oss/env-nextjs', '@t3-oss/env-core'],
+  transpilePackages: ['@t3-oss/env-nextjs', '@t3-oss/env-core', '@lobehub/icons'],
   serverExternalPackages: ['ffmpeg-static'],
   async headers() {
     return [
