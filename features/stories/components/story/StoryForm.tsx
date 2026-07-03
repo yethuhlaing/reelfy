@@ -47,6 +47,7 @@ const STYLE_OPTIONS = [
   { value: 'minimal', label: 'Minimal', hint: 'Clean, simple characters' },
   { value: 'expressive', label: 'Expressive', hint: 'Dynamic, emotive poses' },
   { value: 'dramatic', label: 'Dramatic', hint: 'High contrast, bold scenes' },
+  { value: 'editorial', label: 'Editorial', hint: 'Clean explainer, fresh visual per scene' },
 ] as const
 
 const VIDEO_QUALITY_OPTIONS = [

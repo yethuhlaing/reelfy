@@ -5,7 +5,46 @@ export function stickmanPlanSystemPrompt(tone: VoiceTone, density: SceneDensity,
     minimal: 'clean, sparse linework; restrained but readable',
     expressive: 'dynamic, exaggerated poses; bouncy energy; cartoonish motion',
     dramatic: 'bold, theatrical poses; heavy shadows; strong contrast',
+    editorial: 'minimalist wobbly hand-drawn black line art on near-white paper; heavy empty whitespace; sparse red/orange/blue handwritten annotations; clean, absurd, product-sketch feeling',
   }
+
+  const isEditorial = style === 'editorial'
+
+  const comicImagePromptRules = `IMAGE PROMPT — REQUIRED CONTENT (write 90-160 words, dense, specific):
+
+Each imagePrompt MUST be a concrete, cinematic description of a SINGLE moment.
+After the mandatory "Use the same stickman character as before: ..." opening, include, in order:
+
+1. WHO + EMOTION: count of stickmen, their roles (e.g. "solo protagonist", "protagonist + skeptical investor", "protagonist + small crowd"), and current emotion shown via body posture (see ENCODING below).
+2. WHAT THEY ARE DOING: exact physical action tied to the story sentence — running, slumping at desk, pitching with arm extended, staring at empty wallet, climbing a graph line, etc. Be specific.
+3. SETTING + PROPS: concrete environment — coffee shop, garage, boardroom, server room, mountaintop. List at least 1 (ideally 2-4) minimalist props the character interacts with (laptop, whiteboard with rough chart, coffee cup, suitcase, money bag $, rocket, lightbulb, phone, clock, book).
+4. VISUAL EFFECTS (always include at least 2): motion lines, speed swooshes, sweat droplets, exclamation/question marks above head, light rays / radiating sunburst, sparkle stars ✦, smoke puffs, sad rain cloud, thought bubble, broken-heart symbol, fire flames, downward/upward arrow, dotted-line trajectory, impact stars, dollar signs flying, dust kick-up at feet.
+5. IN-IMAGE TEXT (always include 1-2 short snippets — this is required, the panel is comic-style):
+   - Either a speech bubble with 1-4 word dialogue ("We're done.", "Let's ship it!", "Just one more...", "Why us?")
+   - OR a caption banner at top/bottom with 1-5 word situational label ("MONTH 6 — RENT DUE", "FIRST CUSTOMER", "3 AM DEBUG", "PIVOT")
+   - OR a sign/whiteboard inside scene with short text ("REJECTED", "SOLD OUT", "MVP")
+   Keep text legible, uppercase, hand-lettered feel. Quote the exact text inside the imagePrompt.
+6. COMPOSITION: where main character sits in frame (left third / center / right third), camera framing (wide / medium / close), what's in foreground vs background. VARY this between scenes — no two scenes share the same composition.
+7. STYLE LOCK: end with "${styleDescriptions[style]}, thick black ink lines, 16:9 wide panel, white paper texture, soft gray shadows, plus 2-3 flat accent colors used sparingly (e.g. warm yellow sunburst, red speech-bubble fill, blue prop highlight, green dollar sign) — colors are flat fills inside ink outlines, no gradients, no shading. NO frame, NO border, NO panel outline — image bleeds to edges."`
+
+  // Editorial: clean explainer aesthetic (article-illustration register). Fresh visual
+  // metaphor per scene, heavy whitespace, restrained color. Keeps ONE optional bubble +
+  // 1-2 FX purely as motion anchors so the downstream LTX I2V step still has something to animate.
+  const editorialImagePromptRules = `IMAGE PROMPT — REQUIRED CONTENT (write 90-160 words, dense, specific):
+
+Each imagePrompt MUST turn ONE cognitive anchor from the story sentence into a clean, weird, hand-drawn explainer moment — not a busy comic panel.
+After the mandatory "Use the same stickman character as before: ..." opening, include, in order:
+
+1. WHO + EMOTION: count of stickmen, their roles, and emotion shown via body posture (see ENCODING below). Keep the cast small — usually 1, at most 2.
+2. STRUCTURE TYPE — pick EXACTLY ONE and vary it across scenes (no two sibling scenes share a structure type): workflow / before-after contrast / split-path decision / layered method (stacked levels) / route-map (path from A to B) / input-output loop / character state-change. Name the chosen structure implicitly through the composition, never as on-image text.
+3. FRESH METAPHOR: invent a strange-but-coherent visual metaphor bound to THIS scene.sentence and scene.action. Never reuse a sibling scene's object, layout, or metaphor. The protagonist must PERFORM the core conceptual action (e.g. physically sorting, pulling a path, climbing layers), not stand beside a diagram.
+4. SETTING + PROPS: minimal — 1-2 concrete props only, lots of empty space around them. No cluttered environments.
+5. VISUAL EFFECTS (include 1-2, restrained): a single arrow, a dotted trajectory, a small burst, sweat drop, or motion line. These double as LTX motion anchors — always leave at least one moving element. No dense FX stacking.
+6. IN-IMAGE TEXT: at most ONE short optional speech bubble (1-4 words) OR skip it. Plus 3-6 sparse handwritten English labels pointing at parts of the metaphor (lowercase or small-caps, hand-lettered feel). NO caption banner, NO top-left title, NO structure-type written on the image. Quote any exact text inside the imagePrompt.
+7. COMPOSITION: keep the main subject ~40-60% of the canvas, preserve at least 35% blank near-white space. VARY placement and framing between scenes — no two scenes share the same composition.
+8. STYLE LOCK: end with "${styleDescriptions[style]}, near-white background, minimalist wobbly black ink line art, lots of empty white space, at most 5-8 short handwritten English labels — black line art plus sparse accents: orange for main flow/arrows, red only for key problems/results, blue only for secondary notes. No gradients, no shading, no paper texture, no comic panel, no PPT/infographic look, no childish cuteness. NO frame, NO border — image bleeds to edges."`
+
+  const imagePromptRules = isEditorial ? editorialImagePromptRules : comicImagePromptRules
 
   return `You are a visual storyboard engine for a hand-drawn stickman explainer video (YouTube style, ~55-60s, beginner-friendly).
 Convert the user's narrative into vivid, cinematic stickman scenes with a CLEAR NARRATIVE ARC: hook → problem/middle → resolution/takeaway. The input may be any topic — startup journey, product explainer, history, science, personal anecdote, etc.
@@ -37,22 +76,7 @@ The "protagonist" field defines the recurring character. Every imagePrompt MUST 
 Across scenes, ONLY pose, expression, props, setting, FX, and composition change. The character's proportions, head shape, line weight, and style must stay identical.
 
 ============================================================
-IMAGE PROMPT — REQUIRED CONTENT (write 90-160 words, dense, specific):
-
-Each imagePrompt MUST be a concrete, cinematic description of a SINGLE moment.
-After the mandatory "Use the same stickman character as before: ..." opening, include, in order:
-
-1. WHO + EMOTION: count of stickmen, their roles (e.g. "solo protagonist", "protagonist + skeptical investor", "protagonist + small crowd"), and current emotion shown via body posture (see ENCODING below).
-2. WHAT THEY ARE DOING: exact physical action tied to the story sentence — running, slumping at desk, pitching with arm extended, staring at empty wallet, climbing a graph line, etc. Be specific.
-3. SETTING + PROPS: concrete environment — coffee shop, garage, boardroom, server room, mountaintop. List at least 1 (ideally 2-4) minimalist props the character interacts with (laptop, whiteboard with rough chart, coffee cup, suitcase, money bag $, rocket, lightbulb, phone, clock, book).
-4. VISUAL EFFECTS (always include at least 2): motion lines, speed swooshes, sweat droplets, exclamation/question marks above head, light rays / radiating sunburst, sparkle stars ✦, smoke puffs, sad rain cloud, thought bubble, broken-heart symbol, fire flames, downward/upward arrow, dotted-line trajectory, impact stars, dollar signs flying, dust kick-up at feet.
-5. IN-IMAGE TEXT (always include 1-2 short snippets — this is required, the panel is comic-style):
-   - Either a speech bubble with 1-4 word dialogue ("We're done.", "Let's ship it!", "Just one more...", "Why us?")
-   - OR a caption banner at top/bottom with 1-5 word situational label ("MONTH 6 — RENT DUE", "FIRST CUSTOMER", "3 AM DEBUG", "PIVOT")
-   - OR a sign/whiteboard inside scene with short text ("REJECTED", "SOLD OUT", "MVP")
-   Keep text legible, uppercase, hand-lettered feel. Quote the exact text inside the imagePrompt.
-6. COMPOSITION: where main character sits in frame (left third / center / right third), camera framing (wide / medium / close), what's in foreground vs background. VARY this between scenes — no two scenes share the same composition.
-7. STYLE LOCK: end with "${styleDescriptions[style]}, thick black ink lines, 16:9 wide panel, white paper texture, soft gray shadows, plus 2-3 flat accent colors used sparingly (e.g. warm yellow sunburst, red speech-bubble fill, blue prop highlight, green dollar sign) — colors are flat fills inside ink outlines, no gradients, no shading. NO frame, NO border, NO panel outline — image bleeds to edges."
+${imagePromptRules}
 
 ============================================================
 EMOTION ENCODING via body posture (must match scene.emotion):
@@ -96,8 +120,9 @@ Keep it tight — LTX-Video responds to concrete physical verbs, not adjectives.
 HARD RULES:
 - Stickmen: circle head, single-line torso, line arms, line legs. Black ink only. No detailed faces — emotion conveyed by 2-dot eyes + simple mouth + posture + FX.
 - Same protagonist across ALL scenes — only pose/expression/props/setting change.
-- Always: floor line near bottom, soft gray shadow ellipse under each character's feet.
-- Every scene has at least 1 concrete prop (no empty rooms).
+${isEditorial
+    ? '- No floor line, no shadow, no paper texture. Character floats on clean near-white space. Keep at least 35% empty white space per scene.\n- 1-2 sparse props max per scene — never clutter; empty white space is intentional.'
+    : '- Always: floor line near bottom, soft gray shadow ellipse under each character\'s feet.\n- Every scene has at least 1 concrete prop (no empty rooms).'}
 - Each scene MUST be visually distinct from siblings — vary setting, prop, composition, FX.
 - Aspect 16:9.
 - The imagePrompt must NEVER be generic. Bind it to scene.sentence and scene.action.

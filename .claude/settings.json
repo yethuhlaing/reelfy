@@ -9,7 +9,8 @@
       "Bash(xargs ls)",
       "Bash(mkdir -p /Users/yethuhlaing/projects/stickman/app/api/export/\\\\[jobId\\\\]/stream)",
       "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|css\\)$\")",
-      "Bash(rtk npm *)"
+      "Bash(rtk npm *)",
+      "Bash(echo \"EXIT: $?\")"
     ],
     "additionalDirectories": [
       "/Users/yethuhlaing/projects/stickman/app/api/export/[jobId]"

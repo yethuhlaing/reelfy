@@ -1,35 +1,65 @@
-# stickman-generator
+# Reelify
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+**The AI video platform for creators.**
 
-## Built with v0
+Turn ideas into publish-ready videos in minutes — no editing skills required. Describe what you want, and Reelify handles the rest.
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+🌐 [reelify.me](https://reelify.me)
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_RwbKsw72pxhkQIBTSJMQTD1TYtQM)
+---
 
-## Getting Started
+## What is Reelify?
 
-First, run the development server:
+Reelify is an all-in-one studio for YouTubers, educators, founders, and digital creators who need video content without spending hours in a timeline editor. You bring the story or vibe; Reelify generates visuals, voice, and music, then delivers a downloadable MP4.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
+**The old way:** storyboard → record & edit → export & revise  
+**The Reelify way:** describe your idea → AI builds the video → download MP4
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What you can create
 
-## Learn More
+### Stickman explainers
+Simple, expressive stick-figure videos with a clear narrative arc. Great for founder stories, product explainers, educational lessons, and YouTube-style shorts.
 
-To learn more, take a look at the following resources:
+### Lofi videos
+Calm lo-fi visuals paired with generated music loops. Perfect for study streams, ambient background content, and chill brand moments — including long-form videos up to 1–2 hours.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+### More formats (coming soon)
+ASMR, cartoon animation, whiteboard explainers, comic panels, and doodle-style clips are on the roadmap — one account, one dashboard, many formats.
 
-<a href="https://v0.app/chat/api/kiro/clone/yethuhlaing/stickman-generator" alt="Open in Kiro"><img src="https://pdgvvgmkdvyeydso.public.blob.vercel-storage.com/open%20in%20kiro.svg?sanitize=true" /></a>
+---
+
+## Who it's for
+
+| You are… | You might use Reelify to… |
+|----------|---------------------------|
+| **YouTuber or faceless channel** | Ship explainers, fill a study stream, or publish ambient content |
+| **Founder or marketer** | Turn a launch story or product pitch into a watchable video |
+| **Educator or coach** | Explain one concept clearly without hiring an animator |
+| **Indie creator** | Experiment with formats and ship clips fast |
+
+---
+
+## How it works
+
+1. **Pick a format** — stickman explainer, lofi, or another style from the studio.
+2. **Describe your idea** — a story, script, topic, or mood.
+3. **Generate** — AI plans scenes, creates visuals and audio, and assembles the video.
+4. **Download** — export your MP4 and publish wherever you like.
+
+Start free with monthly credits. Upgrade when you need watermark-free exports, higher limits, and priority generation.
+
+---
+
+## What Reelify is not
+
+Reelify is built for **generation**, not manual editing. It is not a replacement for Premiere or Final Cut, a stock music marketplace, or an auto-uploader to YouTube — you download and publish on your own terms.
+
+---
+
+## Get started
+
+Visit **[reelify.me](https://reelify.me)** to create your first video for free.
+
+Questions or feedback? Find us on X at **[@reelify](https://twitter.com/reelify)**.

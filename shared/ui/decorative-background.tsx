@@ -3,12 +3,12 @@ import { Sparkles } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 
 const VIEWPORT_IMAGES = [
-  { src: '/images/3.png', top: '4%', left: '-2%', w: 280, h: 360, rotate: -6, opacity: 0.85, blur: 0 },
-  { src: '/images/2.png', top: '8%', right: '-2%', w: 260, h: 340, rotate: 5, opacity: 0.8, blur: 0 },
-  { src: '/images/5.png', bottom: '6%', left: '-3%', w: 320, h: 400, rotate: 4, opacity: 0.85, blur: 0 },
-  { src: '/images/7.png', bottom: '4%', right: '-3%', w: 300, h: 380, rotate: -5, opacity: 0.85, blur: 0 },
-  { src: '/images/4.png', top: '38%', right: '8%', w: 180, h: 240, rotate: 10, opacity: 0.55, blur: 1 },
-  { src: '/images/1.png', top: '46%', left: '6%', w: 170, h: 220, rotate: -10, opacity: 0.55, blur: 1 },
+  { src: '/images/3.webp', top: '4%', left: '-2%', w: 280, h: 360, rotate: -6, opacity: 0.85, blur: 0 },
+  { src: '/images/2.webp', top: '8%', right: '-2%', w: 260, h: 340, rotate: 5, opacity: 0.8, blur: 0 },
+  { src: '/images/5.webp', bottom: '6%', left: '-3%', w: 320, h: 400, rotate: 4, opacity: 0.85, blur: 0 },
+  { src: '/images/7.webp', bottom: '4%', right: '-3%', w: 300, h: 380, rotate: -5, opacity: 0.85, blur: 0 },
+  { src: '/images/4.webp', top: '38%', right: '8%', w: 180, h: 240, rotate: 10, opacity: 0.55, blur: 1 },
+  { src: '/images/1.webp', top: '46%', left: '6%', w: 170, h: 220, rotate: -10, opacity: 0.55, blur: 1 },
 ]
 
 /** Framed around the form — sits on the sides, fades toward center so inputs stay clear */

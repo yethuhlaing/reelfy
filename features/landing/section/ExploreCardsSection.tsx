@@ -52,7 +52,7 @@ export default function ExploreCardsSection() {
       <div className="grid grid-cols-1 gap-1 md:min-h-0 md:flex-1 md:auto-rows-fr md:grid-cols-3">
         <article className="relative min-h-[300px] overflow-hidden sm:min-h-[340px] md:h-full md:min-h-0">
           <img
-            src="/images/1.png"
+            src="/images/1.webp"
             alt=""
             className="absolute inset-0 h-full w-full object-cover object-center"
           />
@@ -82,7 +82,7 @@ export default function ExploreCardsSection() {
 
         <article className="relative min-h-[300px] overflow-hidden sm:min-h-[340px] md:h-full md:min-h-0">
           <img
-            src="/images/2.png"
+            src="/images/2.webp"
             alt=""
             className="absolute inset-0 h-full w-full object-cover object-center scale-110 blur-[2px]"
           />
@@ -115,7 +115,7 @@ export default function ExploreCardsSection() {
 
         <article className="relative min-h-[300px] overflow-hidden sm:min-h-[340px] md:h-full md:min-h-0">
           <img
-            src="/images/3.png"
+            src="/images/3.webp"
             alt=""
             className="absolute inset-0 h-full w-full object-cover object-center"
           />

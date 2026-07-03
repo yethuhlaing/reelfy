@@ -49,7 +49,7 @@ export interface StoryData {
 
 export type VoiceTone = 'inspirational' | 'casual' | 'documentary' | 'pitch'
 export type SceneDensity = '8' | '10' | '12' | '16' | '20' | '25' | '30' | '35' | '40' | '45' | '50' | '55' | '60'
-export type StickStyle = 'minimal' | 'expressive' | 'dramatic'
+export type StickStyle = 'minimal' | 'expressive' | 'dramatic' | 'editorial'
 export type ImageModel = 'flux-schnell-fal' | 'flux-dev-fal' | 'sdxl-lightning-fal'
 export type VideoModel = 'ltx-video-fal' | 'longcat-fal' | 'kling-fal'
 export type VideoQuality = '720p' | '1080p'

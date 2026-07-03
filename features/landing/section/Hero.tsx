@@ -111,7 +111,7 @@ export default function Hero() {
     >
       {/* Portrait — edge-to-edge on mobile, positioned right on desktop */}
       <motion.div
-        className="pointer-events-none absolute inset-0 z-0 h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.png')] bg-cover bg-center bg-no-repeat lg:hidden"
+        className="pointer-events-none absolute inset-0 z-0 h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:hidden"
         initial={{ opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1.05 }}
         transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
@@ -119,7 +119,7 @@ export default function Hero() {
       />
       <motion.div
         className={cn(
-          "pointer-events-none absolute z-0 hidden h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.png')] bg-cover bg-center bg-no-repeat lg:block",
+          "pointer-events-none absolute z-0 hidden h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:block",
           "lg:inset-auto lg:right-[6%] lg:top-[6%] lg:h-[94%] lg:min-h-0 lg:w-[58%] lg:bg-contain lg:bg-[center_top]",
           "lg:[mask-image:radial-gradient(ellipse_85%_80%_at_52%_22%,black_58%,transparent_92%)]",
           "lg:[-webkit-mask-image:radial-gradient(ellipse_85%_80%_at_52%_22%,black_58%,transparent_92%)]",
