@@ -83,7 +83,7 @@ export function MemeGenerationWorkspace({
             onClick={() => pickVariant(v)}
             className="glass-panel group flex h-full flex-col overflow-hidden p-3 text-left transition hover:ring-2 hover:ring-[var(--accent)]"
           >
-            <div className="pointer-events-none flex aspect-[4/5] w-full items-center justify-center overflow-hidden rounded-md bg-[var(--surface2)]">
+            <div className="pointer-events-none flex aspect-video w-full items-center justify-center overflow-hidden rounded-md bg-[var(--surface2)]">
               <MemePreview
                 imageUrl={v.imageUrl}
                 width={v.width}

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import { TopBar } from '@/shared/layout/TopBar'
 import { WorkspaceTopBar } from '@/features/workspace/components/WorkspaceTopBar'
 import { WorkspaceProvider, useWorkspace } from '@/features/workspace/context/workspace-context'
 import { SceneGrid } from '@/features/workspace/components/cards/SceneGrid'
@@ -626,7 +625,6 @@ function WorkspaceInner({ storyId, category }: Props) {
       retryImage={retryImage}
     >
       <ExportStateProvider>
-      <TopBar showLocalePicker={false} />
       <WorkspaceTopBar
         category={category}
         onPlayAll={playAll}
