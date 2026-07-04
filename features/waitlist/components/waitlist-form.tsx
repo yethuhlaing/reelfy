@@ -6,8 +6,13 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/button";
+import { marketingVideoUrl } from "@/shared/lib/utils";
 
-const WAITLIST_VIDEOS = ["/videos/14.mp4", "/videos/15.mp4", "/videos/11.mp4"] as const;
+const WAITLIST_VIDEOS = [
+  marketingVideoUrl("14.mp4"),
+  marketingVideoUrl("15.mp4"),
+  marketingVideoUrl("11.mp4"),
+] as const;
 
 const TESTIMONIALS = [
   {

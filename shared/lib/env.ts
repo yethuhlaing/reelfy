@@ -20,7 +20,7 @@ export const env = createEnv({
     // AI / media providers (enable features when set)
     FAL_KEY: optionalNonEmpty,
     GEMINI_API_KEY: optionalNonEmpty,
-    GROQ_API_KEY: optionalNonEmpty,
+    OPENROUTER_API_KEY: optionalNonEmpty,
     NVIDIA_API_KEY: optionalNonEmpty,
     ELEVENLABS_API_KEY: optionalNonEmpty,
     ELEVENLABS_VOICE_ID: optionalNonEmpty,
@@ -51,6 +51,7 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),
+    NEXT_PUBLIC_BLOB_STORAGE_URL: optionalUrl,
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
@@ -61,7 +62,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     FAL_KEY: process.env.FAL_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-    GROQ_API_KEY: process.env.GROQ_API_KEY,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
     NVIDIA_API_KEY: process.env.NVIDIA_API_KEY,
     ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
     ELEVENLABS_VOICE_ID: process.env.ELEVENLABS_VOICE_ID,
@@ -82,6 +83,7 @@ export const env = createEnv({
     WEBHOOK_SKIP_TUNNEL: process.env.WEBHOOK_SKIP_TUNNEL,
     SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    NEXT_PUBLIC_BLOB_STORAGE_URL: process.env.NEXT_PUBLIC_BLOB_STORAGE_URL,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === '1',

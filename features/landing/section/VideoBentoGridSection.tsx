@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { marketingVideoUrl } from "@/shared/lib/utils";
 
 type BentoTile = {
   id: string;
@@ -16,7 +17,7 @@ type BentoTile = {
 const TILES: BentoTile[] = [
   {
     id: "create",
-    video: "/videos/1.mp4",
+    video: marketingVideoUrl("1.mp4"),
     title: "CREATE",
     href: "/new",
     className:
@@ -25,7 +26,7 @@ const TILES: BentoTile[] = [
   },
   {
     id: "motion",
-    video: "/videos/2.mp4",
+    video: marketingVideoUrl("2.mp4"),
     title: "MOTION",
     className:
       "min-h-[280px] md:col-span-1 lg:col-span-3 lg:row-start-1 lg:col-start-6 lg:min-h-0",
@@ -33,14 +34,14 @@ const TILES: BentoTile[] = [
   },
   {
     id: "frame",
-    video: "/videos/3.mp4",
+    video: marketingVideoUrl("3.mp4"),
     className:
       "min-h-[280px] md:col-span-1 lg:col-span-4 lg:row-start-1 lg:col-start-9 lg:min-h-0",
     overlay: "light",
   },
   {
     id: "prompt",
-    video: "/videos/4.mp4",
+    video: marketingVideoUrl("4.mp4"),
     title: "IMAGINE",
     className:
       "min-h-[280px] md:col-span-1 lg:col-span-3 lg:row-start-2 lg:col-start-6 lg:min-h-0",
@@ -48,7 +49,7 @@ const TILES: BentoTile[] = [
   },
   {
     id: "flow",
-    video: "/videos/5.mp4",
+    video: marketingVideoUrl("5.mp4"),
     title: "FLOW",
     className:
       "min-h-[280px] md:col-span-1 lg:col-span-4 lg:row-start-2 lg:col-start-9 lg:min-h-0",
@@ -56,7 +57,7 @@ const TILES: BentoTile[] = [
   },
   {
     id: "clip",
-    video: "/videos/6.mp4",
+    video: marketingVideoUrl("6.mp4"),
     title: "CUT",
     className:
       "min-h-[280px] md:col-span-1 lg:col-span-5 lg:row-start-3 lg:col-start-1 lg:min-h-0",
@@ -64,7 +65,7 @@ const TILES: BentoTile[] = [
   },
   {
     id: "workspace",
-    video: "/videos/7.mp4",
+    video: marketingVideoUrl("7.mp4"),
     title: "From story to screen",
     href: "/dashboard",
     className:
@@ -73,7 +74,7 @@ const TILES: BentoTile[] = [
   },
   {
     id: "story",
-    video: "/videos/8.mp4",
+    video: marketingVideoUrl("8.mp4"),
     title: "STORY",
     className:
       "min-h-[400px] md:col-span-2 md:row-span-2 lg:col-span-6 lg:row-span-2 lg:row-start-4 lg:col-start-1 lg:min-h-0",
@@ -81,7 +82,7 @@ const TILES: BentoTile[] = [
   },
   {
     id: "scene",
-    video: "/videos/9.mp4",
+    video: marketingVideoUrl("9.mp4"),
     title: "SCENE",
     className:
       "min-h-[340px] md:col-span-1 lg:col-span-6 lg:row-start-4 lg:col-start-7 lg:min-h-0",
@@ -89,14 +90,14 @@ const TILES: BentoTile[] = [
   },
   {
     id: "vibe",
-    video: "/videos/10.mp4",
+    video: marketingVideoUrl("10.mp4"),
     className:
       "min-h-[340px] md:col-span-1 lg:col-span-6 lg:row-start-5 lg:col-start-7 lg:min-h-0",
     overlay: "light",
   },
   {
     id: "draft",
-    video: "/videos/11.mp4",
+    video: marketingVideoUrl("11.mp4"),
     title: "DRAFT",
     className:
       "min-h-[380px] md:col-span-1 lg:col-span-4 lg:row-start-6 lg:col-start-1 lg:min-h-0",
@@ -104,7 +105,7 @@ const TILES: BentoTile[] = [
   },
   {
     id: "pulse",
-    video: "/videos/12.mp4",
+    video: marketingVideoUrl("12.mp4"),
     title: "PULSE",
     className:
       "min-h-[380px] md:col-span-1 lg:col-span-5 lg:row-start-6 lg:col-start-5 lg:min-h-0",
@@ -112,7 +113,7 @@ const TILES: BentoTile[] = [
   },
   {
     id: "reel",
-    video: "/videos/13.mp4",
+    video: marketingVideoUrl("13.mp4"),
     title: "REEL",
     className:
       "min-h-[380px] md:col-span-1 lg:col-span-3 lg:row-start-6 lg:col-start-10 lg:min-h-0",

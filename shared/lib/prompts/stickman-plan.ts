@@ -8,9 +8,11 @@ export function stickmanPlanSystemPrompt(tone: VoiceTone, density: SceneDensity,
     editorial: 'minimalist wobbly hand-drawn black line art on near-white paper; heavy empty whitespace; sparse red/orange/blue handwritten annotations; clean, absurd, product-sketch feeling',
   }
 
-  const isEditorial = style === 'editorial'
-
-  const comicImagePromptRules = `IMAGE PROMPT — REQUIRED CONTENT (write 90-160 words, dense, specific):
+  const comicRules = (opts: {
+    fxRule: string
+    textRule: string
+    styleLock: string
+  }) => `IMAGE PROMPT — REQUIRED CONTENT (write 90-160 words, dense, specific):
 
 Each imagePrompt MUST be a concrete, cinematic description of a SINGLE moment.
 After the mandatory "Use the same stickman character as before: ..." opening, include, in order:
@@ -18,19 +20,34 @@ After the mandatory "Use the same stickman character as before: ..." opening, in
 1. WHO + EMOTION: count of stickmen, their roles (e.g. "solo protagonist", "protagonist + skeptical investor", "protagonist + small crowd"), and current emotion shown via body posture (see ENCODING below).
 2. WHAT THEY ARE DOING: exact physical action tied to the story sentence — running, slumping at desk, pitching with arm extended, staring at empty wallet, climbing a graph line, etc. Be specific.
 3. SETTING + PROPS: concrete environment — coffee shop, garage, boardroom, server room, mountaintop. List at least 1 (ideally 2-4) minimalist props the character interacts with (laptop, whiteboard with rough chart, coffee cup, suitcase, money bag $, rocket, lightbulb, phone, clock, book).
-4. VISUAL EFFECTS (always include at least 2): motion lines, speed swooshes, sweat droplets, exclamation/question marks above head, light rays / radiating sunburst, sparkle stars ✦, smoke puffs, sad rain cloud, thought bubble, broken-heart symbol, fire flames, downward/upward arrow, dotted-line trajectory, impact stars, dollar signs flying, dust kick-up at feet.
-5. IN-IMAGE TEXT (always include 1-2 short snippets — this is required, the panel is comic-style):
-   - Either a speech bubble with 1-4 word dialogue ("We're done.", "Let's ship it!", "Just one more...", "Why us?")
-   - OR a caption banner at top/bottom with 1-5 word situational label ("MONTH 6 — RENT DUE", "FIRST CUSTOMER", "3 AM DEBUG", "PIVOT")
-   - OR a sign/whiteboard inside scene with short text ("REJECTED", "SOLD OUT", "MVP")
-   Keep text legible, uppercase, hand-lettered feel. Quote the exact text inside the imagePrompt.
+4. ${opts.fxRule}
+5. ${opts.textRule}
 6. COMPOSITION: where main character sits in frame (left third / center / right third), camera framing (wide / medium / close), what's in foreground vs background. VARY this between scenes — no two scenes share the same composition.
-7. STYLE LOCK: end with "${styleDescriptions[style]}, thick black ink lines, 16:9 wide panel, white paper texture, soft gray shadows, plus 2-3 flat accent colors used sparingly (e.g. warm yellow sunburst, red speech-bubble fill, blue prop highlight, green dollar sign) — colors are flat fills inside ink outlines, no gradients, no shading. NO frame, NO border, NO panel outline — image bleeds to edges."`
+7. STYLE LOCK: end with "${opts.styleLock}"`
 
-  // Editorial: clean explainer aesthetic (article-illustration register). Fresh visual
-  // metaphor per scene, heavy whitespace, restrained color. Keeps ONE optional bubble +
-  // 1-2 FX purely as motion anchors so the downstream LTX I2V step still has something to animate.
-  const editorialImagePromptRules = `IMAGE PROMPT — REQUIRED CONTENT (write 90-160 words, dense, specific):
+  const imagePromptRulesByStyle: Record<StickStyle, string> = {
+    // Minimal: calm, sparse. Few FX, quiet text, generous whitespace. Closest to "clean".
+    minimal: comicRules({
+      fxRule: 'VISUAL EFFECTS (include AT MOST 1, subtle): a single motion line, one sweat drop, one small arrow, or one question/exclamation mark. Keep it quiet — no FX stacking. Prefer empty space over decoration.',
+      textRule: 'IN-IMAGE TEXT (0-1 snippet, optional): at most one small speech bubble with 1-3 word dialogue, OR none. No caption banners. Keep it minimal.',
+      styleLock: `${styleDescriptions[style]}, thin clean black ink lines, 16:9 wide panel, plenty of white space, at most 1-2 flat muted accent colors used sparingly — flat fills inside ink outlines, no gradients, no shading. NO frame, NO border — image bleeds to edges.`,
+    }),
+    // Expressive: loud, bouncy, cartoonish. Max FX, big bubbles, exaggerated motion.
+    expressive: comicRules({
+      fxRule: 'VISUAL EFFECTS (include AT LEAST 3, energetic): motion lines, speed swooshes, sparkle stars ✦, impact stars, bouncing dust puffs, exclamation marks, sweat sprays, radiating burst, dollar signs flying. Pile on the cartoon energy.',
+      textRule: 'IN-IMAGE TEXT (always 1-2 snippets): a bold speech bubble with 1-4 word dialogue ("Let\'s go!", "No way!", "We did it!") AND/OR a punchy caption banner ("PLOT TWIST", "DAY ONE"). Big, bouncy, hand-lettered uppercase.',
+      styleLock: `${styleDescriptions[style]}, bold springy black ink lines with squash-and-stretch, 16:9 wide panel, 3-4 vivid flat accent colors (warm yellow, red, cyan, green) used generously — flat fills inside ink outlines, no gradients. NO frame, NO border — image bleeds to edges.`,
+    }),
+    // Dramatic: cinematic, high contrast, heavy shadow, theatrical staging.
+    dramatic: comicRules({
+      fxRule: 'VISUAL EFFECTS (include 2-3, cinematic): strong directional light rays, long cast shadows, dramatic radiating sunburst, spotlight cone, heavy motion lines, smoke, or a single bold arrow. Use FX to build tension and depth.',
+      textRule: 'IN-IMAGE TEXT (1-2 snippets, high-impact): a terse speech bubble ("It\'s over.", "Now.") OR a bold caption banner ("THE BREAKING POINT", "ALL IN"). Heavy, uppercase, cinematic hand-lettering.',
+      styleLock: `${styleDescriptions[style]}, thick high-contrast black ink lines, 16:9 wide panel, deep soft gray/black shadows and strong chiaroscuro, 2-3 saturated flat accent colors on a moody near-neutral ground — flat fills inside ink outlines, no gradients. NO frame, NO border — image bleeds to edges.`,
+    }),
+    // Editorial: clean explainer aesthetic (article-illustration register). Fresh visual
+    // metaphor per scene, heavy whitespace, restrained color. Keeps ONE optional bubble +
+    // 1-2 FX purely as motion anchors so the downstream LTX I2V step still has something to animate.
+    editorial: `IMAGE PROMPT — REQUIRED CONTENT (write 90-160 words, dense, specific):
 
 Each imagePrompt MUST turn ONE cognitive anchor from the story sentence into a clean, weird, hand-drawn explainer moment — not a busy comic panel.
 After the mandatory "Use the same stickman character as before: ..." opening, include, in order:
@@ -42,9 +59,18 @@ After the mandatory "Use the same stickman character as before: ..." opening, in
 5. VISUAL EFFECTS (include 1-2, restrained): a single arrow, a dotted trajectory, a small burst, sweat drop, or motion line. These double as LTX motion anchors — always leave at least one moving element. No dense FX stacking.
 6. IN-IMAGE TEXT: at most ONE short optional speech bubble (1-4 words) OR skip it. Plus 3-6 sparse handwritten English labels pointing at parts of the metaphor (lowercase or small-caps, hand-lettered feel). NO caption banner, NO top-left title, NO structure-type written on the image. Quote any exact text inside the imagePrompt.
 7. COMPOSITION: keep the main subject ~40-60% of the canvas, preserve at least 35% blank near-white space. VARY placement and framing between scenes — no two scenes share the same composition.
-8. STYLE LOCK: end with "${styleDescriptions[style]}, near-white background, minimalist wobbly black ink line art, lots of empty white space, at most 5-8 short handwritten English labels — black line art plus sparse accents: orange for main flow/arrows, red only for key problems/results, blue only for secondary notes. No gradients, no shading, no paper texture, no comic panel, no PPT/infographic look, no childish cuteness. NO frame, NO border — image bleeds to edges."`
+8. STYLE LOCK: end with "${styleDescriptions[style]}, near-white background, minimalist wobbly black ink line art, lots of empty white space, at most 5-8 short handwritten English labels — black line art plus sparse accents: orange for main flow/arrows, red only for key problems/results, blue only for secondary notes. No gradients, no shading, no paper texture, no comic panel, no PPT/infographic look, no childish cuteness. NO frame, NO border — image bleeds to edges."`,
+  }
 
-  const imagePromptRules = isEditorial ? editorialImagePromptRules : comicImagePromptRules
+  const imagePromptRules = imagePromptRulesByStyle[style]
+
+  // Per-style grounding/whitespace/prop rules injected into HARD RULES.
+  const groundingRuleByStyle: Record<StickStyle, string> = {
+    minimal: '- Floor line near bottom, faint gray shadow ellipse under feet. Keep the frame airy — plenty of white space, 1-2 props max.',
+    expressive: '- Floor line near bottom, soft gray shadow ellipse under feet. Fill the frame with energy — props, FX, and motion welcome.',
+    dramatic: '- Floor line near bottom, long dramatic cast shadow under feet. Use deep shadow and staging for cinematic depth; 1-3 purposeful props.',
+    editorial: '- No floor line, no shadow, no paper texture. Character floats on clean near-white space. Keep at least 35% empty white space per scene.\n- 1-2 sparse props max per scene — never clutter; empty white space is intentional.',
+  }
 
   return `You are a visual storyboard engine for a hand-drawn stickman explainer video (YouTube style, ~55-60s, beginner-friendly).
 Convert the user's narrative into vivid, cinematic stickman scenes with a CLEAR NARRATIVE ARC: hook → problem/middle → resolution/takeaway. The input may be any topic — startup journey, product explainer, history, science, personal anecdote, etc.
@@ -120,9 +146,7 @@ Keep it tight — LTX-Video responds to concrete physical verbs, not adjectives.
 HARD RULES:
 - Stickmen: circle head, single-line torso, line arms, line legs. Black ink only. No detailed faces — emotion conveyed by 2-dot eyes + simple mouth + posture + FX.
 - Same protagonist across ALL scenes — only pose/expression/props/setting change.
-${isEditorial
-    ? '- No floor line, no shadow, no paper texture. Character floats on clean near-white space. Keep at least 35% empty white space per scene.\n- 1-2 sparse props max per scene — never clutter; empty white space is intentional.'
-    : '- Always: floor line near bottom, soft gray shadow ellipse under each character\'s feet.\n- Every scene has at least 1 concrete prop (no empty rooms).'}
+${groundingRuleByStyle[style]}
 - Each scene MUST be visually distinct from siblings — vary setting, prop, composition, FX.
 - Aspect 16:9.
 - The imagePrompt must NEVER be generic. Bind it to scene.sentence and scene.action.

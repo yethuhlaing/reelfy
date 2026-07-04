@@ -30,13 +30,20 @@ export interface TextProvider {
 
 import { geminiProvider } from './text-gemini'
 import { nvidiaNemotronUltra } from './text-nvidia'
-import { groqLlama70b, groqDeepSeekR1 } from './text-groq'
+import {
+  orDeepSeekR1,
+  orLlama70b,
+  orGeminiFlash,
+  orQwen72b,
+} from './text-openrouter'
 
 export const TEXT_PROVIDERS: Record<TextModel, TextProvider> = {
   'gemini-2.5-flash': geminiProvider,
   'nvidia/nemotron-ultra-253b-v1': nvidiaNemotronUltra,
-  'groq/llama-3.3-70b-versatile': groqLlama70b,
-  'groq/deepseek-r1-distill-llama-70b': groqDeepSeekR1,
+  'openrouter/deepseek/deepseek-r1:free': orDeepSeekR1,
+  'openrouter/meta-llama/llama-3.3-70b-instruct:free': orLlama70b,
+  'openrouter/google/gemini-2.0-flash-exp:free': orGeminiFlash,
+  'openrouter/qwen/qwen-2.5-72b-instruct:free': orQwen72b,
 }
 
 export function getTextProvider(id?: TextModel): TextProvider {

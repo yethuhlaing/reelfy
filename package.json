@@ -14,7 +14,8 @@
     "start": "next start",
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "upload:marketing-videos": "tsx scripts/upload-marketing-videos.ts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.6.1",

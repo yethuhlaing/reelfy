@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ArrowRight, Clock, Play, X } from "lucide-react";
 
-const SAMPLE_VIDEO = "/videos/8.mp4";
+import { marketingVideoUrl } from "@/shared/lib/utils";
+
+const SAMPLE_VIDEO = marketingVideoUrl("8.mp4");
 const SAMPLE_LABEL = "55s stickman explainer · sample output";
 
 const PIPELINE_STEPS = [

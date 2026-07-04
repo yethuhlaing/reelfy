@@ -56,8 +56,10 @@ export type VideoQuality = '720p' | '1080p'
 export type TextModel =
   | 'gemini-2.5-flash'
   | 'nvidia/nemotron-ultra-253b-v1'
-  | 'groq/llama-3.3-70b-versatile'
-  | 'groq/deepseek-r1-distill-llama-70b'
+  | 'openrouter/deepseek/deepseek-r1:free'
+  | 'openrouter/meta-llama/llama-3.3-70b-instruct:free'
+  | 'openrouter/google/gemini-2.0-flash-exp:free'
+  | 'openrouter/qwen/qwen-2.5-72b-instruct:free'
 
 export interface GenerateOptions {
   density: SceneDensity
