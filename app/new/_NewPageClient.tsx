@@ -5,6 +5,7 @@ import RuixenMoonChat from '@/features/dashboard/components/ai-chat'
 import { StoryForm } from '@/features/stories/components/story/StoryForm'
 import { LofiForm } from '@/features/lofi/components/LofiForm'
 import { LofiStockForm } from '@/features/lofi-stock/components/LofiStockForm'
+import { MemeForm } from '@/features/meme/components/MemeForm'
 
 function CategoryForm({
   category,
@@ -18,6 +19,8 @@ function CategoryForm({
       return <LofiForm onBackToStart={onBackToStart} />
     case 'lofi-stock':
       return <LofiStockForm onBackToStart={onBackToStart} />
+    case 'meme':
+      return <MemeForm onBackToStart={onBackToStart} />
     default:
       return <StoryForm category={category} onBackToStart={onBackToStart} />
   }

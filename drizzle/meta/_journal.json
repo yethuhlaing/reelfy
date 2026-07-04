@@ -57,6 +57,20 @@
       "when": 1780350652215,
       "tag": "0007_purple_shen",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783173324046,
+      "tag": "0008_red_jane_foster",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783174000000,
+      "tag": "0009_meme_generations",
+      "breakpoints": true
     }
   ]
 }

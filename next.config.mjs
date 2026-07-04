@@ -18,7 +18,7 @@ const nextConfig = {
   },
   output: 'standalone',
   transpilePackages: ['@t3-oss/env-nextjs', '@t3-oss/env-core', '@lobehub/icons'],
-  serverExternalPackages: ['ffmpeg-static'],
+  serverExternalPackages: ['@resvg/resvg-js', 'sharp', 'ffmpeg-static'],
   async headers() {
     return [
       {

@@ -172,7 +172,7 @@ export function StoryForm({ category, onBackToStart }: { category: string; onBac
       const id = newStoryId()
       savePendingStory({ id, category, storyInput: trimmed, options, createdAt: Date.now() })
       toast.success('Cooking your story…')
-      router.push(storyHref(id, { starting: true }))
+      router.push(storyHref(id, { starting: true, category }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start')
       setSubmitting(false)

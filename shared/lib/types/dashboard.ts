@@ -14,3 +14,15 @@ export interface DashboardStory {
   lastUpdated: number
   lofiVideoId?: string | null
 }
+
+export interface DashboardMeme {
+  id: string
+  inputText: string
+  previewUrl: string
+  variantCount: number
+  createdAt: number
+}
+
+export type DashboardGridItem =
+  | { kind: 'story'; createdAt: number; story: DashboardStory }
+  | { kind: 'meme'; createdAt: number; meme: DashboardMeme }

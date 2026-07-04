@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/button";
+import { useLazyVideoSource } from "@/shared/hooks/use-lazy-video-source";
 import { marketingVideoUrl } from "@/shared/lib/utils";
 
 const WAITLIST_VIDEOS = [
@@ -80,10 +81,11 @@ function WaitlistVideoPanel({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const indexRef = useRef(0);
+  const { containerRef, shouldLoad } = useLazyVideoSource<HTMLDivElement>({ rootMargin: "400px" });
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !shouldLoad) return;
 
     const playCurrent = () => {
       video.src = WAITLIST_VIDEOS[indexRef.current];
@@ -101,15 +103,18 @@ function WaitlistVideoPanel({
     playCurrent();
 
     return () => video.removeEventListener("ended", onEnded);
-  }, []);
+  }, [shouldLoad]);
 
   return (
-    <div className={`relative overflow-hidden bg-black ${className ?? ""}`}>
+    <div
+      ref={containerRef}
+      className={`relative overflow-hidden bg-black ${className ?? ""}`}
+    >
       <video
         ref={videoRef}
         muted
         playsInline
-        preload="metadata"
+        preload={shouldLoad ? "auto" : "none"}
         className="absolute inset-0 h-full w-full object-cover object-center"
         aria-hidden
       />

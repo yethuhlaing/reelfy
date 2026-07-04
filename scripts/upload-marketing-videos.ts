@@ -2,7 +2,9 @@
  * Upload public/videos/*.mp4 to Vercel Blob at marketing/videos/{name}.
  * Sets NEXT_PUBLIC_BLOB_STORAGE_URL in .env.
  *
- * Usage: pnpm upload:marketing-videos
+ * Usage:
+ *   pnpm optimize:marketing-videos   # compress for web first (recommended)
+ *   pnpm upload:marketing-videos
  * Requires: BLOB_READ_WRITE_TOKEN in .env
  */
 import fs from 'node:fs'

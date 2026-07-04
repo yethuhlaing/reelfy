@@ -6,9 +6,9 @@ export function EmptyDashboard() {
   return (
     <div className="flex flex-col items-center gap-[18px] rounded-[18px] border border-dashed border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_80%,transparent)] px-5 py-[60px] text-center">
       <StickmanArt />
-      <h3 className="font-[var(--font-heading)] text-2xl">No videos yet</h3>
+      <h3 className="font-[var(--font-heading)] text-2xl">Nothing here yet</h3>
       <p className="max-w-[420px] text-[var(--muted)]">
-        Your narrative stories and ambient loops will show up here once you create one.
+        Your stories, ambient loops, and saved memes will show up here once you create one.
       </p>
       <div className="flex flex-wrap justify-center gap-2.5">
         {CREATE_CATEGORY_LINKS.map((cat) => (

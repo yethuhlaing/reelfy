@@ -10,7 +10,9 @@
       "Bash(mkdir -p /Users/yethuhlaing/projects/stickman/app/api/export/\\\\[jobId\\\\]/stream)",
       "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|css\\)$\")",
       "Bash(rtk npm *)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(rtk proxy *)",
+      "Bash(node -e ' *)"
     ],
     "additionalDirectories": [
       "/Users/yethuhlaing/projects/stickman/app/api/export/[jobId]"

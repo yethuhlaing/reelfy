@@ -1,12 +1,15 @@
+import { sql } from 'drizzle-orm'
 import {
   bigint,
   boolean,
+  customType,
   index,
   integer,
   jsonb,
   numeric,
   pgTable,
   primaryKey,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -15,6 +18,22 @@ import {
 export type StoryStatus = 'draft' | 'generating' | 'ready' | 'rendered' | 'failed'
 export type LofiVideoStatus = 'planning' | 'generating' | 'gating' | 'rendering' | 'complete' | 'failed' | 'aborted'
 export type LofiAssetStatus = 'pending' | 'submitted' | 'ready' | 'failed' | 'skipped'
+
+/** Embedding dimension for the meme template matcher (OpenRouter text-embedding-3-small). */
+export const MEME_EMBEDDING_DIM = 1536
+
+/** pgvector column type. Stored/queried as a `vector(N)` via the pgvector extension. */
+export const vector = customType<{ data: number[]; driverData: string; config: { dimensions: number } }>({
+  dataType(config) {
+    return `vector(${config?.dimensions ?? MEME_EMBEDDING_DIM})`
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`
+  },
+  fromDriver(value: string): number[] {
+    return value.replace(/^\[|\]$/g, '').split(',').map(Number)
+  },
+})
 
 const createdAt = timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 const updatedAt = timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
@@ -312,6 +331,88 @@ export const waitlist = pgTable(
   (table) => [uniqueIndex('waitlist_email_unique').on(table.email)],
 )
 
+// Meme generator: curated template library.
+export const memeTemplates = pgTable(
+  'meme_templates',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    imageUrl: text('image_url').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    // Text used to build the embedding + as LLM matching context.
+    description: text('description').notNull(),
+    // Joke structure guidance for the caption LLM.
+    captionGuide: text('caption_guide').notNull().default(''),
+    // Per-box geometry + style. Array of MemeTextBox (percent-based).
+    textBoxes: jsonb('text_boxes').notNull().default(sql`'[]'::jsonb`),
+    // Role of each box in the joke, aligned by index. e.g. ["rejected option","preferred option"].
+    boxRoles: jsonb('box_roles').notNull().default(sql`'[]'::jsonb`),
+    // Few-shot sample fills for the caption LLM. Array of string[] (one per box).
+    examples: jsonb('examples').notNull().default(sql`'[]'::jsonb`),
+    toneTags: jsonb('tone_tags').notNull().default(sql`'[]'::jsonb`),
+    // description + captionGuide embedding for pgvector retrieval.
+    embedding: vector('embedding', { dimensions: MEME_EMBEDDING_DIM }),
+    // Manual weekly bump for lightweight trend boosting.
+    trendingScore: real('trending_score').notNull().default(0),
+    // Provenance for future licence filtering.
+    source: text('source').notNull().default('imgflip'),
+    license: text('license'),
+    active: boolean('active').notNull().default(true),
+    createdAt,
+    updatedAt,
+  },
+  (table) => ({
+    slugIdx: uniqueIndex('meme_templates_slug_unique').on(table.slug),
+    activeIdx: index('meme_templates_active_idx').on(table.active),
+  }),
+)
+
+// Generated meme records (legacy — superseded by meme_generations).
+export const memes = pgTable(
+  'memes',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    inputText: text('input_text').notNull(),
+    templateId: text('template_id')
+      .notNull()
+      .references(() => memeTemplates.id, { onDelete: 'restrict' }),
+    // Rendered box state (MemeRenderBox[]): text + geometry + style at export time.
+    boxes: jsonb('boxes').notNull().default(sql`'[]'::jsonb`),
+    imageUrl: text('image_url').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    creditsCharged: integer('credits_charged').notNull().default(0),
+    costUsd: numeric('cost_usd', { precision: 10, scale: 4 }).notNull().default('0'),
+    createdAt,
+  },
+  (table) => ({
+    userCreatedIdx: index('memes_user_created_idx').on(table.userId, table.createdAt),
+  }),
+)
+
+// One saved generation = user prompt + all variant options.
+export const memeGenerations = pgTable(
+  'meme_generations',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    inputText: text('input_text').notNull(),
+    variants: jsonb('variants').notNull().default(sql`'[]'::jsonb`),
+    creditsCharged: integer('credits_charged').notNull().default(1),
+    createdAt,
+  },
+  (table) => ({
+    userCreatedIdx: index('meme_generations_user_created_idx').on(table.userId, table.createdAt),
+  }),
+)
+
 export const schema = {
   user,
   session,
@@ -328,6 +429,9 @@ export const schema = {
   apiCostLogs,
   appConfig,
   waitlist,
+  memeTemplates,
+  memes,
+  memeGenerations,
 }
 
 export type DatabaseSchema = typeof schema

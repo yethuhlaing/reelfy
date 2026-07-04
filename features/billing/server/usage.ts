@@ -4,7 +4,7 @@ import { db } from '@/shared/lib/db'
 import { apiUsageEvents, user } from '@/shared/lib/db/schema'
 import { polar } from './polar-client'
 
-export type MeterName = 'api_calls' | 'image_gen' | 'video_gen' | 'voice_gen' | 'story_gen'
+export type MeterName = 'api_calls' | 'image_gen' | 'video_gen' | 'voice_gen' | 'story_gen' | 'meme_generation'
 
 export interface UsageEventInput {
   userId: string

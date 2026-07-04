@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ArrowRight, Clock, Play, X } from "lucide-react";
 
+import { useLazyVideoSource } from "@/shared/hooks/use-lazy-video-source";
 import { marketingVideoUrl } from "@/shared/lib/utils";
 
 const SAMPLE_VIDEO = marketingVideoUrl("8.mp4");
@@ -32,6 +33,7 @@ export default function VideoSection() {
   const [isPlaying, setIsPlaying] = useState(false);
   const previewRef = useRef<HTMLVideoElement>(null);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
+  const { containerRef, shouldLoad } = useLazyVideoSource<HTMLElement>({ rootMargin: "600px" });
 
   const closeModal = useCallback(() => {
     setIsPlaying(false);
@@ -44,10 +46,10 @@ export default function VideoSection() {
 
   useEffect(() => {
     const preview = previewRef.current;
-    if (!preview) return;
+    if (!preview || !shouldLoad) return;
     preview.muted = true;
     void preview.play().catch(() => {});
-  }, []);
+  }, [shouldLoad]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -73,6 +75,7 @@ export default function VideoSection() {
 
   return (
     <section
+      ref={containerRef}
       className="flex h-screen w-full flex-col bg-background"
       id="video-section"
       aria-labelledby={headingId}
@@ -101,11 +104,11 @@ export default function VideoSection() {
         <div className="group relative mx-auto h-full max-w-7xl overflow-hidden rounded-3xl border border-border shadow-2xl">
           <video
             ref={previewRef}
-            src={SAMPLE_VIDEO}
+            src={shouldLoad ? SAMPLE_VIDEO : undefined}
             muted
             loop
             playsInline
-            preload="metadata"
+            preload={shouldLoad ? "auto" : "none"}
             className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
             aria-hidden
           />
@@ -196,6 +199,7 @@ export default function VideoSection() {
                 src={SAMPLE_VIDEO}
                 controls
                 playsInline
+                preload="auto"
                 className="h-full w-full object-contain"
               />
             </div>

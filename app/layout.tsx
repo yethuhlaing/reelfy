@@ -159,6 +159,12 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning className={`${urbanist.variable} ${jbMono.variable}`}>
       <head>
         <meta name="apple-mobile-web-app-title" content="Reelfy" />
+        {process.env.NEXT_PUBLIC_BLOB_STORAGE_URL ? (
+          <>
+            <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_BLOB_STORAGE_URL} />
+            <link rel="preconnect" href={process.env.NEXT_PUBLIC_BLOB_STORAGE_URL} crossOrigin="" />
+          </>
+        ) : null}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

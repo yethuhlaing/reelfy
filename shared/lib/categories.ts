@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { Music2 } from 'lucide-react'
+import { Music2, Laugh } from 'lucide-react'
 
 export type CreateCategoryLink = {
   id: string
@@ -13,6 +13,7 @@ export const CREATE_CATEGORY_LINKS: CreateCategoryLink[] = [
   { id: 'stickman', navLabel: 'Animated characters', glyph: '◈' },
   { id: 'lofi', navLabel: 'Chill music & visuals', icon: Music2 },
   { id: 'lofi-stock', navLabel: 'Stock music & visuals', glyph: '♪' },
+  { id: 'meme', navLabel: 'Meme generator', icon: Laugh },
 ]
 
 /** Sidebar heading above create links — matches /new picker */
@@ -22,9 +23,17 @@ export function newCategoryHref(id: string): string {
   return `/new?category=${encodeURIComponent(id)}`
 }
 
-export function storyHref(id: string, opts?: { starting?: boolean }): string {
+export function storyHref(id: string, opts?: { starting?: boolean; category?: string }): string {
   const base = `/dashboard/story/${id}`
-  return opts?.starting ? `${base}?starting=1` : base
+  const params = new URLSearchParams()
+  if (opts?.starting) params.set('starting', '1')
+  if (opts?.category) params.set('category', opts.category)
+  const query = params.toString()
+  return query ? `${base}?${query}` : base
+}
+
+export function memeHref(id: string): string {
+  return `/dashboard/meme/${id}`
 }
 
 export function getCategoryNavLabel(id: string): string {

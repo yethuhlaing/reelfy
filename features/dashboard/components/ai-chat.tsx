@@ -10,6 +10,7 @@ import {
   Paperclip,
   Music2,
   Library,
+  Laugh,
 } from "lucide-react";
 
 const PENDING_PROMPT_KEY = "new:pending-prompt";
@@ -29,6 +30,11 @@ const CATEGORIES = [
     id: "lofi-stock",
     label: "Lofi Stock",
     icon: <Library className="w-4 h-4" />,
+  },
+  {
+    id: "meme",
+    label: "Meme",
+    icon: <Laugh className="w-4 h-4" />,
   },
 ];
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLazyVideoSource } from "@/shared/hooks/use-lazy-video-source";
 import { marketingVideoUrl } from "@/shared/lib/utils";
 
 type BentoTile = {
@@ -124,17 +125,18 @@ const TILES: BentoTile[] = [
 function BentoVideoCard({ tile }: { tile: BentoTile }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const { containerRef, shouldLoad } = useLazyVideoSource<HTMLElement>({ rootMargin: "500px" });
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !shouldLoad) return;
     video.pause();
     video.currentTime = 0;
-  }, []);
+  }, [shouldLoad]);
 
   const playVideo = useCallback(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !shouldLoad) return;
 
     video.muted = true;
     video.defaultMuted = true;
@@ -157,7 +159,7 @@ function BentoVideoCard({ tile }: { tile: BentoTile }) {
     if (video.networkState !== HTMLMediaElement.NETWORK_LOADING) {
       video.load();
     }
-  }, []);
+  }, [shouldLoad]);
 
   const pauseVideo = useCallback(() => {
     const video = videoRef.current;
@@ -200,11 +202,11 @@ function BentoVideoCard({ tile }: { tile: BentoTile }) {
     <>
       <video
         ref={videoRef}
-        src={tile.video}
+        src={shouldLoad ? tile.video : undefined}
         muted
         loop
         playsInline
-        preload="metadata"
+        preload={shouldLoad ? "auto" : "none"}
         className="absolute inset-0 z-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
         aria-hidden
       />
@@ -256,7 +258,7 @@ function BentoVideoCard({ tile }: { tile: BentoTile }) {
   };
 
   return (
-    <article className={className} {...interactionHandlers}>
+    <article ref={containerRef} className={className} {...interactionHandlers}>
       {inner}
     </article>
   );
