@@ -131,46 +131,74 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
 
       setState({ storyId, status: 'rendering', progress: 45 })
 
+      // Render can outlive a single serverless function window, so the stream
+      // closes itself periodically and we reconnect — resuming from Redis.
+      // The browser connection lifetime is decoupled from render duration.
+      const OVERALL_DEADLINE = Date.now() + 20 * 60 * 1000 // 20 min hard cap
+      const RECONNECT_DELAY = 1200
+      const MAX_ERR_RETRIES = 8
+
       await new Promise<void>((resolve, reject) => {
-        const es = new EventSource(`/api/export/${jobId}/stream`)
-        esRef.current = es
+        let errRetries = 0
 
-        es.onmessage = (event) => {
-          if (!isRunActive(runId)) {
-            es.close()
-            esRef.current = null
-            resolve()
-            return
-          }
-          let data: { status: string; videoUrl?: string; error?: string }
-          try {
-            data = JSON.parse(event.data as string)
-          } catch {
-            return
-          }
-          if (data.status === 'done' && data.videoUrl) {
-            setState({ storyId, status: 'done', progress: 100, downloadUrl: data.videoUrl })
-            es.close()
-            esRef.current = null
-            resolve()
-          } else if (data.status === 'failed' || data.status === 'timeout') {
-            es.close()
-            esRef.current = null
-            reject(new Error(data.error ?? 'Export failed'))
-          }
-        }
-
-        es.onerror = () => {
-          if (!isRunActive(runId)) {
-            es.close()
-            esRef.current = null
-            resolve()
-            return
-          }
+        const finish = (es: EventSource) => {
           es.close()
-          esRef.current = null
-          reject(new Error('Stream connection lost'))
+          if (esRef.current === es) esRef.current = null
         }
+
+        const connect = () => {
+          if (!isRunActive(runId)) return resolve()
+          if (Date.now() > OVERALL_DEADLINE) {
+            return reject(new Error('Export timed out'))
+          }
+
+          const es = new EventSource(`/api/export/${jobId}/stream`)
+          esRef.current = es
+
+          es.onmessage = (event) => {
+            if (!isRunActive(runId)) {
+              finish(es)
+              return resolve()
+            }
+            let data: { status: string; videoUrl?: string; error?: string }
+            try {
+              data = JSON.parse(event.data as string)
+            } catch {
+              return
+            }
+            if (data.status === 'done' && data.videoUrl) {
+              setState({ storyId, status: 'done', progress: 100, downloadUrl: data.videoUrl })
+              finish(es)
+              resolve()
+            } else if (data.status === 'failed') {
+              finish(es)
+              reject(new Error(data.error ?? 'Export failed'))
+            } else if (data.status === 'reconnect') {
+              // Server ended its window on purpose — reconnect immediately.
+              errRetries = 0
+              finish(es)
+              setTimeout(connect, 100)
+            } else if (data.status === 'progress') {
+              errRetries = 0 // heartbeat: connection healthy
+            }
+          }
+
+          es.onerror = () => {
+            if (!isRunActive(runId)) {
+              finish(es)
+              return resolve()
+            }
+            finish(es)
+            errRetries += 1
+            if (errRetries > MAX_ERR_RETRIES) {
+              reject(new Error('Stream connection lost'))
+              return
+            }
+            setTimeout(connect, RECONNECT_DELAY)
+          }
+        }
+
+        connect()
       })
     } catch (err) {
       if (!isRunActive(runId)) return

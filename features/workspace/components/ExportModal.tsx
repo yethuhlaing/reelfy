@@ -17,7 +17,6 @@ interface Props {
 
 export function ExportModal({ open, onClose, storyId, scenes }: Props) {
   const { state, startExport, cancelExport, reset } = useExportState()
-  const [resolution, setResolution] = useState<'720p' | '1080p'>('1080p')
   const [includeIntro, setIncludeIntro] = useState(true)
   const [rangeOn, setRangeOn] = useState(false)
   const [from, setFrom] = useState(1)
@@ -49,11 +48,6 @@ export function ExportModal({ open, onClose, storyId, scenes }: Props) {
               </div>
             )}
             <div className="my-2 flex items-center gap-2.5">
-              <label style={{ width: 110, color: 'var(--muted)' }}>Resolution</label>
-              <label><input type="radio" checked={resolution === '720p'} onChange={() => setResolution('720p')} /> 720p</label>
-              <label><input type="radio" checked={resolution === '1080p'} onChange={() => setResolution('1080p')} /> 1080p</label>
-            </div>
-            <div className="my-2 flex items-center gap-2.5">
               <label style={{ width: 110, color: 'var(--muted)' }}>Intro</label>
               <label><input type="checkbox" checked={includeIntro} onChange={(e) => setIncludeIntro(e.target.checked)} /> Include thumbnail intro</label>
             </div>
@@ -76,7 +70,7 @@ export function ExportModal({ open, onClose, storyId, scenes }: Props) {
               <Button
                 onClick={() => {
                   const opts: ExportOptions = {
-                    resolution,
+                    resolution: '1080p',
                     includeIntro,
                     range: rangeOn ? { from, to } : undefined,
                   }

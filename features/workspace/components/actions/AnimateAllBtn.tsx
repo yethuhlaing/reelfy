@@ -21,10 +21,10 @@ export function AnimateAllBtn({ state, onConfirm }: Props) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-2.5 font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-3 text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[color-mix(in_srgb,var(--surface2)_70%,var(--accent)_8%)] disabled:cursor-not-allowed disabled:opacity-45"
           disabled={state.disabled}
         >
-          <Sparkles size={14} /> {state.label}
+          <Sparkles size={14} className="text-[var(--accent)]" /> {state.label}
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">

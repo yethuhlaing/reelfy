@@ -2,7 +2,7 @@ import { fireAndForgetUsage } from '@/features/billing/server/usage'
 import type { MemeRenderBox, MemeTemplate, MemeVariant } from '@/shared/lib/types'
 import { embedText } from './embeddings'
 import { retrieveTemplates } from './templates-db'
-import { generateCaptions } from './caption'
+import { generateCaptions, resolveCaptionModel, type CaptionModel } from './caption'
 import { renderMeme } from './render'
 import { uploadMemeImage } from './memes-db'
 
@@ -26,17 +26,19 @@ async function fetchTemplateImage(url: string, signal?: AbortSignal): Promise<Bu
  * Steps: embed idea -> pgvector top-N templates -> caption each (parallel) ->
  * render each (parallel) -> upload preview PNGs. Fully synchronous.
  *
- * `watermark` is applied to the rendered preview when the user is on a plan
- * that carries one (free tier).
+ * `includeWatermark` adds the Reelify logo when the user is on a plan that
+ * carries one (free tier).
  */
 export async function generateMemeVariants(params: {
   idea: string
   userId: string
   variantCount?: number
-  watermark?: string
+  captionModel?: CaptionModel | string
+  includeWatermark?: boolean
   signal?: AbortSignal
 }): Promise<MemeVariant[]> {
-  const { idea, userId, variantCount = 3, watermark, signal } = params
+  const { idea, userId, variantCount = 3, includeWatermark, signal } = params
+  const captionModel = resolveCaptionModel(params.captionModel)
 
   const queryEmbedding = await embedText(idea, signal)
   const templates = await retrieveTemplates(queryEmbedding, variantCount)
@@ -47,7 +49,7 @@ export async function generateMemeVariants(params: {
   const variants = await Promise.all(
     templates.map(async (template): Promise<MemeVariant> => {
       const [captions, templateImage] = await Promise.all([
-        generateCaptions(idea, template, signal),
+        generateCaptions(idea, template, captionModel, signal),
         fetchTemplateImage(template.imageUrl, signal),
       ])
       const boxes = toRenderBoxes(template, captions)
@@ -56,7 +58,7 @@ export async function generateMemeVariants(params: {
         width: template.width,
         height: template.height,
         boxes,
-        watermark,
+        includeWatermark,
       })
       const renderedUrl = await uploadMemeImage(`variant-${template.id}-${Date.now()}`, png)
 

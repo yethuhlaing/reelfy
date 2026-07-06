@@ -69,6 +69,17 @@ export function SceneCard({
             <span>Generating…</span>
           </div>
         )}
+
+        {/* Scrim + hover actions live over the image, not the text block */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+        <SceneCardActions
+          scene={scene}
+          isPlaying={isPlaying}
+          onPlay={onPlay}
+          onRegenImage={onRegenImage}
+          onAnimate={onAnimate}
+          readOnly={readOnly}
+        />
       </div>
 
       <div className="flex flex-col gap-3 p-4">
@@ -83,15 +94,6 @@ export function SceneCard({
           </span>
         </div>
       </div>
-
-      <SceneCardActions
-        scene={scene}
-        isPlaying={isPlaying}
-        onPlay={onPlay}
-        onRegenImage={onRegenImage}
-        onAnimate={onAnimate}
-        readOnly={readOnly}
-      />
 
       {isPlaying && (
         <div className="absolute bottom-4 right-4 flex h-5 items-end gap-[3px]">

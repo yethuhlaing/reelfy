@@ -2,7 +2,7 @@ import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getTemplateById } from '@/features/meme/server/templates-db'
 import { renderMeme } from '@/features/meme/server/render'
 import { getGenerationForUser, updateGenerationVariant, uploadMemeImage } from '@/features/meme/server/memes-db'
-import { watermarkForPlan } from '@/features/meme/server/watermark'
+import { shouldWatermarkForPlan } from '@/features/meme/server/watermark'
 import type { MemeRenderBox, MemeVariant } from '@/shared/lib/types'
 
 export const runtime = 'nodejs'
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       width: template.width,
       height: template.height,
       boxes,
-      watermark: watermarkForPlan(planTier),
+      includeWatermark: shouldWatermarkForPlan(planTier),
     })
 
     const renderedUrl = await uploadMemeImage(`${generationId}-${templateId}`, png)

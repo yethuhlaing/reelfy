@@ -56,10 +56,12 @@ export type VideoQuality = '720p' | '1080p'
 export type TextModel =
   | 'gemini-2.5-flash'
   | 'nvidia/nemotron-ultra-253b-v1'
-  | 'openrouter/deepseek/deepseek-r1:free'
   | 'openrouter/meta-llama/llama-3.3-70b-instruct:free'
-  | 'openrouter/google/gemini-2.0-flash-exp:free'
-  | 'openrouter/qwen/qwen-2.5-72b-instruct:free'
+  | 'openrouter/qwen/qwen3-next-80b-a3b-instruct:free'
+  | 'openrouter/openai/gpt-oss-20b:free'
+  | 'openrouter/google/gemma-4-31b-it:free'
+  | 'openrouter/google/gemma-4-26b-a4b-it:free'
+  | 'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free'
 
 export interface GenerateOptions {
   density: SceneDensity

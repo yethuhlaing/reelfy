@@ -581,4 +581,230 @@ export const SEED_TEMPLATES: SeedTemplate[] = [
     ],
     source: 'imgflip',
   },
+  {
+    slug: 'theyre-the-same-picture',
+    name: "They're The Same Picture",
+    imgflipImageUrl: 'https://i.imgflip.com/2za3u1.jpg',
+    width: 1363,
+    height: 1524,
+    description:
+      'Pam from The Office shows two photos; corporate asks if they are different. Used when two things are obviously the same but someone treats them as different.',
+    captionGuide:
+      'Box 0 = corporate / the person asking. Box 1 = first thing being compared. Box 2 = second thing (same as first). Punchline: "They\'re the same picture."',
+    boxRoles: ['corporate / asker', 'first thing', 'second thing (same)'],
+    examples: [
+      ['Corporate needs you to find the differences', 'Tabs', 'Spaces'],
+      ['Find the difference', 'Staging bug', 'Production bug'],
+    ],
+    toneTags: ['same', 'corporate', 'obvious'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 2, wPct: 90, hPct: 12, align: 'center', style: 'plain-black', maxChars: 55 },
+      { index: 1, xPct: 5, yPct: 38, wPct: 42, hPct: 14, align: 'center', style: 'plain-black', maxChars: 30 },
+      { index: 2, xPct: 53, yPct: 38, wPct: 42, hPct: 14, align: 'center', style: 'plain-black', maxChars: 30 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'hide-the-pain-harold',
+    name: 'Hide the Pain Harold',
+    imgflipImageUrl: 'https://i.imgflip.com/gk5el.jpg',
+    width: 480,
+    height: 601,
+    description:
+      'An older man smiling through obvious pain. Used when pretending everything is fine while suffering inside.',
+    captionGuide:
+      'Box 0 = the painful situation (top). Box 1 = the fake smile / what you say out loud (bottom). Contrast inner pain with outward positivity.',
+    boxRoles: ['the painful truth', 'what you say with a smile'],
+    examples: [
+      ['Production is on fire', 'Great sprint everyone!'],
+      ['I have no idea what this code does', 'Looks good to me!'],
+    ],
+    toneTags: ['pain', 'fake smile', 'cope'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 3, wPct: 90, hPct: 22, align: 'center', style: 'impact-outline', maxChars: 45 },
+      { index: 1, xPct: 5, yPct: 74, wPct: 90, hPct: 22, align: 'center', style: 'impact-outline', maxChars: 45 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'surprised-pikachu',
+    name: 'Surprised Pikachu',
+    imgflipImageUrl: 'https://i.imgflip.com/2kbn1e.jpg',
+    width: 1893,
+    height: 1893,
+    description:
+      'Surprised Pikachu face. Used when someone is shocked by an entirely predictable outcome they caused themselves.',
+    captionGuide:
+      'Box 0 = the action or cause (top). Box 1 = the obvious consequence (middle). Box 2 = the feigned surprise reaction (bottom). Cause should make the outcome obvious.',
+    boxRoles: ['the cause', 'the obvious outcome', 'surprised reaction'],
+    examples: [
+      ['Skip writing tests', 'Bug in production', 'Surprised Pikachu face'],
+      ['Deploy on Friday', 'Weekend outage', 'How did this happen?'],
+    ],
+    toneTags: ['surprise', 'predictable', 'consequence'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 3, wPct: 90, hPct: 18, align: 'center', style: 'impact-outline', maxChars: 45 },
+      { index: 1, xPct: 5, yPct: 38, wPct: 90, hPct: 18, align: 'center', style: 'impact-outline', maxChars: 45 },
+      { index: 2, xPct: 5, yPct: 72, wPct: 90, hPct: 18, align: 'center', style: 'impact-outline', maxChars: 45 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'panik-kalm-panik',
+    name: 'Panik Kalm Panik',
+    imgflipImageUrl: 'https://i.imgflip.com/3qqcim.png',
+    width: 640,
+    height: 881,
+    description:
+      'Three-panel meme: panic, calm realization, panic again. Used when a brief moment of relief is shattered by a worse thought.',
+    captionGuide:
+      'Box 0 = initial panic (top). Box 1 = false calm / rationalization (middle). Box 2 = panic returns worse (bottom). Escalate the final panic.',
+    boxRoles: ['initial panic', 'false calm', 'panic returns'],
+    examples: [
+      ['Build failed', 'It\'s just a lint error', 'It broke production'],
+      ['Forgot to save', 'Auto-save exists', 'Auto-save was off'],
+    ],
+    toneTags: ['panic', 'escalation', 'three-panel'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 4, wPct: 90, hPct: 22, align: 'center', style: 'plain-black', maxChars: 40 },
+      { index: 1, xPct: 5, yPct: 38, wPct: 90, hPct: 22, align: 'center', style: 'plain-black', maxChars: 40 },
+      { index: 2, xPct: 5, yPct: 72, wPct: 90, hPct: 22, align: 'center', style: 'plain-black', maxChars: 40 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'buff-doge-vs-cheems',
+    name: 'Buff Doge vs. Cheems',
+    imgflipImageUrl: 'https://i.imgflip.com/43a45p.png',
+    width: 937,
+    height: 720,
+    description:
+      'Strong buff Doge vs weak Cheems comparing then vs now, or strong vs weak versions of the same thing.',
+    captionGuide:
+      'Box 0 = the strong/buff version (top left). Box 1 = the weak/modern version (top right). Box 2 = then/strong label. Box 3 = now/weak label. Contrast past glory with present decline.',
+    boxRoles: ['strong version', 'weak version', 'then label', 'now label'],
+    examples: [
+      ['Writing code by hand', 'Copy-pasting from ChatGPT', '2010', '2026'],
+      ['Manual deploys', 'One-click CI/CD', 'Then', 'Now'],
+    ],
+    toneTags: ['contrast', 'then-now', 'doge'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 8, wPct: 42, hPct: 18, align: 'center', style: 'plain-black', maxChars: 35 },
+      { index: 1, xPct: 53, yPct: 8, wPct: 42, hPct: 18, align: 'center', style: 'plain-black', maxChars: 35 },
+      { index: 2, xPct: 5, yPct: 72, wPct: 42, hPct: 14, align: 'center', style: 'label-white', maxChars: 20 },
+      { index: 3, xPct: 53, yPct: 72, wPct: 42, hPct: 14, align: 'center', style: 'label-white', maxChars: 20 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'marked-safe-from',
+    name: 'Marked Safe From',
+    imgflipImageUrl: 'https://i.imgflip.com/2odckz.jpg',
+    width: 618,
+    height: 499,
+    description:
+      'Facebook "Marked Safe From X" notification format. Used to humorously report surviving or avoiding something.',
+    captionGuide:
+      'Box 0 = the person marked safe (top). Box 1 = what they were marked safe from (bottom). Phrase as "Marked Safe From [X]".',
+    boxRoles: ['who is safe', 'marked safe from'],
+    examples: [
+      ['John has been', 'Marked Safe From the production outage'],
+      ['Sarah has been', 'Marked Safe From the all-hands meeting'],
+    ],
+    toneTags: ['safe', 'survival', 'facebook'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 8, wPct: 90, hPct: 18, align: 'center', style: 'plain-black', maxChars: 40 },
+      { index: 1, xPct: 5, yPct: 68, wPct: 90, hPct: 22, align: 'center', style: 'plain-black', maxChars: 55 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'bike-fall',
+    name: 'Bike Fall',
+    imgflipImageUrl: 'https://i.imgflip.com/1b42wl.jpg',
+    width: 500,
+    height: 680,
+    description:
+      'Person riding a bike, puts stick in wheel, falls. Used when someone sabotages themselves and blames external factors.',
+    captionGuide:
+      'Box 0 = the person on the bike. Box 1 = the stick they inserted (self-sabotage). Box 2 = the fall / consequence. The person causes their own problem.',
+    boxRoles: ['the person', 'the self-sabotage', 'the consequence'],
+    examples: [
+      ['Me', 'Skip code review', 'Why is there a bug?'],
+      ['The team', 'Ignore tech debt', 'Why is everything slow?'],
+    ],
+    toneTags: ['self-sabotage', 'irony', 'blame'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 5, wPct: 40, hPct: 14, align: 'center', style: 'label-white', maxChars: 24 },
+      { index: 1, xPct: 45, yPct: 38, wPct: 30, hPct: 14, align: 'center', style: 'label-white', maxChars: 28 },
+      { index: 2, xPct: 5, yPct: 78, wPct: 90, hPct: 16, align: 'center', style: 'impact-outline', maxChars: 40 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'megamind-peeking',
+    name: 'Megamind peeking',
+    imgflipImageUrl: 'https://i.imgflip.com/64sz4u.png',
+    width: 540,
+    height: 540,
+    description:
+      'Megamind peeking around a corner with a sly look. Used when waiting to see if a plan worked or to gloat at results.',
+    captionGuide:
+      'Box 0 = the setup / what you did (top). Box 1 = what you are peeking to see happen (bottom). Tone is scheming or anticipatory.',
+    boxRoles: ['the setup', 'waiting to see'],
+    examples: [
+      ['Pushed to production without telling anyone', 'Waiting to see if anyone notices'],
+      ['Renamed all the variables', 'Waiting for code review'],
+    ],
+    toneTags: ['scheming', 'waiting', 'anticipation'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 3, wPct: 90, hPct: 22, align: 'center', style: 'impact-outline', maxChars: 50 },
+      { index: 1, xPct: 5, yPct: 72, wPct: 90, hPct: 22, align: 'center', style: 'impact-outline', maxChars: 50 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'roll-safe-think-about-it',
+    name: 'Roll Safe Think About It',
+    imgflipImageUrl: 'https://i.imgflip.com/1h7in3.jpg',
+    width: 702,
+    height: 395,
+    description:
+      'Man taps temple/smarts gesture. Used for terrible logic presented as genius life hacks.',
+    captionGuide:
+      'Box 0 = the bad logic or "hack" (top). Box 1 = the punchline reinforcing it with "can\'t X if you Y" or temple-tap wisdom (bottom).',
+    boxRoles: ['the bad logic', 'the temple-tap wisdom'],
+    examples: [
+      ['Can\'t fail tests if you don\'t write tests', '*taps temple*'],
+      ['Can\'t get hacked if you don\'t deploy', 'Big brain'],
+    ],
+    toneTags: ['big brain', 'bad logic', 'hack'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 3, wPct: 90, hPct: 22, align: 'center', style: 'impact-outline', maxChars: 50 },
+      { index: 1, xPct: 5, yPct: 72, wPct: 90, hPct: 22, align: 'center', style: 'impact-outline', maxChars: 45 },
+    ],
+    source: 'imgflip',
+  },
+  {
+    slug: 'trophy-if-i-had-one',
+    name: "This Is Where I'd Put My Trophy If I Had One",
+    imgflipImageUrl: 'https://i.imgflip.com/1wz1x.jpg',
+    width: 300,
+    height: 418,
+    description:
+      'Dinkleberg from Fairly OddParents gesturing at an empty trophy shelf. Used for boasting about achievements you do not have.',
+    captionGuide:
+      'Box 0 = the achievement you claim (top). Box 1 = "This is where I\'d put my trophy if I had one" or the empty shelf punchline (bottom). Ironic bragging about nothing.',
+    boxRoles: ['the fake achievement', 'empty shelf punchline'],
+    examples: [
+      ['My perfect attendance record', 'If I had one'],
+      ['All the bugs I fixed on time', 'This is where I\'d put my trophy'],
+    ],
+    toneTags: ['ironic', 'bragging', 'empty'],
+    textBoxes: [
+      { index: 0, xPct: 5, yPct: 3, wPct: 90, hPct: 22, align: 'center', style: 'impact-outline', maxChars: 45 },
+      { index: 1, xPct: 5, yPct: 74, wPct: 90, hPct: 22, align: 'center', style: 'impact-outline', maxChars: 50 },
+    ],
+    source: 'imgflip',
+  },
 ]

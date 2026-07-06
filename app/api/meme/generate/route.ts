@@ -3,13 +3,15 @@ import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getCredits, deductCredits } from '@/shared/lib/db/credits'
 import { generateMemeVariants } from '@/features/meme/server/pipeline'
 import { insertGeneration } from '@/features/meme/server/memes-db'
-import { watermarkForPlan } from '@/features/meme/server/watermark'
+import { shouldWatermarkForPlan } from '@/features/meme/server/watermark'
 import type { MemeGenResult } from '@/shared/lib/types'
+
+import { MEME_GENERATION_CREDITS } from '@/features/meme/constants'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const CREDITS_PER_GENERATION = 1
+const CREDITS_PER_GENERATION = MEME_GENERATION_CREDITS
 
 function badRequest(message: string) {
   return new Response(JSON.stringify({ error: message }), { status: 400 })
@@ -24,10 +26,15 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return badRequest('Invalid JSON')
 
-  const { idea } = body as { idea?: string }
+  const { idea, captionModel, variantCount } = body as {
+    idea?: string
+    captionModel?: string
+    variantCount?: number
+  }
   if (!idea || idea.trim().length < 2) {
     return badRequest('Missing required field: idea')
   }
+  const count = Math.min(Math.max(variantCount ?? 3, 1), 3)
 
   const balance = await getCredits(userId)
   if (balance < CREDITS_PER_GENERATION) {
@@ -50,8 +57,9 @@ export async function POST(request: Request) {
     const variants = await generateMemeVariants({
       idea: trimmed,
       userId,
-      variantCount: 3,
-      watermark: watermarkForPlan(planTier),
+      variantCount: count,
+      captionModel,
+      includeWatermark: shouldWatermarkForPlan(planTier),
       signal: request.signal,
     })
 

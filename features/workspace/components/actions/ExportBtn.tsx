@@ -21,7 +21,7 @@ export function ExportBtn({ state, storyId, scenes }: Props) {
       <RenderingPill onClick={() => setOpen(true)} />
       {state.visible && (
         <button
-          className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-transparent px-2.5 text-[var(--text)] backdrop-blur-md transition hover:bg-[var(--surface2)] hover:border-[var(--border-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-4 font-semibold text-[var(--accent-ink)] shadow-[0_0_0_1px_var(--accent),0_8px_24px_-8px_var(--accent-glow)] transition hover:bg-[var(--accent-hover)] hover:shadow-[0_0_0_1px_var(--accent-hover),0_12px_32px_-8px_var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-45"
           disabled={state.disabled}
           onClick={() => setOpen(true)}
           title="Export MP4"

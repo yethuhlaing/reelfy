@@ -1,0 +1,2 @@
+export const MEME_GENERATION_CREDITS = 1
+export const MEME_CLEAN_DOWNLOAD_CREDITS = 1

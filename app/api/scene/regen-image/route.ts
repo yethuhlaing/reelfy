@@ -59,6 +59,7 @@ export async function POST(request: Request) {
   const imageProvider = getImageProvider(imageModel)
   const hasBlobToken = Boolean(env.BLOB_READ_WRITE_TOKEN)
 
+  let stage = 'generate'
   try {
     const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, {
       aspectRatio: '16:9',
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       },
     })
 
+    stage = 'deduct'
     const deduction = await deductCredits(userId, credits)
     if (!deduction.ok) {
       return Response.json(
@@ -79,6 +81,7 @@ export async function POST(request: Request) {
       )
     }
 
+    stage = 'persist'
     let imageUrl: string
     if (hasBlobToken) {
       imageUrl = await completeSceneImage({
@@ -96,6 +99,7 @@ export async function POST(request: Request) {
       }
     }
 
+    stage = 'clear-video'
     await clearSceneVideo(storyId, sceneId, userId)
 
     fireAndForgetUsage({
@@ -109,7 +113,7 @@ export async function POST(request: Request) {
     return Response.json({ url: imageUrl })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('regen-image failed', msg)
-    return Response.json({ error: msg }, { status: 500 })
+    console.error(`regen-image failed at stage=${stage}`, err)
+    return Response.json({ error: `[${stage}] ${msg}` }, { status: 500 })
   }
 }

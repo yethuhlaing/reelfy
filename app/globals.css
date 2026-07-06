@@ -22,15 +22,19 @@
   --surface: rgba(255, 255, 255, 0.03);     /* glass tint */
   --surface2: rgba(255, 255, 255, 0.06);
   --surface-solid: #14141a;                  /* fallback when glass not OK */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
+  --border: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.08);
   --accent: #df732e;
   --accent-hover: #f08a4a;
   --accent-ink: #ffffff;
   --accent-glow: rgba(223, 115, 46, 0.35);
   --text: #f4f4f5;
   --muted: #a1a1aa;
+  --muted-bg: var(--surface2);
+  --muted-foreground: var(--muted);
   --danger: #ef4444;
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
   --success: #22c55e;
   --warn: #eab308;
   --font-heading: var(--font-urbanist), 'Urbanist', system-ui, sans-serif;
@@ -46,7 +50,6 @@
   --primary-foreground: var(--accent-ink);
   --secondary: var(--surface2);
   --secondary-foreground: var(--text);
-  --muted-foreground: var(--muted);
   --accent-foreground: var(--accent-ink);
   --ring: var(--accent);
   --input: var(--border);
@@ -88,6 +91,10 @@
   --accent-glow: rgba(223, 115, 46, 0.25);
   --text: #0a0a0a;
   --muted: #525252;
+  --muted-bg: var(--surface2);
+  --muted-foreground: var(--muted);
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
   --gradient-border: linear-gradient(135deg, rgba(223,115,46,0.35), rgba(0,0,0,0.06));
   --background: var(--bg);
   --foreground: var(--text);
@@ -95,12 +102,12 @@
   --primary-foreground: var(--accent-ink);
   --secondary: var(--surface2);
   --secondary-foreground: var(--text);
-  --muted-foreground: var(--muted);
   --accent-foreground: var(--accent-ink);
   --ring: var(--accent);
   --input: var(--border);
   --card: var(--surface-solid);
   --card-foreground: var(--text);
+  --danger: #ef4444;
   --coral: #ff5a3c;
   --coral-light: #ff8c42;
   --coral-muted: rgba(255, 140, 66, 0.4);
@@ -516,6 +523,25 @@
 @theme inline {
   --font-sans: var(--font-urbanist), 'Urbanist', system-ui, sans-serif;
   --font-display: var(--font-urbanist), 'Urbanist', system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted-bg);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --color-coral: var(--coral);
   --color-coral-light: var(--coral-light);
   --color-coral-foreground: var(--coral-foreground);

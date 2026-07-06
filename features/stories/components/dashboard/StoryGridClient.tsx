@@ -31,7 +31,6 @@ export function StoryGridClient({ items: initialItems }: StoryGridClientProps) {
       try {
         const res = await fetch(`/api/stories/${storyId}`, { method: 'DELETE' })
         if (!res.ok) throw new Error('Delete failed')
-        router.refresh()
       } catch (err) {
         setItems(snapshot)
         throw err

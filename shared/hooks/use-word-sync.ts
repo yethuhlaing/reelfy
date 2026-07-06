@@ -20,15 +20,14 @@ export function useWordSync(
       const audio = audioRef.current
       if (audio && !audio.paused) {
         const ms = audio.currentTime * 1000
+        // Highlight the latest word that has started. Holds through gaps
+        // between words instead of flickering to "none".
         let idx = -1
         for (let i = 0; i < wordTimings.length; i++) {
-          const w = wordTimings[i]
-          if (ms >= w.startMs && ms < w.endMs) {
-            idx = i
-            break
-          }
+          if (ms >= wordTimings[i].startMs) idx = i
+          else break
         }
-        setActiveIndex(idx)
+        setActiveIndex((prev) => (prev === idx ? prev : idx))
       }
       rafRef.current = requestAnimationFrame(tick)
     }

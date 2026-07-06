@@ -50,7 +50,7 @@ export function ThumbnailDrawer({ open, onClose }: Props) {
   }
 
   return (
-    <Drawer open={open} onClose={onClose} title="Thumbnail" placement="top-right">
+    <Drawer open={open} onClose={onClose} title="Thumbnail" placement="right">
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="Thumbnail" className="mb-3 block w-full rounded-[10px]" />

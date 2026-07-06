@@ -3,7 +3,8 @@ import { getImageProvider } from '@/shared/lib/providers/image/image'
 import { getTextProvider } from '@/shared/lib/providers/text/text'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getCredits, deductCredits } from '@/shared/lib/db/credits'
-import { upsertStoryWithScenes } from '@/features/stories/server/stories-db'
+import { upsertStoryWithScenes, updateStoryMeta } from '@/features/stories/server/stories-db'
+import { toUserErrorMessage } from '@/shared/lib/user-error-message'
 import { fireAndForgetUsage } from '@/features/billing/server/usage'
 import { clearStoryAssetsBeforeRegenerate, completeSceneImage } from '@/features/stories/server/story-assets'
 import { env } from '@/shared/lib/env'
@@ -15,6 +16,38 @@ const IMAGE_MODEL_CREDITS: Record<ImageModel, number> = {
   'flux-schnell-fal': 1,
   'flux-dev-fal': 2,
   'sdxl-lightning-fal': 1,
+}
+
+// How many scene images to generate concurrently, and how long one image may take
+// before we give up on it (a hung fal queue call would otherwise block generation).
+const IMAGE_CONCURRENCY = 4
+const IMAGE_TIMEOUT_MS = 90_000
+
+/** Reject if `promise` doesn't settle within `ms`. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v) },
+      (e) => { clearTimeout(timer); reject(e) },
+    )
+  })
+}
+
+/** Run `worker` over `items` with at most `limit` in flight at once. */
+async function mapWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<void>,
+): Promise<void> {
+  let next = 0
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++
+      await worker(items[i], i)
+    }
+  })
+  await Promise.all(runners)
 }
 
 export async function POST(request: Request) {
@@ -128,6 +161,10 @@ export async function POST(request: Request) {
           operation: 'text_plan',
         })
         await throwIfAborted()
+
+        // Never trust model-generated scene ids — some models emit duplicates ("S1","S1",…)
+        // which collide on the scenes primary key. Reassign deterministic unique ids.
+        plan.scenes = plan.scenes.map((s, i) => ({ ...s, id: `${storyId}-s${i + 1}` }))
         send({ type: 'story', title: plan.title, tagline: plan.tagline, protagonist: plan.protagonist })
         send({ type: 'thumbnail-prompt', prompt: plan.thumbnailPrompt })
 
@@ -171,28 +208,36 @@ export async function POST(request: Request) {
 
         let done = 0
         const total = plan.scenes.length
+        let outOfCredits = false
         send({ type: 'image-progress', done, total })
 
-        for (const scene of plan.scenes) {
-          await throwIfAborted()
+        // Generate images concurrently (capped) with a per-image timeout so one hung
+        // fal call can't stall the whole story. deductCredits is atomic, safe in parallel.
+        await mapWithConcurrency(plan.scenes, IMAGE_CONCURRENCY, async (scene) => {
+          if (signal.aborted || outOfCredits) return
           try {
-            const { mimeType, data } = await imageProvider.generate(scene.imagePrompt, {
-              aspectRatio: '16:9',
-              signal,
-              costContext: {
-                userId,
-                storyId,
-                sceneId: scene.id,
-                creditsCharged: creditsPerScene,
-                operation: 'scene_image',
-              },
-            })
+            const { mimeType, data } = await withTimeout(
+              imageProvider.generate(scene.imagePrompt, {
+                aspectRatio: '16:9',
+                signal,
+                costContext: {
+                  userId,
+                  storyId,
+                  sceneId: scene.id,
+                  creditsCharged: creditsPerScene,
+                  operation: 'scene_image',
+                },
+              }),
+              IMAGE_TIMEOUT_MS,
+              `Image for scene ${scene.id}`,
+            )
             await throwIfAborted()
 
             const deduction = await deductCredits(userId, creditsPerScene)
             if (!deduction.ok) {
+              outOfCredits = true
               send({ type: 'insufficient_credits', required: creditsPerScene, balance: deduction.balance })
-              break
+              return
             }
 
             let imageUrl: string
@@ -230,7 +275,7 @@ export async function POST(request: Request) {
             done += 1
             if (!signal.aborted) send({ type: 'image-progress', done, total })
           }
-        }
+        })
 
         send({ type: 'stage', id: 'images', status: 'done', detail: `${done}/${total} images` })
 
@@ -268,10 +313,18 @@ export async function POST(request: Request) {
       } catch (err) {
         if (!isAbort(err)) {
           console.error('Generate stream error:', err)
-          send({
-            type: 'error',
-            error: err instanceof Error ? err.message : 'Generation failed',
-          })
+          const userMsg = toUserErrorMessage(err, 'Generation failed')
+          // Persist failure so the story doesn't stay stuck on "Generating…" after reload.
+          try {
+            await updateStoryMeta(storyId, userId, {
+              status: 'failed',
+              title: 'Generation failed',
+              tagline: userMsg,
+            })
+          } catch (persistErr) {
+            console.error('Failed to persist failed status', persistErr)
+          }
+          send({ type: 'error', error: userMsg })
         }
       } finally {
         signal.removeEventListener('abort', onAbort)

@@ -3,6 +3,7 @@ import { Resvg } from '@resvg/resvg-js'
 import sharp from 'sharp'
 import type { MemeBoxStyle, MemeRenderBox } from '@/shared/lib/types'
 import { loadMemeFonts, fontFamilyForStyle } from './fonts'
+import { watermarkLogoComposite } from './watermark-logo'
 
 /** Visual constants shared with the client preview (keep these in sync). */
 const STYLE_PRESETS: Record<
@@ -105,9 +106,9 @@ export async function renderMeme(params: {
   width: number
   height: number
   boxes: MemeRenderBox[]
-  watermark?: string
+  includeWatermark?: boolean
 }): Promise<Buffer> {
-  const { templateImage, width, height, boxes, watermark } = params
+  const { templateImage, width, height, boxes, includeWatermark } = params
   const fonts = await loadMemeFonts()
 
   const children = boxes.map((box) => {
@@ -130,28 +131,6 @@ export async function renderMeme(params: {
     }
     return node
   })
-
-  if (watermark) {
-    children.push(
-      el(
-        'div',
-        {
-          style: {
-            position: 'absolute',
-            right: '1.5%',
-            bottom: '1.5%',
-            display: 'flex',
-            color: 'rgba(255,255,255,0.85)',
-            fontFamily: 'Inter',
-            fontWeight: 700,
-            fontSize: Math.round(height * 0.028),
-            textShadow: '1px 1px 2px rgba(0,0,0,0.9)',
-          },
-        },
-        watermark,
-      ),
-    )
-  }
 
   const root = el(
     'div',
@@ -176,9 +155,14 @@ export async function renderMeme(params: {
     .render()
     .asPng()
 
+  const composites: { input: Buffer; top: number; left: number }[] = [{ input: overlayPng, top: 0, left: 0 }]
+  if (includeWatermark) {
+    composites.push(await watermarkLogoComposite(width, height))
+  }
+
   const output = await sharp(templateImage)
     .resize(width, height, { fit: 'fill' })
-    .composite([{ input: overlayPng, top: 0, left: 0 }])
+    .composite(composites)
     .png()
     .toBuffer()
 

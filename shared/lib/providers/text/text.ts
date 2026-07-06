@@ -31,19 +31,23 @@ export interface TextProvider {
 import { geminiProvider } from './text-gemini'
 import { nvidiaNemotronUltra } from './text-nvidia'
 import {
-  orDeepSeekR1,
   orLlama70b,
-  orGeminiFlash,
-  orQwen72b,
+  orQwen3Next,
+  orGptOss20b,
+  orGemma4,
+  orGemma4Small,
+  orNemotron3Ultra,
 } from './text-openrouter'
 
 export const TEXT_PROVIDERS: Record<TextModel, TextProvider> = {
   'gemini-2.5-flash': geminiProvider,
   'nvidia/nemotron-ultra-253b-v1': nvidiaNemotronUltra,
-  'openrouter/deepseek/deepseek-r1:free': orDeepSeekR1,
   'openrouter/meta-llama/llama-3.3-70b-instruct:free': orLlama70b,
-  'openrouter/google/gemini-2.0-flash-exp:free': orGeminiFlash,
-  'openrouter/qwen/qwen-2.5-72b-instruct:free': orQwen72b,
+  'openrouter/qwen/qwen3-next-80b-a3b-instruct:free': orQwen3Next,
+  'openrouter/openai/gpt-oss-20b:free': orGptOss20b,
+  'openrouter/google/gemma-4-31b-it:free': orGemma4,
+  'openrouter/google/gemma-4-26b-a4b-it:free': orGemma4Small,
+  'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free': orNemotron3Ultra,
 }
 
 export function getTextProvider(id?: TextModel): TextProvider {

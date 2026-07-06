@@ -56,7 +56,6 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
   const [renaming, setRenaming] = useState(false)
   const [title, setTitle] = useState(summary.title)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [deleting, setDeleting] = useState(false)
 
   const thumb = summary.thumbnailUrl
   const status = summary.status
@@ -87,15 +86,11 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
   }
 
   const handleDelete = async () => {
-    setDeleting(true)
+    setConfirmDelete(false)
     try {
       await onDelete(summary.id)
-      setConfirmDelete(false)
-      toast.success('Story deleted')
     } catch {
       toast.error('Delete failed', { description: 'Could not delete story. Try again.' })
-    } finally {
-      setDeleting(false)
     }
   }
 
@@ -200,10 +195,9 @@ export function StoryCard({ summary, onChange, onDelete }: Props) {
             <AlertDialogCancel>Keep story</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={deleting}
               className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500"
             >
-              {deleting ? 'Deleting...' : 'Delete story'}
+              Delete story
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

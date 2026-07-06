@@ -5,6 +5,7 @@ export async function fetchStory(storyId: string): Promise<{
   options: GenerateOptions | null
   storyData: StoryData
   category: string
+  status?: string
   composedVideoUrl?: string | null
 } | null> {
   const res = await fetch(`/api/stories/${storyId}`)

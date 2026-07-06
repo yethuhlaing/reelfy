@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { AlertTriangle, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { WorkspaceTopBar } from '@/features/workspace/components/WorkspaceTopBar'
 import { WorkspaceProvider, useWorkspace } from '@/features/workspace/context/workspace-context'
 import { SceneGrid } from '@/features/workspace/components/cards/SceneGrid'
 import { VoiceoverBar } from '@/features/workspace/components/media/VoiceoverBar'
 import { ThumbnailDrawer } from '@/features/workspace/components/drawers/ThumbnailDrawer'
+import { VoiceDrawer } from '@/features/workspace/components/drawers/VoiceDrawer'
 import { SceneDrawer } from '@/features/workspace/components/drawers/SceneDrawer'
+import { PlayAllFab } from '@/features/workspace/components/actions/PlayAllFab'
+import { deriveWorkspaceActions } from '@/features/workspace/lib/workspace-state'
 import { StickmanScribble } from '@/features/workspace/components/media/StickmanScribble'
 import { GibberishText } from '@/features/workspace/components/media/GibberishText'
 import { StageDetailsPopover } from '@/features/workspace/components/media/StageDetailsPopover'
@@ -57,6 +61,7 @@ function WorkspaceInner({ storyId, category }: Props) {
   const [storyInput, setStoryInput] = useState('')
   const [options, setOptions] = useState<GenerateOptions | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [failedError, setFailedError] = useState<string | null>(null)
   const [stages, setStages] = useState<Stage[]>(INITIAL_STAGES)
   const [imageProgress, setImageProgress] = useState<{ done: number; total: number } | null>(null)
   const [activeTab, setActiveTab] = useState<'scenes' | 'script'>('scenes')
@@ -65,6 +70,7 @@ function WorkspaceInner({ storyId, category }: Props) {
   const [sceneDrawerOpen, setSceneDrawerOpen] = useState(false)
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [voiceOpen, setVoiceOpen] = useState(false)
 
   const isPlayingAllRef = useRef(false)
   const storyDataRef = useRef<StoryData | null>(null)
@@ -99,6 +105,10 @@ function WorkspaceInner({ storyId, category }: Props) {
         setStoryData(data.storyData)
         if (data.options) setOptions(data.options)
         setStoryInput(data.storyInput ?? '')
+        // Story left in a failed state on a previous run — show retry UI, not a blank screen.
+        if (data.status === 'failed') {
+          setFailedError(data.storyData.tagline || 'Generation failed. Please try again.')
+        }
       })
       .catch(() => {})
     return () => {
@@ -199,6 +209,7 @@ function WorkspaceInner({ storyId, category }: Props) {
 
   const runGenerate = async (input: string, opts: GenerateOptions) => {
     setIsGenerating(true)
+    setFailedError(null)
     setStoryData(null)
     setStages(INITIAL_STAGES)
     setImageProgress(null)
@@ -307,6 +318,7 @@ function WorkspaceInner({ storyId, category }: Props) {
         )
       } else {
         const msg = err instanceof Error ? err.message : 'Generation failed'
+        setFailedError(msg)
         setStages((prev) =>
           prev.map((s) => (s.status === 'active' ? { ...s, status: 'error', detail: msg } : s)),
         )
@@ -388,7 +400,7 @@ function WorkspaceInner({ storyId, category }: Props) {
               )
             }
           } catch {
-            // non-fatal — karaoke unavailable, falls back to TypingAnimation
+            // non-fatal — no word timings, transcript shows as static text
           }
         }
 
@@ -608,6 +620,19 @@ function WorkspaceInner({ storyId, category }: Props) {
     setSceneDrawerOpen(true)
   }
 
+  const retryGeneration = () => {
+    if (!options || !storyInput.trim()) {
+      // No cached input/options (e.g. after a hard refresh with no story stub) — send them
+      // back to the form so they can re-enter details.
+      router.push(`/new?category=${encodeURIComponent(category)}`)
+      return
+    }
+    startedRef.current = true
+    void runGenerate(storyInput, options)
+  }
+
+  const actions = deriveWorkspaceActions(storyData, isGenerating, playState.isPlaying, false, false)
+
   return (
     <WorkspaceProvider
       storyId={storyId}
@@ -626,26 +651,12 @@ function WorkspaceInner({ storyId, category }: Props) {
     >
       <ExportStateProvider>
       <WorkspaceTopBar
-        category={category}
-        onPlayAll={playAll}
         onAnimateAll={animateAll}
         onToggleThumbnail={() => setThumbOpen((v) => !v)}
+        onToggleVoice={() => setVoiceOpen((v) => !v)}
         onToggleDetails={() => setDetailsOpen((v) => !v)}
-        onVoiceChange={async (voiceId) => {
-          await fetch(`/api/stories/${storyId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ voiceId }),
-          })
-          setOptions((prev) => prev ? { ...prev, voiceId } : prev)
-          setStoryData((prev) =>
-            prev
-              ? { ...prev, scenes: prev.scenes.map((s) => ({ ...s, voiceoverUrl: null })) }
-              : prev,
-          )
-        }}
-        onRenamed={(t) => setStoryData((prev) => (prev ? { ...prev, title: t } : prev))}
         thumbnailOpen={thumbOpen}
+        voiceOpen={voiceOpen}
       />
 
       <div className="border-b border-[var(--border)] px-5">
@@ -679,7 +690,29 @@ function WorkspaceInner({ storyId, category }: Props) {
             <div className="text-[0.72rem] uppercase tracking-[0.04em] text-[var(--muted)]">{summarizeStages(stages, imageProgress)}</div>
           </div>
         )}
-        {storyData ? (
+        {failedError && !isGenerating ? (
+          <div className="mx-auto flex max-w-[460px] flex-col items-center gap-4 rounded-[18px] border border-[color-mix(in_srgb,var(--danger)_35%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_6%,var(--surface))] px-6 py-9 text-center">
+            <div className="grid h-11 w-11 place-items-center rounded-full bg-[color-mix(in_srgb,var(--danger)_15%,transparent)] text-[var(--danger)]">
+              <AlertTriangle size={20} />
+            </div>
+            <h3 className="font-[var(--font-heading)] text-lg">Generation failed</h3>
+            <p className="max-w-[380px] text-[0.85rem] leading-relaxed text-[var(--muted)]">{failedError}</p>
+            <div className="mt-1 flex flex-wrap items-center justify-center gap-2.5">
+              <button
+                onClick={retryGeneration}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[var(--accent)] px-3.5 py-2 text-[0.82rem] font-semibold text-[var(--accent-fg,#fff)] transition hover:opacity-90"
+              >
+                <RotateCcw size={14} /> Retry
+              </button>
+              <button
+                onClick={() => router.push(`/new?category=${encodeURIComponent(category)}`)}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface2)] px-3.5 py-2 text-[0.82rem] font-medium text-[var(--text)] transition hover:border-[var(--border-strong)]"
+              >
+                Change model
+              </button>
+            </div>
+          </div>
+        ) : storyData ? (
           activeTab === 'scenes' ? (
             <SceneGrid
               scenes={storyData.scenes}
@@ -724,7 +757,27 @@ function WorkspaceInner({ storyId, category }: Props) {
         onStop={() => { voiceoverAbortRef.current?.abort(); stopPlayback() }}
       />
 
+      {!playState.isPlaying && <PlayAllFab state={actions.playAll} onClick={playAll} />}
+
       <ThumbnailDrawer open={thumbOpen} onClose={() => setThumbOpen(false)} />
+      <VoiceDrawer
+        open={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        currentVoiceId={options?.voiceId}
+        onVoiceChange={async (voiceId) => {
+          await fetch(`/api/stories/${storyId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ voiceId }),
+          })
+          setOptions((prev) => (prev ? { ...prev, voiceId } : prev))
+          setStoryData((prev) =>
+            prev
+              ? { ...prev, scenes: prev.scenes.map((s) => ({ ...s, voiceoverUrl: null })) }
+              : prev,
+          )
+        }}
+      />
       <SceneDrawer
         open={sceneDrawerOpen}
         onClose={() => setSceneDrawerOpen(false)}

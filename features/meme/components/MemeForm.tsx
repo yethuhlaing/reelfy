@@ -5,10 +5,21 @@ import { toast } from 'sonner'
 import { Loader2, Sparkles } from 'lucide-react'
 import { toUserErrorMessage } from '@/shared/lib/user-error-message'
 import type { MemeGenResult, MemeVariant } from '@/shared/lib/types'
+import { ConfigPill } from '@/features/lofi/components/ConfigPill'
+import { CAPTION_MODEL_OPTIONS, CAPTION_MODEL, type CaptionModel } from '@/features/meme/server/caption-models'
 import { MemeGenerationWorkspace } from './MemeGenerationWorkspace'
+
+const MEME_OPTIONS_STORAGE_KEY = 'new-meme:options'
+const VARIANT_COUNT_OPTIONS = [
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+]
 
 export function MemeForm({ onBackToStart }: { onBackToStart?: () => void }) {
   const [idea, setIdea] = useState('')
+  const [captionModel, setCaptionModel] = useState<CaptionModel>(CAPTION_MODEL)
+  const [variantCount, setVariantCount] = useState(3)
   const [generating, setGenerating] = useState(false)
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [variants, setVariants] = useState<MemeVariant[]>([])
@@ -21,6 +32,16 @@ export function MemeForm({ onBackToStart }: { onBackToStart?: () => void }) {
         setIdea(pending)
         localStorage.removeItem('new:pending-prompt')
       }
+      const rawOpts = localStorage.getItem(MEME_OPTIONS_STORAGE_KEY)
+      if (rawOpts) {
+        const parsed = JSON.parse(rawOpts) as { captionModel?: CaptionModel; variantCount?: number }
+        if (parsed.captionModel && CAPTION_MODEL_OPTIONS.some((o) => o.value === parsed.captionModel)) {
+          setCaptionModel(parsed.captionModel)
+        }
+        if (parsed.variantCount && parsed.variantCount >= 1 && parsed.variantCount <= 3) {
+          setVariantCount(parsed.variantCount)
+        }
+      }
     } catch { /* ignore */ }
 
     fetch('/api/credits')
@@ -28,6 +49,12 @@ export function MemeForm({ onBackToStart }: { onBackToStart?: () => void }) {
       .then((d: { balance?: number } | null) => d && setBalance(d.balance ?? null))
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MEME_OPTIONS_STORAGE_KEY, JSON.stringify({ captionModel, variantCount }))
+    } catch { /* ignore */ }
+  }, [captionModel, variantCount])
 
   const handleGenerate = async () => {
     const trimmed = idea.trim()
@@ -40,7 +67,7 @@ export function MemeForm({ onBackToStart }: { onBackToStart?: () => void }) {
       const res = await fetch('/api/meme/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea: trimmed }),
+        body: JSON.stringify({ idea: trimmed, captionModel, variantCount }),
       })
       const data = (await res.json()) as MemeGenResult & { error?: string }
       if (res.status === 402) throw new Error('Not enough credits to generate a meme.')
@@ -50,7 +77,7 @@ export function MemeForm({ onBackToStart }: { onBackToStart?: () => void }) {
       setGenerationId(data.generationId)
       setVariants(data.variants)
       setBalance(data.balance)
-      toast.success('3 memes saved to your dashboard')
+      toast.success(`${data.variants.length} meme${data.variants.length > 1 ? 's' : ''} saved to your dashboard`)
     } catch (err) {
       toast.error(toUserErrorMessage(err, 'Could not generate memes. Please try again.'))
     } finally {
@@ -72,7 +99,9 @@ export function MemeForm({ onBackToStart }: { onBackToStart?: () => void }) {
         </span>
         <h1 style={{ marginTop: 10 }}>Meme generator</h1>
         {balance !== null && (
-          <p className="mt-1 text-sm text-[var(--muted)]">{balance} credits · 1 per generation</p>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            {balance} credits · 1 per generation · clean export 1 credit
+          </p>
         )}
       </div>
 
@@ -90,10 +119,30 @@ export function MemeForm({ onBackToStart }: { onBackToStart?: () => void }) {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate()
               }}
             />
-            <span className="text-[0.7rem] text-[var(--muted)]">
-              We pick the best templates and write the captions. All 3 options save to your dashboard.
+            <span className="text-[0.7rem] text-[var(--muted-foreground)]">
+              We pick the best templates and write the captions. All options save to your dashboard.
             </span>
           </label>
+
+          <div className="flex flex-wrap gap-2">
+            <ConfigPill
+              label="Caption model"
+              value={CAPTION_MODEL_OPTIONS.find((m: { value: string; label: string }) => m.value === captionModel)?.label ?? captionModel}
+              options={CAPTION_MODEL_OPTIONS.map((m: { value: string; label: string }) => ({ value: m.value, label: m.label }))}
+              current={captionModel}
+              onChange={(v) => setCaptionModel(v as CaptionModel)}
+              disabled={generating}
+            />
+            <ConfigPill
+              label="Options"
+              value={String(variantCount)}
+              options={VARIANT_COUNT_OPTIONS}
+              current={String(variantCount)}
+              onChange={(v) => setVariantCount(Number(v))}
+              disabled={generating}
+            />
+          </div>
+
           <div className="flex items-center gap-3">
             <button
               onClick={handleGenerate}
@@ -104,7 +153,7 @@ export function MemeForm({ onBackToStart }: { onBackToStart?: () => void }) {
               {generating ? 'Generating…' : 'Generate memes'}
             </button>
             {onBackToStart && (
-              <button onClick={onBackToStart} className="text-sm text-[var(--muted)] hover:underline">
+              <button onClick={onBackToStart} className="text-sm text-[var(--muted-foreground)] hover:underline">
                 Back
               </button>
             )}

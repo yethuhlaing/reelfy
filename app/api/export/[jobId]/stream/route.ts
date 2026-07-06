@@ -5,7 +5,10 @@ export const runtime = 'nodejs'
 export const maxDuration = 300
 
 const POLL_MS = 1500
-const TIMEOUT_MS = 290 * 1000
+// Close well under the 300s function wall so the client can reconnect
+// and resume from Redis. Long renders survive across many reconnects.
+const WINDOW_MS = 240 * 1000
+const HEARTBEAT_MS = 15 * 1000
 
 export async function GET(
   _req: Request,
@@ -15,7 +18,7 @@ export async function GET(
 
   const encoder = new TextEncoder()
   let closed = false
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
+  const startedAt = Date.now()
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -24,21 +27,23 @@ export async function GET(
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
         }
       }
-
       function close() {
         if (!closed) {
           closed = true
-          if (timeoutId) clearTimeout(timeoutId)
           controller.close()
         }
       }
 
-      timeoutId = setTimeout(() => {
-        send({ status: 'timeout', error: 'Export timed out' })
-        close()
-      }, TIMEOUT_MS)
+      let lastBeat = Date.now()
 
       while (!closed) {
+        // End this window gracefully; client's EventSource reconnects.
+        if (Date.now() - startedAt >= WINDOW_MS) {
+          send({ status: 'reconnect' })
+          close()
+          break
+        }
+
         await new Promise<void>((r) => setTimeout(r, POLL_MS))
         if (closed) break
 
@@ -59,11 +64,8 @@ export async function GET(
 
         if (job.status === 'completed') {
           const videoUrl = job.result?.videoUrl
-          if (!videoUrl) {
-            send({ status: 'failed', error: 'No video URL in result' })
-          } else {
-            send({ status: 'done', videoUrl })
-          }
+          if (!videoUrl) send({ status: 'failed', error: 'No video URL in result' })
+          else send({ status: 'done', videoUrl })
           close()
           break
         }
@@ -73,11 +75,16 @@ export async function GET(
           close()
           break
         }
+
+        // Keep-alive so proxies don't drop the idle connection.
+        if (Date.now() - lastBeat >= HEARTBEAT_MS) {
+          send({ status: 'progress' })
+          lastBeat = Date.now()
+        }
       }
     },
     cancel() {
       closed = true
-      if (timeoutId) clearTimeout(timeoutId)
     },
   })
 

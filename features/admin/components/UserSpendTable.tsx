@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/shared/ui/animated-table-rows'
+} from '@/shared/ui/table'
 
 interface UserSpendTableProps {
   rows: AdminUserSpendRow[]
@@ -20,7 +20,7 @@ export function UserSpendTable({ rows }: UserSpendTableProps) {
   return (
     <Table>
       <TableHeader>
-        <TableRow className="border-0 bg-[var(--surface2)] hover:bg-[var(--surface2)]">
+        <TableRow>
           <TableHead>User</TableHead>
           <TableHead className="text-right">Revenue</TableHead>
           <TableHead className="text-right">API cost</TableHead>
@@ -45,7 +45,7 @@ export function UserSpendTable({ rows }: UserSpendTableProps) {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -48 }}
                 transition={{ duration: 0.35, delay: index * 0.04, ease: 'easeOut' }}
-                className="border-b border-[var(--border)] transition-colors hover:bg-[var(--surface2)]/60"
+                className="border-b transition-colors hover:bg-muted/50"
               >
                 <TableCell className="max-w-[300px]">
                   <div className="flex items-center gap-2">

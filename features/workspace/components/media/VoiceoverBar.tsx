@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { Scene } from '@/shared/lib/types'
 import { usePathname } from 'next/navigation'
 import { SkipBack, SkipForward, X } from 'lucide-react'
@@ -14,7 +14,6 @@ import {
 } from '@/shared/ui/audio-player'
 import { BarVisualizer, type AgentState } from '@/shared/ui/bar-visualizer'
 import { useMediaStreamFromAudio, isUsableMediaStream } from '@/shared/hooks/use-media-stream-from-audio'
-import { TypingAnimation } from '@/shared/ui/typing-animation'
 import { useWordSync } from '@/shared/hooks/use-word-sync'
 
 interface VoiceoverBarProps {
@@ -38,42 +37,25 @@ export function VoiceoverBar({
   const mediaStream = useMediaStreamFromAudio(ref, isPlaying && playerPlaying, activeItem?.id)
   const visualizerDemo = !isUsableMediaStream(mediaStream)
   const isActivelyPlaying = isPlaying && playerPlaying
+
   const voiceoverText = scene?.voiceover ?? ''
   const wordTimings = scene?.voiceoverWordTimings ?? null
   const activeWordIndex = useWordSync(ref, isActivelyPlaying ? wordTimings : null)
 
-  const voiceoverLines = useMemo(() => {
-    const text = voiceoverText.trim()
-    if (!text) return ['']
+  const words = useMemo(
+    () => voiceoverText.trim().split(/\s+/).filter(Boolean),
+    [voiceoverText],
+  )
+  const hasSync = isActivelyPlaying && !!wordTimings?.length
 
-    const words = text.split(/\s+/).filter(Boolean)
-    const chunkSize = 14
-    const chunks: string[] = []
-    for (let i = 0; i < words.length; i += chunkSize) {
-      chunks.push(words.slice(i, i + chunkSize).join(' '))
-    }
-    return chunks.length > 0 ? chunks : [text]
-  }, [voiceoverText])
+  // Keep the active word scrolled into view for long transcripts.
+  const trackRef = useRef<HTMLDivElement | null>(null)
+  const activeWordRef = useRef<HTMLSpanElement | null>(null)
+  useEffect(() => {
+    if (!hasSync) return
+    activeWordRef.current?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+  }, [activeWordIndex, hasSync])
 
-  const words = voiceoverText.trim().split(/\s+/).filter(Boolean)
-  const lineWordRanges = useMemo(() => {
-    let cursor = 0
-    return voiceoverLines.map((line) => {
-      const count = line.split(/\s+/).filter(Boolean).length
-      const range = { start: cursor, end: cursor + count - 1 }
-      cursor += count
-      return range
-    })
-  }, [voiceoverLines])
-  const activeLineIndex = useMemo(() => {
-    if (!lineWordRanges.length) return 0
-    if (activeWordIndex < 0) return 0
-    const idx = lineWordRanges.findIndex((r) => activeWordIndex >= r.start && activeWordIndex <= r.end)
-    return idx >= 0 ? idx : 0
-  }, [activeWordIndex, lineWordRanges])
-  const lineRange = lineWordRanges[activeLineIndex] ?? { start: 0, end: Math.max(0, words.length - 1) }
-  const activeWordTiming = activeWordIndex >= 0 && wordTimings?.length ? wordTimings[activeWordIndex] : null
-  const activeWordDurationMs = Math.max(120, (activeWordTiming?.endMs ?? 0) - (activeWordTiming?.startMs ?? 0))
   const visualizerState: AgentState = isBuffering
     ? 'connecting'
     : playerPlaying
@@ -101,63 +83,34 @@ export function VoiceoverBar({
         </button>
 
         <div className="min-w-0 flex-[1.6] overflow-hidden">
-          <p className="text-sm text-[var(--text)]">
-            {isActivelyPlaying && wordTimings?.length ? (
-              <span className="block w-full overflow-hidden whitespace-nowrap leading-5 tracking-normal text-sm">
-                {words.slice(lineRange.start, lineRange.end + 1).map((word, localIndex) => {
-                  const i = lineRange.start + localIndex
-                  const isPast = i < activeWordIndex
-                  const isActive = i === activeWordIndex
-                  const isFuture = i > activeWordIndex
-                  return (
-                    <span
-                      key={i}
-                      className={
-                        isPast
-                          ? 'text-[color-mix(in_srgb,var(--text)_55%,var(--surface)_45%)]'
-                          : isFuture
-                            ? 'text-[var(--text)]/65'
-                            : 'text-[var(--text)]'
-                      }
-                    >
-                      {isActive ? (
-                        <span
-                          className="inline-block bg-[linear-gradient(90deg,var(--accent)_0%,var(--accent)_100%)] bg-no-repeat text-transparent [background-clip:text] [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]"
-                          style={{
-                            backgroundSize: '0% 100%',
-                            animationName: 'voiceoverKaraokeFill',
-                            animationTimingFunction: 'linear',
-                            animationFillMode: 'forwards',
-                            animationDuration: `${activeWordDurationMs}ms`,
-                          }}
-                        >
-                          {word}
-                        </span>
-                      ) : word}
-                      {i < lineRange.end ? ' ' : ''}
-                    </span>
-                  )
-                })}
-              </span>
-            ) : isActivelyPlaying ? (
-              <TypingAnimation
-                key={`${scene.id}:${voiceoverText}:playing`}
-                as="span"
-                words={voiceoverLines}
-                startOnView={false}
-                showCursor
-                loop
-                duration={24}
-                pauseDelay={900}
-                instantRestart
-                className="block w-full whitespace-normal leading-5 tracking-normal text-sm text-[var(--text)]"
-              />
-            ) : (
-              <span className="block w-full whitespace-normal break-words leading-5 tracking-normal text-sm text-[var(--text)]">
-                {voiceoverText}
-              </span>
-            )}
-          </p>
+          {hasSync ? (
+            <div
+              ref={trackRef}
+              className="flex w-full gap-[0.28em] overflow-x-hidden whitespace-nowrap text-sm leading-5"
+            >
+              {words.map((word, i) => {
+                const isActive = i === activeWordIndex
+                const isPast = i < activeWordIndex
+                return (
+                  <span
+                    key={i}
+                    ref={isActive ? activeWordRef : undefined}
+                    className={
+                      isActive
+                        ? 'font-semibold text-[var(--accent)] transition-colors'
+                        : isPast
+                          ? 'text-[var(--muted)] transition-colors'
+                          : 'text-[var(--text)]/55 transition-colors'
+                    }
+                  >
+                    {word}
+                  </span>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="w-full truncate text-sm leading-5 text-[var(--text)]">{voiceoverText}</p>
+          )}
         </div>
 
         <BarVisualizer
@@ -216,16 +169,6 @@ export function VoiceoverBar({
           <X size={14} />
         </button>
       </div>
-      <style jsx>{`
-        @keyframes voiceoverKaraokeFill {
-          from {
-            background-size: 0% 100%;
-          }
-          to {
-            background-size: 100% 100%;
-          }
-        }
-      `}</style>
     </div>
   )
 }

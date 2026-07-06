@@ -292,9 +292,17 @@ export async function upsertStoryWithScenes(params: SaveStoryParams) {
     })
 
   await db.delete(scenes).where(eq(scenes.storyId, storyId))
-  if (storyData.scenes.length > 0) {
+  // Guard against duplicate scene ids (e.g. a model that emitted "S1" twice) so the batch
+  // insert can't violate scenes_pkey. Keep first occurrence, drop later collisions.
+  const seenIds = new Set<string>()
+  const uniqueScenes = storyData.scenes.filter((sc) => {
+    if (seenIds.has(sc.id)) return false
+    seenIds.add(sc.id)
+    return true
+  })
+  if (uniqueScenes.length > 0) {
     await db.insert(scenes).values(
-      storyData.scenes.map((sc, idx) => ({
+      uniqueScenes.map((sc, idx) => ({
         id: sc.id,
         storyId,
         orderIndex: idx,
@@ -372,10 +380,11 @@ export async function updateSceneForUser(
 export async function updateStoryMeta(
   storyId: string,
   userId: string,
-  patch: { title?: string; thumbnailUrl?: string | null; composedVideoUrl?: string | null; status?: string },
+  patch: { title?: string; tagline?: string; thumbnailUrl?: string | null; composedVideoUrl?: string | null; status?: string },
 ): Promise<boolean> {
   const set: Record<string, unknown> = { updatedAt: new Date() }
   if (patch.title !== undefined) set.title = patch.title
+  if (patch.tagline !== undefined) set.tagline = patch.tagline
   if (patch.thumbnailUrl !== undefined) set.thumbnailUrl = patch.thumbnailUrl
   if (patch.composedVideoUrl !== undefined) set.composedVideoUrl = patch.composedVideoUrl
   if (patch.status !== undefined) set.status = patch.status

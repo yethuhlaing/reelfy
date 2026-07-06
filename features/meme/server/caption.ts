@@ -1,10 +1,15 @@
 import { env } from '@/shared/lib/env'
 import type { MemeTemplate, MemeBoxCaption } from '@/shared/lib/types'
+import { CAPTION_MODEL, type CaptionModel } from '@/features/meme/server/caption-models'
+
+export {
+  CAPTION_MODEL,
+  CAPTION_MODEL_OPTIONS,
+  resolveCaptionModel,
+  type CaptionModel,
+} from '@/features/meme/server/caption-models'
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-
-/** Model used to write captions. Cheap, fast, good at meme voice. */
-export const CAPTION_MODEL = 'openai/gpt-4o-mini'
 
 /** Strip markdown fences some models wrap around JSON. */
 function stripFences(content: string): string {
@@ -63,6 +68,7 @@ interface CaptionResponse {
 async function callCaption(
   idea: string,
   template: MemeTemplate,
+  model: CaptionModel,
   signal?: AbortSignal,
 ): Promise<MemeBoxCaption[]> {
   const headers: Record<string, string> = {
@@ -76,7 +82,7 @@ async function callCaption(
     method: 'POST',
     headers,
     body: JSON.stringify({
-      model: CAPTION_MODEL,
+      model,
       messages: [
         { role: 'system', content: buildSystemPrompt() },
         { role: 'user', content: buildUserPrompt(idea, template) },
@@ -121,11 +127,12 @@ function clampCaptions(boxes: MemeBoxCaption[], template: MemeTemplate): MemeBox
 export async function generateCaptions(
   idea: string,
   template: MemeTemplate,
+  model: CaptionModel = CAPTION_MODEL,
   signal?: AbortSignal,
 ): Promise<MemeBoxCaption[]> {
-  let boxes = await callCaption(idea, template, signal)
+  let boxes = await callCaption(idea, template, model, signal)
   if (!isValidCaptionSet(boxes, template)) {
-    boxes = await callCaption(idea, template, signal)
+    boxes = await callCaption(idea, template, model, signal)
   }
   return clampCaptions(boxes, template)
 }

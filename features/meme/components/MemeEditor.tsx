@@ -7,6 +7,7 @@ import {
   AlignLeft,
   AlignRight,
   CaseUpper,
+  ChevronDown,
   Download,
   Loader2,
   RotateCcw,
@@ -18,7 +19,16 @@ import type {
   MemeRenderBox,
   MemeVariant,
 } from '@/shared/lib/types'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { MemePreview } from './MemePreview'
+import { MEME_CLEAN_DOWNLOAD_CREDITS } from '@/features/meme/constants'
 
 const TEXT_SAVE_DEBOUNCE_MS = 1000
 
@@ -51,7 +61,8 @@ export function MemeEditor({
 }) {
   const [boxes, setBoxes] = useState<MemeRenderBox[]>(variant.boxes)
   const [selected, setSelected] = useState<number | null>(boxes[0]?.index ?? null)
-  const [downloading, setDownloading] = useState(false)
+  const [downloading, setDownloading] = useState<'watermarked' | 'clean' | null>(null)
+  const [balance, setBalance] = useState<number | null>(null)
   const [renderedUrl, setRenderedUrl] = useState(variant.renderedUrl)
 
   const boxesRef = useRef(boxes)
@@ -65,6 +76,13 @@ export function MemeEditor({
 
   boxesRef.current = boxes
   renderedUrlRef.current = renderedUrl
+
+  useEffect(() => {
+    fetch('/api/credits')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { balance?: number } | null) => d && setBalance(d.balance ?? null))
+      .catch(() => {})
+  }, [])
 
   // Only reset local state when the user actually switches to a *different*
   // variant. The save round-trip mutates the `variant` prop (same templateId);
@@ -165,19 +183,41 @@ export function MemeEditor({
     [scheduleTextSave],
   )
 
-  const handleDownload = async () => {
-    setDownloading(true)
+  const handleDownload = async (withWatermark: boolean) => {
+    setDownloading(withWatermark ? 'watermarked' : 'clean')
     try {
-      const url = await flushSave()
-      if (!url) return
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `meme-${variant.templateId}.png`
-      a.target = '_blank'
-      a.rel = 'noopener noreferrer'
-      a.click()
+      await flushSave()
+      const params = new URLSearchParams({
+        generationId,
+        templateId: variant.templateId,
+        watermark: withWatermark ? '1' : '0',
+      })
+      const res = await fetch(`/api/meme/download?${params}`)
+      if (res.status === 402) {
+        throw new Error(`Not enough credits. Clean download costs ${MEME_CLEAN_DOWNLOAD_CREDITS} credit.`)
+      }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(data?.error ?? 'Download failed')
+      }
+
+      const nextBalance = res.headers.get('X-Credits-Balance')
+      if (nextBalance) setBalance(Number(nextBalance))
+
+      const blob = await res.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      try {
+        const a = document.createElement('a')
+        a.href = objectUrl
+        a.download = `meme-${variant.templateId}${withWatermark ? '-watermarked' : ''}.png`
+        a.click()
+      } finally {
+        URL.revokeObjectURL(objectUrl)
+      }
+    } catch (err) {
+      toast.error(toUserErrorMessage(err, 'Could not download meme.'))
     } finally {
-      setDownloading(false)
+      setDownloading(null)
     }
   }
 
@@ -206,7 +246,7 @@ export function MemeEditor({
       </div>
 
       <div className="flex flex-col gap-4">
-        <button onClick={onBack} className="self-start text-sm text-[var(--muted)] hover:underline">
+        <button onClick={onBack} className="self-start text-sm text-[var(--muted-foreground)] hover:underline">
           {backLabel}
         </button>
 
@@ -223,7 +263,7 @@ export function MemeEditor({
                   : 'border-[var(--border)] hover:border-[var(--accent)]'
               }`}
             >
-              <span className="text-xs text-[var(--muted)]">Box {box.index + 1}</span>
+              <span className="text-xs text-[var(--muted-foreground)]">Box {box.index + 1}</span>
               <textarea
                 value={box.text}
                 onChange={(e) => updateBox(box.index, { text: e.target.value }, 'debounced')}
@@ -234,7 +274,7 @@ export function MemeEditor({
               />
             </button>
           ))}
-          <p className="text-[0.7rem] text-[var(--muted)]">
+          <p className="text-[0.7rem] text-[var(--muted-foreground)]">
             Click a caption or the meme to select. Drag to move, corner handles to resize.
           </p>
         </div>
@@ -248,14 +288,69 @@ export function MemeEditor({
         )}
 
         <div className="glass-panel p-4">
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-60"
-          >
-            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Download PNG
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={downloading !== null}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-3 py-2.5 text-sm font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {downloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Download
+                <ChevronDown className="h-4 w-4 opacity-80" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="center"
+              className="w-[var(--radix-dropdown-menu-trigger-width)] border-[var(--border)] bg-[var(--surface-solid)] p-1.5"
+            >
+              <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium text-[var(--muted-foreground)]">
+                Export as PNG
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                disabled={downloading !== null}
+                className="cursor-pointer rounded-md px-2 py-2.5 focus:bg-[var(--surface2)]"
+                onSelect={() => void handleDownload(true)}
+              >
+                <div className="flex w-full items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">With watermark</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">Includes Reelify logo</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-[var(--surface2)] px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                    Free
+                  </span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={downloading !== null}
+                className="cursor-pointer rounded-md px-2 py-2.5 focus:bg-[var(--surface2)]"
+                onSelect={() => void handleDownload(false)}
+              >
+                <div className="flex w-full items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">Without watermark</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">Clean export for sharing</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-[0.65rem] font-semibold text-[var(--accent)]">
+                    {MEME_CLEAN_DOWNLOAD_CREDITS} credit
+                  </span>
+                </div>
+              </DropdownMenuItem>
+              {balance !== null && (
+                <>
+                  <DropdownMenuSeparator className="bg-[var(--border)]" />
+                  <p className="px-2 py-1.5 text-center text-[0.7rem] text-[var(--muted-foreground)]">
+                    {balance} credits available
+                  </p>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>
@@ -291,7 +386,7 @@ function BoxToolbar({
             })
             onCommit()
           }}
-          className="inline-flex items-center gap-1 text-[0.7rem] text-[var(--muted)] hover:underline"
+          className="inline-flex items-center gap-1 text-[0.7rem] text-[var(--muted-foreground)] hover:underline"
         >
           <RotateCcw className="h-3 w-3" /> Reset
         </button>
@@ -299,7 +394,7 @@ function BoxToolbar({
 
       {/* Preset */}
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-[var(--muted)]">Preset</span>
+        <span className="text-xs text-[var(--muted-foreground)]">Preset</span>
         <div className="grid grid-cols-4 gap-1">
           {STYLE_OPTIONS.map((opt) => (
             <button
@@ -323,7 +418,7 @@ function BoxToolbar({
 
       {/* Font */}
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-[var(--muted)]">Font</span>
+        <span className="text-xs text-[var(--muted-foreground)]">Font</span>
         <div className="grid grid-cols-2 gap-1">
           {FONT_OPTIONS.map((opt) => {
             const active = (box.fontFamily ?? '').startsWith(opt.value)
@@ -411,7 +506,7 @@ function BoxToolbar({
 
       {/* Font size */}
       <label className="flex flex-col gap-1">
-        <span className="flex items-center justify-between text-xs text-[var(--muted)]">
+        <span className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
           <span>Font size</span>
           <span>{sizePct === 0 ? 'Auto' : `${sizePct}%`}</span>
         </span>
@@ -448,7 +543,7 @@ function ColorField({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-xs text-[var(--muted)]">{label}</span>
+      <span className="text-xs text-[var(--muted-foreground)]">{label}</span>
       <div className="flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1">
         <input
           type="color"
