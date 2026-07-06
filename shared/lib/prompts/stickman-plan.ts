@@ -1,6 +1,81 @@
-import type { VoiceTone, SceneDensity, StickStyle } from '../types'
+import type { VoiceTone, SceneDensity, StickStyle, Format } from '../types'
 
-export function stickmanPlanSystemPrompt(tone: VoiceTone, density: SceneDensity, style: StickStyle): string {
+// Per-format content-structure rules. Format is orthogonal to StickStyle (look):
+// it decides the arc, the voiceover pattern, whether scenes are numbered, how the
+// density budget fans out across items, and which emotions are appropriate.
+type FormatRule = {
+  // Replaces the NARRATIVE ARC block. Describes how the whole video is structured.
+  arc: string
+  // Injected into the `voiceover` schema hint — the cadence/phrasing per scene.
+  voiceoverHint: string
+  // Injected into the SCENE COUNT block — how to spread `density` scenes.
+  sceneFanOut: string
+  // Steers scene.emotion selection (enum is unchanged; this is guidance only).
+  emotionGuidance: string
+  // Whether facts/tutorial-style item numbering (itemIndex/itemLabel + drawn badge) applies.
+  numbered: boolean
+}
+
+const formatRules: Record<Format, FormatRule> = {
+  narrative: {
+    arc: `NARRATIVE ARC (mandatory):
+- First 1-2 scenes = HOOK (relatable opening, sets up character + tension).
+- Middle scenes = PROBLEM/JOURNEY (struggle, attempts, emotional beats).
+- Last 1-2 scenes = RESOLUTION/TAKEAWAY (payoff, lesson, forward look).
+Voiceovers should flow as a single connected story, not isolated captions.`,
+    voiceoverHint: 'Flowing, connected story — each line continues from the last. Do NOT number scenes.',
+    sceneFanOut: 'Split the story into beats; more emotional beats = more scenes.',
+    emotionGuidance: 'Use the full emotional range (frustration, despair, hope, triumph, etc.) to build an arc.',
+    numbered: false,
+  },
+  facts: {
+    arc: `INFORMATIONAL (FACTS) STRUCTURE — NOT a story arc:
+- First 1 scene = INTRO ("Here are 5 tips to win at X", state how many items).
+- Middle = each item is a self-contained point, in order, clearly separated. No emotional arc, no "problem" middle.
+- Last 1 scene = RECAP/PAYOFF (quick summary or call to action).
+Read the number of items from the user's input (e.g. "5 tips" → 5 items). If the input states no number, pick a sensible 5-7. Each item gets a numbered label.`,
+    voiceoverHint: 'Start each item scene by announcing its number, e.g. "Tip one: ...", "Number three: ...". Keep items self-contained and factual, not a connected story.',
+    sceneFanOut: 'Distribute the ~{density} scenes across the N items (~density/N scenes per item, plus 1 intro + 1 recap). Give each item multiple beats (setup shot, detail, example) rather than one scene each. All scenes of one item share the same itemIndex + itemLabel.',
+    emotionGuidance: 'Prefer neutral, curiosity, determination. Do NOT use despair/frustration — this is informational, not dramatic.',
+    numbered: true,
+  },
+  explainer: {
+    arc: `EXPLAINER STRUCTURE (teach ONE concept):
+- First 1 scene = pose the question / what we'll explain.
+- Middle scenes = build the concept step by logical step, each adding one idea.
+- Last 1 scene = "so that's why / how it works" synthesis.
+No emotional problem arc — this teaches, it doesn't dramatize. Voiceovers connect as a teaching sequence.`,
+    voiceoverHint: 'Teaching sequence — each line builds on the previous concept. Do NOT number scenes.',
+    sceneFanOut: 'Split the concept into logical steps; one step may take 1-2 scenes.',
+    emotionGuidance: 'Prefer curiosity, neutral, determination, and relief/excitement at the "aha" moment. Avoid despair.',
+    numbered: false,
+  },
+  tutorial: {
+    arc: `HOW-TO (TUTORIAL) STRUCTURE — ordered steps to DO a thing:
+- First 1 scene = setup / what you'll accomplish + what you need.
+- Middle = each step in order ("First...", "Next...", "Then..."), one action per step. Numbered.
+- Last 1 scene = the finished result.
+Read the number of steps from the input if stated; otherwise pick a sensible 4-7. Each step gets a numbered label.`,
+    voiceoverHint: 'Announce each step number, e.g. "Step one: ...", "Next, step two: ...". Instructional and concrete.',
+    sceneFanOut: 'Distribute the ~{density} scenes across the N steps (~density/N per step, plus 1 setup + 1 result). All scenes of one step share the same itemIndex + itemLabel.',
+    emotionGuidance: 'Prefer determination, neutral, curiosity, and relief/triumph at the finished result. Avoid despair.',
+    numbered: true,
+  },
+  comparison: {
+    arc: `COMPARISON STRUCTURE (A vs B):
+- First 1 scene = introduce the two things being compared.
+- Middle = alternate — show what A does, then what B does, across the key dimensions. Keep it balanced.
+- Last 1 scene = verdict / when to pick which.
+Some tension is fine, but stay fair to both sides. Voiceovers connect as a weighing-up.`,
+    voiceoverHint: 'Weigh two sides — "X does this, whereas Y does that". End on a verdict. Do NOT number scenes.',
+    sceneFanOut: 'Alternate scenes between side A and side B across dimensions; end with the verdict scene.',
+    emotionGuidance: 'Prefer curiosity, determination, neutral. Light triumph on the verdict is fine. Avoid despair.',
+    numbered: false,
+  },
+}
+
+export function stickmanPlanSystemPrompt(tone: VoiceTone, density: SceneDensity, style: StickStyle, format: Format = 'narrative'): string {
+  const fmt = formatRules[format]
   const styleDescriptions: Record<StickStyle, string> = {
     minimal: 'clean, sparse linework; restrained but readable',
     expressive: 'dynamic, exaggerated poses; bouncy energy; cartoonish motion',
@@ -62,7 +137,13 @@ After the mandatory "Use the same stickman character as before: ..." opening, in
 8. STYLE LOCK: end with "${styleDescriptions[style]}, near-white background, minimalist wobbly black ink line art, lots of empty white space, at most 5-8 short handwritten English labels — black line art plus sparse accents: orange for main flow/arrows, red only for key problems/results, blue only for secondary notes. No gradients, no shading, no paper texture, no comic panel, no PPT/infographic look, no childish cuteness. NO frame, NO border — image bleeds to edges."`,
   }
 
-  const imagePromptRules = imagePromptRulesByStyle[style]
+  // For numbered formats (facts/tutorial), a small consistent corner number badge is
+  // REQUIRED and OVERRIDES the per-style "no caption banner / no title" rules above.
+  const numberBadgeRule = fmt.numbered
+    ? `\n\nNUMBER BADGE (REQUIRED — overrides any "no banner / no title" rule above): draw a small hand-lettered number badge for this scene's item — a circled numeral (e.g. "3") or short label (e.g. "TIP 3" / "STEP 2") — placed in the TOP-RIGHT corner, small, same position and style in every scene. Quote the exact itemLabel text inside the imagePrompt. This is the ONLY caption allowed; keep it small so it never dominates the panel.`
+    : ''
+
+  const imagePromptRules = imagePromptRulesByStyle[style] + numberBadgeRule
 
   // Per-style grounding/whitespace/prop rules injected into HARD RULES.
   const groundingRuleByStyle: Record<StickStyle, string> = {
@@ -73,7 +154,7 @@ After the mandatory "Use the same stickman character as before: ..." opening, in
   }
 
   return `You are a visual storyboard engine for a hand-drawn stickman explainer video (YouTube style, ~55-60s, beginner-friendly).
-Convert the user's narrative into vivid, cinematic stickman scenes with a CLEAR NARRATIVE ARC: hook → problem/middle → resolution/takeaway. The input may be any topic — startup journey, product explainer, history, science, personal anecdote, etc.
+Convert the user's input into vivid, cinematic stickman scenes, structured according to the FORMAT below (${format}). The input may be any topic — startup journey, product explainer, list of tips, how-to, history, science, personal anecdote, etc.
 Return ONLY valid JSON matching this exact schema — no markdown, no prose, no fences.
 
 {
@@ -84,13 +165,17 @@ Return ONLY valid JSON matching this exact schema — no markdown, no prose, no 
   "scenes": [{
     "id": string,                 // "S1", "S2"...
     "sentence": string,           // exact phrase from story
-    "voiceover": string,          // Adjust length based on scene count: fewer scenes = longer voiceover per scene (~8-12s, 20-30 words), more scenes = shorter (~4-7s, 10-18 words). Conversational beginner-friendly English, tone: ${tone}. Describe what stickman is doing + feeling + purpose of the moment.
+    "voiceover": string,          // Adjust length based on scene count: fewer scenes = longer voiceover per scene (~8-12s, 20-30 words), more scenes = shorter (~4-7s, 10-18 words). Conversational beginner-friendly English, tone: ${tone}. FORMAT VOICEOVER: ${fmt.voiceoverHint}
     "action": string,             // physical stickman action, one sentence
     "setting": string,            // location in <=8 words
-    "emotion": "frustration" | "hope" | "excitement" | "despair" | "triumph" | "curiosity" | "relief" | "determination" | "neutral",
+    "emotion": "frustration" | "hope" | "excitement" | "despair" | "triumph" | "curiosity" | "relief" | "determination" | "neutral",  // EMOTION GUIDANCE: ${fmt.emotionGuidance}
     "characters": 1 | 2 | 3,
     "props": string[],             // REQUIRED: at least 1 concrete prop per scene
-    "imagePrompt": string,        // 90-160 words, see RULES
+    "imagePrompt": string,        // 90-160 words, see RULES${fmt.numbered ? `
+    "itemIndex": number,          // REQUIRED for this format: which item (1-based) this scene belongs to. All scenes of the same tip/step share the same itemIndex. Intro scene = 0, recap scene = 0.
+    "itemLabel": string,          // REQUIRED for this format: the drawn badge text, e.g. "TIP 3" or "STEP 2". Empty string "" for intro/recap scenes.` : `
+    "itemIndex": null,            // null for this format (not a numbered list)
+    "itemLabel": null,            // null for this format`}
     "motionPrompt": string        // 15-30 words: specific motion for LTX-Video I2V — describe body movements, prop FX, particles. Must match scene.action.
   }]
 }
@@ -151,16 +236,13 @@ ${groundingRuleByStyle[style]}
 - Aspect 16:9.
 - The imagePrompt must NEVER be generic. Bind it to scene.sentence and scene.action.
 
-NARRATIVE ARC (mandatory):
-- First 1-2 scenes = HOOK (relatable opening, sets up character + tension).
-- Middle scenes = PROBLEM/JOURNEY (struggle, attempts, emotional beats).
-- Last 1-2 scenes = RESOLUTION/TAKEAWAY (payoff, lesson, forward look).
-Voiceovers should flow as a single connected story, not isolated captions.
+${fmt.arc}
 
 SCENE COUNT:
-Generate approximately ${density} scenes total. Adjust scene splitting based on story length and emotional beats — shorter stories get fewer scenes, longer stories get more. Aim for ~${density} scenes to match target runtime (~${Math.round(Number(density) * 0.8)}s video at 0.8s/scene for shorter, ~${Math.round(Number(density) * 1.2)}s at 1.2s/scene for longer content).
+Generate approximately ${density} scenes total to match target runtime (~${Math.round(Number(density) * 0.8)}s video at 0.8s/scene for shorter, ~${Math.round(Number(density) * 1.2)}s at 1.2s/scene for longer content).
+FORMAT FAN-OUT: ${fmt.sceneFanOut.replace('{density}', String(density))}
 
-Current density: ${density}`
+Current density: ${density} · Format: ${format}`
 }
 
 export function stickmanPlanUserMessage(narrative: string): string {

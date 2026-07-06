@@ -1,4 +1,4 @@
-import type { SceneDensity, StickStyle, VoiceTone, ImageModel, TextModel, StreamEvent, Scene, StoryData, VideoModel, VideoQuality } from '@/shared/lib/types'
+import type { SceneDensity, StickStyle, VoiceTone, Format, ImageModel, TextModel, StreamEvent, Scene, StoryData, VideoModel, VideoQuality } from '@/shared/lib/types'
 import { getImageProvider } from '@/shared/lib/providers/image/image'
 import { getTextProvider } from '@/shared/lib/providers/text/text'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
@@ -59,18 +59,21 @@ export async function POST(request: Request) {
   if (!body) {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 })
   }
-  const { storyId, story, density, style, tone, imageModel, videoModel, videoQuality, textModel, category } = body as {
+  const { storyId, story, density, style, tone, format, imageModel, videoModel, videoQuality, textModel, category } = body as {
     storyId: string
     story: string
     density: SceneDensity
     style: StickStyle
     tone: VoiceTone
+    format?: Format
     imageModel?: ImageModel
     videoModel?: VideoModel
     videoQuality?: VideoQuality
     textModel?: TextModel
     category?: string
   }
+  // Backfill: older clients don't send format; default to the original narrative behavior.
+  const resolvedFormat: Format = format ?? 'narrative'
 
   if (!storyId || !story || !density || !style || !tone) {
     return new Response(JSON.stringify({ error: 'Missing required fields: storyId, story, density, style, tone' }), { status: 400 })
@@ -127,10 +130,11 @@ export async function POST(request: Request) {
           density,
           style,
           tone,
+          format: resolvedFormat,
           imageModel: imageModel ?? 'flux-schnell-fal',
           videoModel: videoModel ?? 'ltx-video-fal',
           videoQuality: videoQuality ?? '720p',
-          textModel: textModel ?? 'gemini-2.5-flash',
+          textModel: textModel ?? 'gpt-4o-mini',
         } as const
 
         try {
@@ -155,7 +159,7 @@ export async function POST(request: Request) {
           console.error('Failed to persist story stub', persistErr)
         }
 
-        const plan = await textProvider.planStory(story, density, style, tone, signal, {
+        const plan = await textProvider.planStory(story, density, style, tone, resolvedFormat, signal, {
           userId,
           storyId,
           operation: 'text_plan',

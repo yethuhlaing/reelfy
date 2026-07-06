@@ -20,6 +20,11 @@ export interface ScenePlan {
   props: string[]
   imagePrompt: string
   motionPrompt?: string
+  // Set only for numbered formats (facts, tutorial). itemIndex groups the ~N
+  // scenes that belong to one tip/step; itemLabel is the drawn badge ("Tip 3", "Step 2").
+  // Null/absent for narrative, explainer, comparison.
+  itemIndex?: number | null
+  itemLabel?: string | null
 }
 
 export interface WordTiming {
@@ -50,23 +55,23 @@ export interface StoryData {
 export type VoiceTone = 'inspirational' | 'casual' | 'documentary' | 'pitch'
 export type SceneDensity = '8' | '10' | '12' | '16' | '20' | '25' | '30' | '35' | '40' | '45' | '50' | '55' | '60'
 export type StickStyle = 'minimal' | 'expressive' | 'dramatic' | 'editorial'
+// Content STRUCTURE (orthogonal to StickStyle, which is look). Drives the narrative
+// arc, voiceover pattern, scene fan-out, numbering, and emotion guidance in the plan prompt.
+export type Format = 'narrative' | 'facts' | 'explainer' | 'tutorial' | 'comparison'
 export type ImageModel = 'flux-schnell-fal' | 'flux-dev-fal' | 'sdxl-lightning-fal'
 export type VideoModel = 'ltx-video-fal' | 'longcat-fal' | 'kling-fal'
 export type VideoQuality = '720p' | '1080p'
 export type TextModel =
-  | 'gemini-2.5-flash'
-  | 'nvidia/nemotron-ultra-253b-v1'
-  | 'openrouter/meta-llama/llama-3.3-70b-instruct:free'
-  | 'openrouter/qwen/qwen3-next-80b-a3b-instruct:free'
-  | 'openrouter/openai/gpt-oss-20b:free'
-  | 'openrouter/google/gemma-4-31b-it:free'
-  | 'openrouter/google/gemma-4-26b-a4b-it:free'
-  | 'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free'
+  | 'gpt-4o-mini'
+  | 'gpt-4.1-mini'
+  | 'gpt-4o'
+  | 'gpt-5'
 
 export interface GenerateOptions {
   density: SceneDensity
   style: StickStyle
   tone: VoiceTone
+  format: Format
   imageModel: ImageModel
   videoModel: VideoModel
   videoQuality: VideoQuality

@@ -19,7 +19,7 @@ export type StoryStatus = 'draft' | 'generating' | 'ready' | 'rendered' | 'faile
 export type LofiVideoStatus = 'planning' | 'generating' | 'gating' | 'rendering' | 'complete' | 'failed' | 'aborted'
 export type LofiAssetStatus = 'pending' | 'submitted' | 'ready' | 'failed' | 'skipped'
 
-/** Embedding dimension for the meme template matcher (OpenRouter text-embedding-3-small). */
+/** Embedding dimension for the meme template matcher (OpenAI text-embedding-3-small). */
 export const MEME_EMBEDDING_DIM = 1536
 
 /** pgvector column type. Stored/queried as a `vector(N)` via the pgvector extension. */

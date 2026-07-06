@@ -1,4 +1,5 @@
 import { getJob } from '@/shared/lib/jobs/store'
+import { reconcileExportFromFal } from '@/features/stories/server/export-finalize'
 import type { ExportResult } from '@/shared/lib/jobs/types'
 
 export const runtime = 'nodejs'
@@ -35,6 +36,8 @@ export async function GET(
       }
 
       let lastBeat = Date.now()
+      let lastReconcile = 0
+      const RECONCILE_MS = 5000
 
       while (!closed) {
         // End this window gracefully; client's EventSource reconnects.
@@ -74,6 +77,13 @@ export async function GET(
           send({ status: 'failed', error: job.error ?? 'Export failed' })
           close()
           break
+        }
+
+        // Fallback: ask fal directly in case the webhook never arrived
+        // (e.g. dead dev tunnel, lost callback). Throttled so we don't hammer.
+        if (Date.now() - lastReconcile >= RECONCILE_MS) {
+          lastReconcile = Date.now()
+          reconcileExportFromFal(jobId).catch(() => {})
         }
 
         // Keep-alive so proxies don't drop the idle connection.

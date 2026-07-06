@@ -12,7 +12,8 @@
       "Bash(rtk npm *)",
       "Bash(echo \"EXIT: $?\")",
       "Bash(rtk proxy *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(git rm *)"
     ],
     "additionalDirectories": [
       "/Users/yethuhlaing/projects/stickman/app/api/export/[jobId]"

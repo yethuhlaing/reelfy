@@ -28,7 +28,7 @@ function mapKnownError(message: string): string | null {
   }
 
   if (
-    /googlegenerativeai|generativelanguage|gemini|openrouter api|nvidia api|openai\/v1\/chat/i.test(lower)
+    /openai|api\.openai\.com|v1\/chat\/completions|v1\/embeddings/i.test(lower)
   ) {
     return 'Could not generate prompts right now. Please try again in a few minutes.'
   }

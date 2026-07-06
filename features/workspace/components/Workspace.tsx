@@ -230,6 +230,7 @@ function WorkspaceInner({ storyId, category }: Props) {
           density: opts.density,
           style: opts.style,
           tone: opts.tone,
+          format: opts.format,
           imageModel: opts.imageModel,
           videoModel: opts.videoModel,
           videoQuality: opts.videoQuality,

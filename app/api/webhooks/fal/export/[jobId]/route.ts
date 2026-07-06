@@ -1,7 +1,7 @@
-import { getJob, markCompleted, markFailed } from '@/shared/lib/jobs/store'
+import { getJob, markFailed } from '@/shared/lib/jobs/store'
 import { readFalHeaders, verifyFalWebhook } from '@/shared/lib/jobs/verify-fal'
-import { completeComposedVideo } from '@/features/stories/server/story-assets'
-import type { ExportPayload, ExportResult } from '@/shared/lib/jobs/types'
+import { finalizeExport } from '@/features/stories/server/export-finalize'
+import type { ExportPayload } from '@/shared/lib/jobs/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -55,24 +55,8 @@ export async function POST(
     return new Response('ok')
   }
 
-  if (!job.payload.userId) {
-    await markFailed(jobId, 'Job missing userId')
-    return new Response('ok')
-  }
-
   try {
-    const res = await fetch(falVideoUrl)
-    if (!res.ok) {
-      throw new Error(`fal video download failed: HTTP ${res.status}`)
-    }
-    const buf = Buffer.from(await res.arrayBuffer())
-    const videoUrl = await completeComposedVideo({
-      storyId: job.payload.storyId,
-      userId: job.payload.userId,
-      data: buf,
-    })
-    const result: ExportResult = { videoUrl }
-    await markCompleted(jobId, result)
+    await finalizeExport(jobId, falVideoUrl)
   } catch (err) {
     console.error('Export webhook failed', err)
     await markFailed(jobId, err instanceof Error ? err.message : 'Blob upload failed')

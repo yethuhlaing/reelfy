@@ -1,6 +1,6 @@
 import { expandPrompts } from '@/features/lofi/server/prompt-expander'
 import { ALLOWED_DURATION_SEC } from '@/features/lofi/lib/pricing-constants'
-import { TEXT_MODEL_VALUES } from '@/shared/lib/text-model-options'
+import { TEXT_MODEL_VALUES, DEFAULT_TEXT_MODEL } from '@/shared/lib/text-model-options'
 import { toUserErrorMessage } from '@/shared/lib/user-error-message'
 import type { TextModel } from '@/shared/lib/types'
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   const model = typeof textModel === 'string' && TEXT_MODEL_VALUES.includes(textModel as TextModel)
     ? (textModel as TextModel)
-    : 'gemini-2.5-flash'
+    : DEFAULT_TEXT_MODEL
 
   try {
     const result = await expandPrompts({

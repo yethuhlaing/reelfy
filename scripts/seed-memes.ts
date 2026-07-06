@@ -5,7 +5,7 @@
  * -> embed (description + captionGuide) -> upsert into meme_templates.
  *
  * Usage: pnpm seed:memes
- * Requires: DATABASE_URL, BLOB_READ_WRITE_TOKEN, OPENROUTER_API_KEY in .env
+ * Requires: DATABASE_URL, BLOB_READ_WRITE_TOKEN, OPENAI_API_KEY in .env
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -56,7 +56,7 @@ function loadEnvFile(): void {
     const value = parseEnvValue(trimmed.slice(eq + 1))
     if (!(key in process.env)) process.env[key] = value
   }
-  // Seed only needs DB + Blob + OpenRouter; skip full app env validation.
+  // Seed only needs DB + Blob + OpenAI; skip full app env validation.
   process.env.SKIP_ENV_VALIDATION ??= '1'
 }
 

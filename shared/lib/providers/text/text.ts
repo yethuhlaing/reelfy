@@ -1,4 +1,4 @@
-import type { VoiceTone, SceneDensity, StickStyle, ScenePlan, TextModel } from '@/shared/lib/types'
+import type { VoiceTone, SceneDensity, StickStyle, Format, ScenePlan, TextModel } from '@/shared/lib/types'
 import type { ApiCostContext } from '@/shared/lib/db/cost-logger'
 
 export interface PlanResult {
@@ -17,6 +17,7 @@ export interface TextProvider {
     density: SceneDensity,
     style: StickStyle,
     tone: VoiceTone,
+    format: Format,
     signal?: AbortSignal,
     costContext?: ApiCostContext,
   ): Promise<PlanResult>
@@ -28,29 +29,16 @@ export interface TextProvider {
   ): Promise<string>
 }
 
-import { geminiProvider } from './text-gemini'
-import { nvidiaNemotronUltra } from './text-nvidia'
-import {
-  orLlama70b,
-  orQwen3Next,
-  orGptOss20b,
-  orGemma4,
-  orGemma4Small,
-  orNemotron3Ultra,
-} from './text-openrouter'
+import { gpt4oMini, gpt41Mini, gpt4o, gpt5 } from './text-openai'
 
 export const TEXT_PROVIDERS: Record<TextModel, TextProvider> = {
-  'gemini-2.5-flash': geminiProvider,
-  'nvidia/nemotron-ultra-253b-v1': nvidiaNemotronUltra,
-  'openrouter/meta-llama/llama-3.3-70b-instruct:free': orLlama70b,
-  'openrouter/qwen/qwen3-next-80b-a3b-instruct:free': orQwen3Next,
-  'openrouter/openai/gpt-oss-20b:free': orGptOss20b,
-  'openrouter/google/gemma-4-31b-it:free': orGemma4,
-  'openrouter/google/gemma-4-26b-a4b-it:free': orGemma4Small,
-  'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free': orNemotron3Ultra,
+  'gpt-4o-mini': gpt4oMini,
+  'gpt-4.1-mini': gpt41Mini,
+  'gpt-4o': gpt4o,
+  'gpt-5': gpt5,
 }
 
 export function getTextProvider(id?: TextModel): TextProvider {
-  const key = id ?? 'gemini-2.5-flash'
-  return TEXT_PROVIDERS[key] ?? TEXT_PROVIDERS['gemini-2.5-flash']
+  const key = id ?? 'gpt-4o-mini'
+  return TEXT_PROVIDERS[key] ?? TEXT_PROVIDERS['gpt-4o-mini']
 }

@@ -3,18 +3,18 @@
 // server module. Kept separate from caption.ts, which does pull in env.
 
 export const CAPTION_MODEL_OPTIONS = [
-  { value: 'openai/gpt-4o-mini', label: 'GPT-4o mini' },
-  { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
-  { value: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
-  { value: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
+  { value: 'gpt-4.1-mini', label: 'GPT-4.1 mini' },
+  { value: 'gpt-4o', label: 'GPT-4o' },
+  { value: 'gpt-5', label: 'GPT-5' },
 ] as const
 
 export type CaptionModel = (typeof CAPTION_MODEL_OPTIONS)[number]['value']
 
 export const CAPTION_MODEL_VALUES = CAPTION_MODEL_OPTIONS.map((o) => o.value) as readonly string[]
 
-/** Default caption model. Cheap, fast, good at meme voice. */
-export const CAPTION_MODEL: CaptionModel = 'openai/gpt-4o-mini'
+/** Default caption model. Cheap, fast, plenty good for short meme captions. */
+export const CAPTION_MODEL: CaptionModel = 'gpt-4o-mini'
 
 /** Coerce an arbitrary input to a valid caption model, falling back to default. */
 export function resolveCaptionModel(input?: string): CaptionModel {

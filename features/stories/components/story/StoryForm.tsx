@@ -23,10 +23,11 @@ const DEFAULTS: GenerateOptions = {
   density: '12',
   style: 'expressive',
   tone: 'inspirational',
+  format: 'narrative',
   imageModel: 'flux-schnell-fal',
   videoModel: 'ltx-video-fal',
   videoQuality: '1080p',
-  textModel: 'gemini-2.5-flash',
+  textModel: 'gpt-4o-mini',
 }
 
 const STORAGE_PREFIX = 'new-story:options:'
@@ -62,6 +63,14 @@ const TONE_OPTIONS = [
   { value: 'casual', label: 'Casual', hint: 'Conversational, relaxed' },
   { value: 'documentary', label: 'Documentary', hint: 'Calm, authoritative narration' },
   { value: 'pitch', label: 'Pitch', hint: 'Confident, persuasive' },
+] as const
+
+const FORMAT_OPTIONS = [
+  { value: 'narrative', label: 'Story', hint: 'Connected arc: hook → problem → payoff' },
+  { value: 'facts', label: 'Facts', hint: 'Numbered tips/points, e.g. "5 tips to win"' },
+  { value: 'explainer', label: 'Explainer', hint: 'Teach one concept step by step' },
+  { value: 'tutorial', label: 'How-to', hint: 'Ordered steps to do a thing' },
+  { value: 'comparison', label: 'Compare', hint: 'A vs B, then a verdict' },
 ] as const
 
 const STORY_PROMPT_PLACEHOLDERS = [
@@ -239,6 +248,12 @@ export function StoryForm({ category, onBackToStart }: { category: string; onBac
         <div className="flex flex-col gap-5">
           <SectionHeading title="Script & narration" subtitle="How the story is written and delivered" />
           <OptionGrid>
+            <OptionCard
+              label="Format"
+              value={options.format}
+              options={FORMAT_OPTIONS}
+              onSelect={(v) => set('format', v as GenerateOptions['format'])}
+            />
             <OptionCard
               label="Voice tone"
               value={options.tone}

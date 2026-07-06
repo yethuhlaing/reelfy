@@ -1,5 +1,5 @@
-import { env } from '@/shared/lib/env'
 import type { MemeTemplate, MemeBoxCaption } from '@/shared/lib/types'
+import { chatJson, stripFences } from '@/shared/lib/providers/openai/client'
 import { CAPTION_MODEL, type CaptionModel } from '@/features/meme/server/caption-models'
 
 export {
@@ -8,14 +8,6 @@ export {
   resolveCaptionModel,
   type CaptionModel,
 } from '@/features/meme/server/caption-models'
-
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-
-/** Strip markdown fences some models wrap around JSON. */
-function stripFences(content: string): string {
-  const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-  return fenceMatch ? fenceMatch[1] : content
-}
 
 function buildSystemPrompt(): string {
   return [
@@ -71,34 +63,15 @@ async function callCaption(
   model: CaptionModel,
   signal?: AbortSignal,
 ): Promise<MemeBoxCaption[]> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-    'X-Title': 'Reelify',
-  }
-  if (env.PUBLIC_BASE_URL) headers['HTTP-Referer'] = env.PUBLIC_BASE_URL
-
-  const res = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: buildSystemPrompt() },
-        { role: 'user', content: buildUserPrompt(idea, template) },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.9,
-      max_tokens: 512,
-    }),
+  const { content } = await chatJson({
+    model,
+    system: buildSystemPrompt(),
+    user: buildUserPrompt(idea, template),
+    temperature: 0.9,
+    maxTokens: 512,
     signal,
   })
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`OpenRouter caption error (${res.status}): ${err}`)
-  }
-  const data = (await res.json()) as { choices: { message: { content: string } }[] }
-  const parsed = JSON.parse(stripFences(data.choices[0].message.content)) as CaptionResponse
+  const parsed = JSON.parse(stripFences(content)) as CaptionResponse
   return parsed.boxes ?? []
 }
 

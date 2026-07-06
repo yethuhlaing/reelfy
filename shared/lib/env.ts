@@ -19,6 +19,9 @@ export const env = createEnv({
 
     // AI / media providers (enable features when set)
     FAL_KEY: optionalNonEmpty,
+    OPENAI_API_KEY: optionalNonEmpty,
+    // Override to point OpenAI-compatible calls at OpenRouter/Azure in prod.
+    OPENAI_BASE_URL: optionalUrl,
     GEMINI_API_KEY: optionalNonEmpty,
     OPENROUTER_API_KEY: optionalNonEmpty,
     NVIDIA_API_KEY: optionalNonEmpty,
@@ -61,6 +64,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     FAL_KEY: process.env.FAL_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
     NVIDIA_API_KEY: process.env.NVIDIA_API_KEY,
