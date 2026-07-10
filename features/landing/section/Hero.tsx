@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import ReactDOM from "react-dom";
 import { motion } from "motion/react";
 import { ArrowRight, Clock, Scissors, Sparkles } from "lucide-react";
 import { useLenis } from "lenis/react";
-import { HyperText } from "@/shared/components/hyper-text";
 import { newCategoryHref } from "@/shared/lib/categories";
 import { cn } from "@/shared/lib/utils";
 
@@ -99,6 +99,10 @@ function RealismGauge({ size = "md" }: { size?: "md" | "lg" }) {
 export default function Hero() {
   const lenis = useLenis();
 
+  // Hero background is a CSS image (discovered late). Preload via the React DOM
+  // API — a raw <link rel="preload"> in the layout <head> gets stripped by Next.
+  ReactDOM.preload("/images/hero.webp", { as: "image", fetchPriority: "high" });
+
   const scrollToHowItWorks = () => {
     lenis?.scrollTo("#video-section", { offset: -80, duration: 1.2 });
   };
@@ -109,24 +113,17 @@ export default function Hero() {
       id="hero-section"
       style={{ background: "var(--hero-sunset)" }}
     >
-      {/* Portrait — edge-to-edge on mobile, positioned right on desktop */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-0 h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:hidden"
-        initial={{ opacity: 0, scale: 1.04 }}
-        animate={{ opacity: 1, scale: 1.05 }}
-        transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
+      <div
+        className="hero-fade-in pointer-events-none absolute inset-0 z-0 h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:hidden"
         aria-hidden
       />
-      <motion.div
+      <div
         className={cn(
-          "pointer-events-none absolute z-0 hidden h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:block",
+          "hero-fade-in pointer-events-none absolute z-0 hidden h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:block",
           "lg:inset-auto lg:right-[6%] lg:top-[6%] lg:h-[94%] lg:min-h-0 lg:w-[58%] lg:bg-contain lg:bg-[center_top]",
           "lg:[mask-image:radial-gradient(ellipse_85%_80%_at_52%_22%,black_58%,transparent_92%)]",
           "lg:[-webkit-mask-image:radial-gradient(ellipse_85%_80%_at_52%_22%,black_58%,transparent_92%)]",
         )}
-        initial={{ opacity: 0, scale: 1.03 }}
-        animate={{ opacity: 1, scale: 0.96 }}
-        transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
         aria-hidden
       />
 
@@ -152,60 +149,20 @@ export default function Hero() {
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 flex flex-col justify-start">
             <h1 className="mt-44 font-display text-[12vw] font-black uppercase leading-[0.88] tracking-tighter sm:mt-20 sm:text-[11vw] md:mt-24 md:text-[10vw] lg:mt-24 lg:text-[128px] xl:text-[140px]">
-              <motion.div
-                className="block"
-                variants={fadeUp}
-                initial="hidden"
-                animate="show"
-                transition={{ delay: 0.35, duration: 0.65, ease: [0.25, 0.1, 0.25, 1] }}
-              >
-                <HyperText
-                  as="span"
-                  animateOnHover={false}
-                  delay={400}
-                  duration={900}
-                  letterClassName="font-display text-white"
-                  className="block py-0 text-[length:inherit] font-black leading-[inherit] tracking-[inherit] text-white"
-                >
-                  Animate
-                </HyperText>
-              </motion.div>
-              <motion.div
-                className="block"
-                variants={fadeUp}
-                initial="hidden"
-                animate="show"
-                transition={{ delay: 0.5, duration: 0.65, ease: [0.25, 0.1, 0.25, 1] }}
-              >
-                <HyperText
-                  as="span"
-                  animateOnHover={false}
-                  delay={650}
-                  duration={1000}
-                  letterClassName="font-display text-white"
-                  className="block py-0 text-[length:inherit] font-black leading-[inherit] tracking-[inherit] text-white"
-                >
-                  Your Story
-                </HyperText>
-              </motion.div>
-              <motion.div
-                className="block"
-                variants={fadeUp}
-                initial="hidden"
-                animate="show"
-                transition={{ delay: 0.65, duration: 0.65, ease: [0.25, 0.1, 0.25, 1] }}
-              >
-                <HyperText
-                  as="span"
-                  animateOnHover={false}
-                  delay={900}
-                  duration={1000}
-                  letterClassName="font-display text-white"
-                  className="block py-0 text-[length:inherit] font-black leading-[inherit] tracking-[inherit] text-white"
-                >
-                  With AI
-                </HyperText>
-              </motion.div>
+              {/* Static text with a transform-only CSS rise. This is the LCP
+                  element — it must paint on the first frame and never change
+                  width. The old HyperText letter-scramble made LCP wait for the
+                  JS animation to finish (~6.6s) and caused ~0.29 CLS from
+                  per-frame letter-width jitter. */}
+              <span className="hero-rise block text-white" style={{ animationDelay: "0.05s" }}>
+                Animate
+              </span>
+              <span className="hero-rise block text-white" style={{ animationDelay: "0.12s" }}>
+                Your Story
+              </span>
+              <span className="hero-rise block text-white" style={{ animationDelay: "0.19s" }}>
+                With AI
+              </span>
             </h1>
           </div>
         </div>

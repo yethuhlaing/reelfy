@@ -58,7 +58,18 @@ export default function Navbar() {
     <nav className="absolute top-0 left-0 z-50 w-full px-8 py-6 md:px-16 lg:px-20" id="reelify-nav">
       <div className="flex w-full items-center justify-between">
         <Link href="/" className="cursor-pointer select-none transition-opacity hover:opacity-80">
-          <img src="/logos/logo.png" alt="Reelify" className="h-6 w-auto md:h-8" />
+          {/* 80px source (was a 2000×2000 / 49KB PNG rendered at 24–32px — that
+              oversized decode was the landing-page LCP element). Explicit
+              width/height + high fetch priority keep it small and early. */}
+          <img
+            src="/logos/logo-80.png"
+            alt="Reelify"
+            width={32}
+            height={32}
+            fetchPriority="high"
+            decoding="async"
+            className="h-6 w-auto md:h-8"
+          />
         </Link>
 
         <div className="hidden items-center rounded-full border border-white/15 bg-black/25 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl md:flex">

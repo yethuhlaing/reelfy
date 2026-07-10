@@ -2,6 +2,41 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Hero entrance: scale only, opacity stays 1 so the LCP image counts on first
+   paint (no JS/framer-motion gating). Skipped for reduced-motion users. */
+@keyframes hero-fade-in {
+  from {
+    transform: scale(1.04);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+.hero-fade-in {
+  animation: hero-fade-in 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+/* Headline lines rise into place. Opacity stays 1 the whole time so the
+   headline (the LCP text) is painted on first frame instead of waiting for
+   framer-motion to hydrate. Per-line stagger via inline animation-delay. */
+@keyframes hero-rise {
+  from {
+    transform: translateY(30px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.hero-rise {
+  animation: hero-rise 0.65s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade-in,
+  .hero-rise {
+    animation: none;
+  }
+}
+
 /* Meme caption fonts — must match the server Satori render (public/fonts). */
 @font-face {
   font-family: 'Anton';

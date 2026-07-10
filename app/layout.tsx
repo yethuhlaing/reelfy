@@ -159,10 +159,12 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning className={`${urbanist.variable} ${jbMono.variable}`}>
       <head>
         <meta name="apple-mobile-web-app-title" content="Reelfy" />
-        {process.env.NEXT_PUBLIC_BLOB_STORAGE_URL ? (
+        {/* hero.webp is preloaded via ReactDOM.preload in the Hero component —
+            a raw <link rel="preload"> here gets stripped by the Next head merge. */}
+        {process.env.NEXT_PUBLIC_CDN_URL ? (
           <>
-            <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_BLOB_STORAGE_URL} />
-            <link rel="preconnect" href={process.env.NEXT_PUBLIC_BLOB_STORAGE_URL} crossOrigin="" />
+            <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_CDN_URL} />
+            <link rel="preconnect" href={process.env.NEXT_PUBLIC_CDN_URL} crossOrigin="" />
           </>
         ) : null}
         <script
