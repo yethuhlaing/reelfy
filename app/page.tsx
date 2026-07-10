@@ -10,15 +10,15 @@ import VideoBentoGridSection from '@/features/landing/section/VideoBentoGridSect
 import PricingSection from '@/features/landing/section/pricingSection'
 
 export const metadata: Metadata = {
-  title: 'Reelify — AI Video Generator for Creators | Explainers, Lofi, ASMR & Cartoon',
+  title: 'Reelfy — AI Video Generator for Creators | Explainers, Lofi, ASMR & Cartoon',
   description:
-    'Reelify lets creators generate explainer videos, long-hour lofi music, ASMR songs, and cartoon videos with AI — no editing skills needed. Start free.',
+    'Reelfy lets creators generate explainer videos, long-hour lofi music, ASMR songs, and cartoon videos with AI — no editing skills needed. Start free.',
   keywords: flatKeywords('core', 'stickman', 'lofi', 'asmr', 'cartoon', 'creator'),
   alternates: {
     canonical: buildCanonical('/'),
   },
   openGraph: {
-    title: 'Reelify — AI Video Generator for Creators',
+    title: 'Reelfy — AI Video Generator for Creators',
     description:
       'Generate explainer videos, lofi music, ASMR & cartoon videos with AI. Built for YouTubers, educators, and digital creators. Start free.',
     url: SEO.siteUrl,
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
         url: SEO.defaults.ogImage,
         width: 1200,
         height: 630,
-        alt: 'Reelify — Generate AI Videos, Lofi Music, ASMR & Cartoons',
+        alt: 'Reelfy — Generate AI Videos, Lofi Music, ASMR & Cartoons',
       },
     ],
   },

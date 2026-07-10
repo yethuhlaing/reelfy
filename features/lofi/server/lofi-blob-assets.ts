@@ -1,28 +1,6 @@
-import { put } from '@vercel/blob'
-import { env } from '@/shared/lib/env'
+import { isManagedUrl, uploadObject, urlToKey } from '@/shared/lib/storage/r2'
 
 export type LofiAssetKind = 'music' | 'visual' | 'stock-music'
-
-const BLOB_HOST = 'blob.vercel-storage.com'
-
-function stripQuery(url: string): string {
-  return url.split('?')[0] ?? url
-}
-
-function isBlobUrl(url: string | null | undefined): url is string {
-  if (!url || url.startsWith('data:')) return false
-  try {
-    return new URL(url).hostname.includes(BLOB_HOST)
-  } catch {
-    return false
-  }
-}
-
-function requireBlobToken(): void {
-  if (!env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
-  }
-}
 
 export function lofiAssetPrefixes(storyId: string): string[] {
   return [
@@ -67,16 +45,9 @@ export async function uploadLofiAsset(params: {
   data: Buffer
   contentType: string
 }): Promise<string> {
-  requireBlobToken()
   const ext = extFromContentType(params.contentType, params.kind)
   const path = lofiAssetPath(params.storyId, params.assetId, params.kind, ext)
-  const blob = await put(path, params.data, {
-    access: 'public',
-    contentType: params.contentType,
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  })
-  return blob.url
+  return uploadObject(path, params.data, params.contentType)
 }
 
 export async function rehostToLofiBlob(params: {
@@ -101,8 +72,8 @@ export function collectLofiBlobUrls(
 ): string[] {
   const urls = new Set<string>()
   for (const asset of assets) {
-    if (isBlobUrl(asset.resultUrl)) urls.add(stripQuery(asset.resultUrl))
+    if (isManagedUrl(asset.resultUrl)) urls.add(urlToKey(asset.resultUrl))
   }
-  if (isBlobUrl(finalVideoUrl)) urls.add(stripQuery(finalVideoUrl))
+  if (isManagedUrl(finalVideoUrl)) urls.add(urlToKey(finalVideoUrl))
   return [...urls]
 }

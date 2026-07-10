@@ -26,7 +26,7 @@ async function fetchTemplateImage(url: string, signal?: AbortSignal): Promise<Bu
  * Steps: embed idea -> pgvector top-N templates -> caption each (parallel) ->
  * render each (parallel) -> upload preview PNGs. Fully synchronous.
  *
- * `includeWatermark` adds the Reelify logo when the user is on a plan that
+ * `includeWatermark` adds the Reelfy logo when the user is on a plan that
  * carries one (free tier).
  */
 export async function generateMemeVariants(params: {

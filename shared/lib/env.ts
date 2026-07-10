@@ -28,8 +28,11 @@ export const env = createEnv({
     ELEVENLABS_API_KEY: optionalNonEmpty,
     ELEVENLABS_VOICE_ID: optionalNonEmpty,
 
-    // Storage & webhooks
-    BLOB_READ_WRITE_TOKEN: optionalNonEmpty,
+    // Storage (Cloudflare R2) & webhooks
+    R2_ACCOUNT_ID: optionalNonEmpty,
+    R2_ACCESS_KEY_ID: optionalNonEmpty,
+    R2_SECRET_ACCESS_KEY: optionalNonEmpty,
+    R2_BUCKET_NAME: optionalNonEmpty,
     WEBHOOK_BASE_URL: optionalUrl,
     PUBLIC_BASE_URL: optionalUrl,
 
@@ -54,7 +57,7 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),
-    NEXT_PUBLIC_BLOB_STORAGE_URL: optionalUrl,
+    NEXT_PUBLIC_CDN_URL: optionalUrl,
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
@@ -71,7 +74,10 @@ export const env = createEnv({
     NVIDIA_API_KEY: process.env.NVIDIA_API_KEY,
     ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
     ELEVENLABS_VOICE_ID: process.env.ELEVENLABS_VOICE_ID,
-    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
     WEBHOOK_BASE_URL: process.env.WEBHOOK_BASE_URL,
     PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL,
     IMAGE_MODEL: process.env.IMAGE_MODEL,
@@ -88,7 +94,7 @@ export const env = createEnv({
     WEBHOOK_SKIP_TUNNEL: process.env.WEBHOOK_SKIP_TUNNEL,
     SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
-    NEXT_PUBLIC_BLOB_STORAGE_URL: process.env.NEXT_PUBLIC_BLOB_STORAGE_URL,
+    NEXT_PUBLIC_CDN_URL: process.env.NEXT_PUBLIC_CDN_URL,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === '1',

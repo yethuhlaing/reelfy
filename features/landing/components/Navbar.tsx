@@ -55,7 +55,7 @@ export default function Navbar() {
     )
 
   return (
-    <nav className="absolute top-0 left-0 z-50 w-full px-8 py-6 md:px-16 lg:px-20" id="reelify-nav">
+    <nav className="absolute top-0 left-0 z-50 w-full px-8 py-6 md:px-16 lg:px-20" id="reelfy-nav">
       <div className="flex w-full items-center justify-between">
         <Link href="/" className="cursor-pointer select-none transition-opacity hover:opacity-80">
           {/* 80px source (was a 2000×2000 / 49KB PNG rendered at 24–32px — that
@@ -63,7 +63,7 @@ export default function Navbar() {
               width/height + high fetch priority keep it small and early. */}
           <img
             src="/logos/logo-80.png"
-            alt="Reelify"
+            alt="Reelfy"
             width={32}
             height={32}
             fetchPriority="high"

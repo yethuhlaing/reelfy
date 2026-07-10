@@ -13,7 +13,10 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(rtk proxy *)",
       "Bash(node -e ' *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git checkout *)",
+      "Bash(git commit -m ' *)"
     ],
     "additionalDirectories": [
       "/Users/yethuhlaing/projects/stickman/app/api/export/[jobId]"

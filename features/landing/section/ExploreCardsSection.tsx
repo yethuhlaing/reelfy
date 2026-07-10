@@ -43,7 +43,7 @@ export default function ExploreCardsSection() {
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Reelify helps creators produce explainers, lofi, ASMR, and cartoons
+            Reelfy helps creators produce explainers, lofi, ASMR, and cartoons
             — no editing skills needed.
           </p>
         </div>
@@ -129,7 +129,7 @@ export default function ExploreCardsSection() {
                 +10K
               </p>
               <p className="max-w-[220px] text-sm font-medium leading-snug text-white/95 sm:pb-1 sm:text-[15px]">
-                Videos generated this month using Reelify&apos;s AI-powered
+                Videos generated this month using Reelfy&apos;s AI-powered
                 studio.
               </p>
             </div>

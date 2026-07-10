@@ -1,11 +1,11 @@
 /**
  * Seed the meme template catalog.
  *
- * For each SEED_TEMPLATES entry: download the imgflip blank -> re-host to Blob
+ * For each SEED_TEMPLATES entry: download the imgflip blank -> re-host to R2
  * -> embed (description + captionGuide) -> upsert into meme_templates.
  *
  * Usage: pnpm seed:memes
- * Requires: DATABASE_URL, BLOB_READ_WRITE_TOKEN, OPENAI_API_KEY in .env
+ * Requires in .env: DATABASE_URL, OPENAI_API_KEY, R2_* creds, NEXT_PUBLIC_CDN_URL
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -80,7 +80,7 @@ async function main() {
       const contentType = res.headers.get('content-type') || 'image/jpeg'
       const data = Buffer.from(await res.arrayBuffer())
 
-      // 2. Re-host to Blob.
+      // 2. Re-host to R2.
       const imageUrl = await uploadTemplateImage(t.slug, data, contentType)
 
       // 3. Embed description + caption guide + tone tags.

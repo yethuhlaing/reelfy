@@ -19,7 +19,7 @@ const PIPELINE_STEPS = [
   {
     step: "02",
     title: "Generate",
-    body: "Reelify plans scenes, voiceover, and motion — no timeline to wrestle with.",
+    body: "Reelfy plans scenes, voiceover, and motion — no timeline to wrestle with.",
   },
   {
     step: "03",
@@ -95,7 +95,7 @@ export default function VideoSection() {
           </div>
           <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
             Three steps from your story to a downloadable video — watch a real
-            Reelify export, then start your own.
+            Reelfy export, then start your own.
           </p>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function VideoSection() {
               type="button"
               onClick={() => setIsPlaying(true)}
               className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full bg-card text-foreground shadow-[0_10px_30px_var(--coral-glow)] transition-all duration-300 hover:scale-110 hover:bg-softpink active:scale-95 sm:h-20 sm:w-20"
-              aria-label="Play sample Reelify video"
+              aria-label="Play sample Reelfy video"
             >
               <Play className="h-6 w-6 translate-x-0.5 fill-primary-foreground text-primary-foreground sm:h-8 sm:w-8" />
             </button>
@@ -177,7 +177,7 @@ export default function VideoSection() {
           className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-background/95 p-4 backdrop-blur-md fade-in duration-300"
           role="dialog"
           aria-modal="true"
-          aria-label="Sample Reelify video"
+          aria-label="Sample Reelfy video"
           onClick={closeModal}
         >
           <div

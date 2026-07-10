@@ -319,7 +319,7 @@ export function MemeEditor({
                 <div className="flex w-full items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">With watermark</p>
-                    <p className="text-xs text-[var(--muted-foreground)]">Includes Reelify logo</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">Includes Reelfy logo</p>
                   </div>
                   <span className="shrink-0 rounded-full bg-[var(--surface2)] px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
                     Free

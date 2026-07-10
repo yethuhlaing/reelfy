@@ -1,44 +1,24 @@
-import { put } from '@vercel/blob'
+import { randomUUID } from 'node:crypto'
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/shared/lib/db'
 import { memeGenerations } from '@/shared/lib/db/schema'
-import { env } from '@/shared/lib/env'
+import { uploadObject } from '@/shared/lib/storage/r2'
 import type { MemeGeneration, MemeVariant } from '@/shared/lib/types'
 
-function hasBlobToken(): boolean {
-  return Boolean(env.BLOB_READ_WRITE_TOKEN)
-}
-
-/** Upload a rendered meme PNG to Blob and return its public URL. */
+/** Upload a rendered meme PNG to R2 and return its public URL. */
 export async function uploadMemeImage(memeId: string, data: Buffer): Promise<string> {
-  if (!hasBlobToken()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
-  }
-  const blob = await put(`memes/${memeId}.png`, data, {
-    access: 'public',
-    contentType: 'image/png',
-    addRandomSuffix: true,
-  })
-  return blob.url
+  // Random suffix: each render is a new immutable object.
+  return uploadObject(`memes/${memeId}-${randomUUID()}.png`, data, 'image/png')
 }
 
-/** Upload a template base image to Blob (used by the seed script). */
+/** Upload a template base image to R2 (used by the seed script). */
 export async function uploadTemplateImage(
   slug: string,
   data: Buffer,
   contentType: string,
 ): Promise<string> {
-  if (!hasBlobToken()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
-  }
   const ext = contentType.split('/')[1] || 'jpg'
-  const blob = await put(`meme-templates/${slug}.${ext}`, data, {
-    access: 'public',
-    contentType,
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  })
-  return blob.url
+  return uploadObject(`meme-templates/${slug}.${ext}`, data, contentType)
 }
 
 function rowToGeneration(r: typeof memeGenerations.$inferSelect): MemeGeneration {

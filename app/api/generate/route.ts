@@ -7,8 +7,6 @@ import { upsertStoryWithScenes, updateStoryMeta } from '@/features/stories/serve
 import { toUserErrorMessage } from '@/shared/lib/user-error-message'
 import { fireAndForgetUsage } from '@/features/billing/server/usage'
 import { clearStoryAssetsBeforeRegenerate, completeSceneImage } from '@/features/stories/server/story-assets'
-import { env } from '@/shared/lib/env'
-
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
@@ -87,7 +85,6 @@ export async function POST(request: Request) {
   const textProvider = getTextProvider(textModel)
   const imageProvider = getImageProvider(imageModel)
   const creditsPerScene = IMAGE_MODEL_CREDITS[imageModel ?? 'flux-schnell-fal'] ?? 1
-  const hasBlobToken = Boolean(env.BLOB_READ_WRITE_TOKEN)
   const signal = request.signal
 
   const encoder = new TextEncoder()
@@ -244,18 +241,13 @@ export async function POST(request: Request) {
               return
             }
 
-            let imageUrl: string
-            if (hasBlobToken) {
-              imageUrl = await completeSceneImage({
-                storyId,
-                sceneId: scene.id,
-                userId,
-                data,
-                mimeType,
-              })
-            } else {
-              imageUrl = `data:${mimeType};base64,${data.toString('base64')}`
-            }
+            const imageUrl = await completeSceneImage({
+              storyId,
+              sceneId: scene.id,
+              userId,
+              data,
+              mimeType,
+            })
 
             await throwIfAborted()
             const idx = finalScenes.findIndex((s) => s.id === scene.id)

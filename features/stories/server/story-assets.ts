@@ -1,4 +1,4 @@
-import { del, list, put } from '@vercel/blob'
+import { randomUUID } from 'node:crypto'
 import {
   deleteStoryForUser,
   getStoryForUser,
@@ -8,39 +8,24 @@ import {
   type StoredStoryRow,
 } from '@/features/stories/server/stories-db'
 import { deleteJobsForStory } from '@/shared/lib/jobs/store'
-import { env } from '@/shared/lib/env'
+import {
+  deleteByKeys,
+  deleteByPrefix,
+  isManagedUrl,
+  uploadObject,
+  urlToKey,
+  type DeleteResult,
+} from '@/shared/lib/storage/r2'
 import { collectLofiBlobUrls, lofiAssetPrefixes } from '@/features/lofi/server/lofi-blob-assets'
 import {
   getLofiAssetsForVideo,
   getLofiVideoByStoryId,
 } from '@/features/lofi/server/lofi-db'
 
-const BLOB_HOST = 'blob.vercel-storage.com'
-
-interface DeleteAssetsResult {
-  deleted: number
-  failed: number
-}
-
-function hasBlobToken(): boolean {
-  return Boolean(env.BLOB_READ_WRITE_TOKEN)
-}
-
-function stripQuery(url: string): string {
-  return url.split('?')[0] ?? url
-}
-
-function isBlobUrl(url: string | null | undefined): url is string {
-  if (!url || url.startsWith('data:')) return false
-  try {
-    return new URL(url).hostname.includes(BLOB_HOST)
-  } catch {
-    return false
-  }
-}
+type DeleteAssetsResult = DeleteResult
 
 function sceneImagePath(storyId: string, sceneId: string, ext: string): string {
-  return `scenes/${storyId}/${sceneId}/${Date.now()}.${ext}`
+  return `scenes/${storyId}/${sceneId}/${Date.now()}-${randomUUID()}.${ext}`
 }
 
 function sceneVoiceoverPath(storyId: string, sceneId: string): string {
@@ -76,54 +61,35 @@ function storyAssetPrefixes(storyId: string, category?: string): string[] {
   return prefixes
 }
 
-function collectStoryAssetUrls(
+/** Collect object keys for the story's managed assets. */
+function collectStoryAssetKeys(
   story: Pick<StoredStoryRow, 'thumbnailUrl' | 'composedVideoUrl'>,
   sceneRows: Pick<StoredSceneRow, 'imageUrl' | 'voiceoverUrl' | 'videoUrl'>[],
 ): string[] {
-  const urls = new Set<string>()
-  if (isBlobUrl(story.thumbnailUrl)) urls.add(stripQuery(story.thumbnailUrl))
-  if (isBlobUrl(story.composedVideoUrl)) urls.add(stripQuery(story.composedVideoUrl))
+  const keys = new Set<string>()
+  if (isManagedUrl(story.thumbnailUrl)) keys.add(urlToKey(story.thumbnailUrl))
+  if (isManagedUrl(story.composedVideoUrl)) keys.add(urlToKey(story.composedVideoUrl))
   for (const scene of sceneRows) {
-    if (isBlobUrl(scene.imageUrl)) urls.add(stripQuery(scene.imageUrl))
-    if (isBlobUrl(scene.voiceoverUrl)) urls.add(stripQuery(scene.voiceoverUrl))
-    if (isBlobUrl(scene.videoUrl)) urls.add(stripQuery(scene.videoUrl))
+    if (isManagedUrl(scene.imageUrl)) keys.add(urlToKey(scene.imageUrl))
+    if (isManagedUrl(scene.voiceoverUrl)) keys.add(urlToKey(scene.voiceoverUrl))
+    if (isManagedUrl(scene.videoUrl)) keys.add(urlToKey(scene.videoUrl))
   }
-  return [...urls]
+  return [...keys]
 }
 
-async function deleteBlobUrls(urls: string[]): Promise<DeleteAssetsResult> {
-  const summary: DeleteAssetsResult = { deleted: 0, failed: 0 }
-  for (const url of urls) {
-    try {
-      await del(url)
-      summary.deleted += 1
-    } catch {
-      summary.failed += 1
-    }
-  }
-  return summary
-}
-
-async function deletePrefixSweep(
-  prefixes: string[],
-): Promise<DeleteAssetsResult> {
+async function deletePrefixSweep(prefixes: string[]): Promise<DeleteAssetsResult> {
   const summary: DeleteAssetsResult = { deleted: 0, failed: 0 }
   for (const prefix of prefixes) {
-    try {
-      const { blobs } = await list({ prefix })
-      for (const blob of blobs) {
-        try {
-          await del(blob.url)
-          summary.deleted += 1
-        } catch {
-          summary.failed += 1
-        }
-      }
-    } catch {
-      summary.failed += 1
-    }
+    const res = await deleteByPrefix(prefix)
+    summary.deleted += res.deleted
+    summary.failed += res.failed
   }
   return summary
+}
+
+/** Bust the CDN edge cache for overwrite-in-place assets by varying the query. */
+function cacheBust(url: string): string {
+  return `${url}?v=${Date.now()}`
 }
 
 async function uploadSceneVideo(
@@ -131,16 +97,8 @@ async function uploadSceneVideo(
   sceneId: string,
   data: Buffer,
 ): Promise<string> {
-  if (!hasBlobToken()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
-  }
-  const blob = await put(sceneVideoPath(storyId, sceneId), data, {
-    access: 'public',
-    contentType: 'video/mp4',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  })
-  return `${blob.url}?v=${Date.now()}`
+  const url = await uploadObject(sceneVideoPath(storyId, sceneId), data, 'video/mp4')
+  return cacheBust(url)
 }
 
 async function uploadSceneImage(
@@ -149,16 +107,9 @@ async function uploadSceneImage(
   data: Buffer,
   mimeType: string,
 ): Promise<string> {
-  if (!hasBlobToken()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
-  }
   const ext = mimeType.split('/')[1] || 'png'
-  const blob = await put(sceneImagePath(storyId, sceneId, ext), data, {
-    access: 'public',
-    contentType: mimeType,
-    addRandomSuffix: true,
-  })
-  return blob.url
+  // sceneImagePath carries a random suffix; each render is a new immutable object.
+  return uploadObject(sceneImagePath(storyId, sceneId, ext), data, mimeType)
 }
 
 async function uploadSceneVoiceover(
@@ -166,16 +117,7 @@ async function uploadSceneVoiceover(
   sceneId: string,
   data: Buffer,
 ): Promise<string> {
-  if (!hasBlobToken()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
-  }
-  const blob = await put(sceneVoiceoverPath(storyId, sceneId), data, {
-    access: 'public',
-    contentType: 'audio/mpeg',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  })
-  return blob.url
+  return uploadObject(sceneVoiceoverPath(storyId, sceneId), data, 'audio/mpeg')
 }
 
 async function uploadThumbnail(
@@ -183,30 +125,14 @@ async function uploadThumbnail(
   data: Buffer,
   mimeType: string,
 ): Promise<string> {
-  if (!hasBlobToken()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
-  }
   const ext = mimeType.includes('jpeg') ? 'jpg' : 'png'
-  const blob = await put(thumbnailPath(storyId, ext), data, {
-    access: 'public',
-    contentType: mimeType,
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  })
-  return `${blob.url}?v=${Date.now()}`
+  const url = await uploadObject(thumbnailPath(storyId, ext), data, mimeType)
+  return cacheBust(url)
 }
 
 export async function uploadComposedVideo(storyId: string, data: Buffer): Promise<string> {
-  if (!hasBlobToken()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
-  }
-  const blob = await put(composedVideoPath(storyId), data, {
-    access: 'public',
-    contentType: 'video/mp4',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  })
-  return `${blob.url}?v=${Date.now()}`
+  const url = await uploadObject(composedVideoPath(storyId), data, 'video/mp4')
+  return cacheBust(url)
 }
 
 async function persistSceneVideo(
@@ -302,13 +228,13 @@ export async function completeThumbnail(params: {
 async function deleteSceneAssets(
   scenes: Pick<StoredSceneRow, 'imageUrl' | 'voiceoverUrl' | 'videoUrl'>[],
 ): Promise<DeleteAssetsResult> {
-  const urls: string[] = []
+  const keys: string[] = []
   for (const scene of scenes) {
-    if (isBlobUrl(scene.imageUrl)) urls.push(stripQuery(scene.imageUrl))
-    if (isBlobUrl(scene.voiceoverUrl)) urls.push(stripQuery(scene.voiceoverUrl))
-    if (isBlobUrl(scene.videoUrl)) urls.push(stripQuery(scene.videoUrl))
+    if (isManagedUrl(scene.imageUrl)) keys.push(urlToKey(scene.imageUrl))
+    if (isManagedUrl(scene.voiceoverUrl)) keys.push(urlToKey(scene.voiceoverUrl))
+    if (isManagedUrl(scene.videoUrl)) keys.push(urlToKey(scene.videoUrl))
   }
-  return deleteBlobUrls(urls)
+  return deleteByKeys(keys)
 }
 
 export async function clearStoryAssetsBeforeRegenerate(
@@ -318,8 +244,8 @@ export async function clearStoryAssetsBeforeRegenerate(
   const existing = await getStoryForUser(storyId, userId)
   if (!existing) return
 
-  const urls = collectStoryAssetUrls(existing.story, existing.scenes)
-  await deleteBlobUrls(urls)
+  const keys = collectStoryAssetKeys(existing.story, existing.scenes)
+  await deleteByKeys(keys)
 }
 
 export async function deleteStoryWithAssets(
@@ -333,27 +259,28 @@ export async function deleteStoryWithAssets(
 
   await deleteJobsForStory(storyId)
 
-  const urlSet = new Set(collectStoryAssetUrls(result.story, result.scenes))
+  const keySet = new Set(collectStoryAssetKeys(result.story, result.scenes))
   if (result.story.category === 'lofi' || result.story.category === 'lofi-stock') {
     const lofiVideo = await getLofiVideoByStoryId(storyId)
     if (lofiVideo) {
       const lofiAssets = await getLofiAssetsForVideo(lofiVideo.id)
-      for (const url of collectLofiBlobUrls(lofiAssets, lofiVideo.finalVideoUrl)) {
-        urlSet.add(url)
+      // collectLofiBlobUrls returns bare object keys.
+      for (const key of collectLofiBlobUrls(lofiAssets, lofiVideo.finalVideoUrl)) {
+        keySet.add(key)
       }
     }
   }
-  const urlSummary = await deleteBlobUrls([...urlSet])
+  const keySummary = await deleteByKeys([...keySet])
   const prefixSummary = await deletePrefixSweep(
     storyAssetPrefixes(storyId, result.story.category),
   )
   const summary: DeleteAssetsResult = {
-    deleted: urlSummary.deleted + prefixSummary.deleted,
-    failed: urlSummary.failed + prefixSummary.failed,
+    deleted: keySummary.deleted + prefixSummary.deleted,
+    failed: keySummary.failed + prefixSummary.failed,
   }
 
   if (summary.failed > 0) {
-    return { ok: false, error: 'Failed to delete some blob assets', summary }
+    return { ok: false, error: 'Failed to delete some story assets', summary }
   }
 
   const deleted = await deleteStoryForUser(storyId, userId)

@@ -1,16 +1,15 @@
 /**
- * Upload public/videos/*.mp4 to Vercel Blob at marketing/videos/{name}.
- * Sets NEXT_PUBLIC_BLOB_STORAGE_URL in .env.
+ * Upload public/videos/*.mp4 to Cloudflare R2 at marketing/videos/{name}.
  *
  * Usage:
  *   pnpm optimize:marketing-videos   # compress for web first (recommended)
  *   pnpm upload:marketing-videos
- * Requires: BLOB_READ_WRITE_TOKEN in .env
+ * Requires in .env: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
+ *   R2_BUCKET_NAME, NEXT_PUBLIC_CDN_URL
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { put } from '@vercel/blob'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const ENV_PATH = path.join(ROOT, '.env')
@@ -30,42 +29,22 @@ function loadEnvFile(): void {
   }
 }
 
-function removeEnvKey(key: string): void {
-  if (!fs.existsSync(ENV_PATH)) return
-  const content = fs.readFileSync(ENV_PATH, 'utf8')
-  const next = content
-    .split('\n')
-    .filter((line) => !line.startsWith(`${key}=`))
-    .join('\n')
-  fs.writeFileSync(ENV_PATH, next.endsWith('\n') ? next : `${next}\n`)
-}
-
-function updateEnvKey(key: string, value: string): void {
-  if (!fs.existsSync(ENV_PATH)) {
-    fs.writeFileSync(ENV_PATH, `${key}=${value}\n`)
-    return
-  }
-  let content = fs.readFileSync(ENV_PATH, 'utf8')
-  const line = `${key}=${value}`
-  const regex = new RegExp(`^${key}=.*$`, 'm')
-  if (regex.test(content)) {
-    content = content.replace(regex, line)
-  } else {
-    content = content.endsWith('\n') ? `${content}${line}\n` : `${content}\n${line}\n`
-  }
-  fs.writeFileSync(ENV_PATH, content)
-}
-
-function blobStorageUrlFromPutUrl(url: string): string {
-  return new URL(url).origin
-}
-
 async function main() {
   loadEnvFile()
+  // Script only needs R2 creds; skip full app env validation.
+  process.env.SKIP_ENV_VALIDATION ??= '1'
 
-  const token = process.env.BLOB_READ_WRITE_TOKEN
-  if (!token) {
-    console.error('Missing BLOB_READ_WRITE_TOKEN in .env')
+  if (
+    !process.env.R2_ACCOUNT_ID ||
+    !process.env.R2_ACCESS_KEY_ID ||
+    !process.env.R2_SECRET_ACCESS_KEY ||
+    !process.env.R2_BUCKET_NAME
+  ) {
+    console.error('Missing R2 credentials in .env (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME)')
+    process.exit(1)
+  }
+  if (!process.env.NEXT_PUBLIC_CDN_URL) {
+    console.error('Missing NEXT_PUBLIC_CDN_URL in .env')
     process.exit(1)
   }
 
@@ -84,37 +63,19 @@ async function main() {
     process.exit(1)
   }
 
-  console.log(`Uploading ${files.length} videos to Vercel Blob (${BLOB_PREFIX}/)...`)
+  const { uploadObject } = await import('@/shared/lib/storage/r2')
 
-  let blobStorageUrl: string | undefined
+  console.log(`Uploading ${files.length} videos to R2 (${BLOB_PREFIX}/)...`)
 
   for (const filename of files) {
     const filePath = path.join(VIDEOS_DIR, filename)
     const data = fs.readFileSync(filePath)
-    const blobPath = `${BLOB_PREFIX}/${filename}`
-
-    const blob = await put(blobPath, data, {
-      access: 'public',
-      contentType: 'video/mp4',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      token,
-    })
-
-    blobStorageUrl ??= blobStorageUrlFromPutUrl(blob.url)
+    const url = await uploadObject(`${BLOB_PREFIX}/${filename}`, data, 'video/mp4')
     const sizeMb = (data.length / (1024 * 1024)).toFixed(1)
-    console.log(`  ✓ ${filename} (${sizeMb} MB)`)
+    console.log(`  ✓ ${filename} (${sizeMb} MB) → ${url}`)
   }
 
-  if (!blobStorageUrl) {
-    console.error('Upload failed — no blob URLs returned')
-    process.exit(1)
-  }
-
-  updateEnvKey('NEXT_PUBLIC_BLOB_STORAGE_URL', blobStorageUrl)
-  removeEnvKey('NEXT_PUBLIC_MARKETING_VIDEOS_BASE_URL')
-  console.log(`\nDone. Blob storage URL written to .env:\n  NEXT_PUBLIC_BLOB_STORAGE_URL=${blobStorageUrl}`)
-  console.log('\nRestart dev server to pick up the new env var.')
+  console.log('\nDone. Ensure NEXT_PUBLIC_CDN_URL is set in .env and Vercel, then restart dev server.')
 }
 
 main().catch((err) => {

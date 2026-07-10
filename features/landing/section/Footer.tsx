@@ -43,7 +43,7 @@ export default function Footer() {
   return (
     <footer
       ref={footerRef}
-      id="reelify-footer"
+      id="reelfy-footer"
       className="relative -mt-8 flex w-full flex-col overflow-hidden bg-transparent pt-8 text-foreground md:-mt-36 md:pt-36"
     >
       {/* Top blend — transparent into page background (overlaps pricing) */}
@@ -134,10 +134,10 @@ export default function Footer() {
             </div>
 
             <a
-              href="mailto:info@reelify.com"
+              href="mailto:info@reelfy.com"
               className="font-display text-2xl font-black tracking-tight text-foreground underline decoration-foreground/25 decoration-1 underline-offset-[6px] transition-colors hover:text-coral hover:decoration-coral sm:text-3xl md:text-[2rem]"
             >
-              Info@reelify.com
+              Info@reelfy.com
             </a>
           </TimelineContent>
 
@@ -199,7 +199,7 @@ export default function Footer() {
               <div className="relative min-h-[360px] w-full overflow-hidden rounded-2xl sm:min-h-[420px]">
                 <Image
                   src="/transparent/4.png"
-                  alt="Reelify creative showcase"
+                  alt="Reelfy creative showcase"
                   width={991}
                   height={1199}
                   className="absolute inset-0 z-0 h-full w-full object-contain object-top"
@@ -232,10 +232,10 @@ export default function Footer() {
               Contact Us
             </p>
             <a
-              href="mailto:hello@reelify.com"
+              href="mailto:hello@reelfy.com"
               className="footer-link text-sm font-medium md:text-base"
             >
-              Hello@reelify.com
+              Hello@reelfy.com
             </a>
           </div>
 
@@ -247,7 +247,7 @@ export default function Footer() {
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
             >
-              REELIFY
+              REELFY
               <span className="text-coral">.</span>
             </motion.h2>
             <motion.span
@@ -286,7 +286,7 @@ export default function Footer() {
           className="relative mx-auto flex w-full max-w-[1400px] flex-col items-center justify-between gap-3 px-4 text-[11px] font-medium tracking-wide sm:flex-row sm:gap-4 sm:px-6 sm:text-xs lg:px-8"
         >
           <p className="text-center sm:text-left">
-            ©{currentYear} Reelify. All Right Reserved.
+            ©{currentYear} Reelfy. All Right Reserved.
           </p>
           {/* <p className="text-center opacity-95">
             Sector 7, Metaverse Jakarta Megapolis 12050

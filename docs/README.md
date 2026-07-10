@@ -2,7 +2,7 @@
 
 ## Start here
 
-- **[`business-context.md`](business-context.md)** — What Reelify is, who it serves, product lines, brand voice, pricing, and SEO cheat sheet. **Use this for all feature copy and content work.**
+- **[`business-context.md`](business-context.md)** — What Reelfy is, who it serves, product lines, brand voice, pricing, and SEO cheat sheet. **Use this for all feature copy and content work.**
 
 ## Feature & implementation docs
 

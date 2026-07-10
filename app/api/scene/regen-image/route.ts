@@ -1,12 +1,10 @@
 import { getImageProvider } from '@/shared/lib/providers/image/image'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getCredits, deductCredits } from '@/shared/lib/db/credits'
-import { getStoryForUser, parseOptions, updateSceneForUser } from '@/features/stories/server/stories-db'
+import { getStoryForUser, parseOptions } from '@/features/stories/server/stories-db'
 import { clearSceneVideo, completeSceneImage } from '@/features/stories/server/story-assets'
 import { fireAndForgetUsage } from '@/features/billing/server/usage'
 import type { ImageModel } from '@/shared/lib/types'
-import { env } from '@/shared/lib/env'
-
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
@@ -57,7 +55,6 @@ export async function POST(request: Request) {
   }
 
   const imageProvider = getImageProvider(imageModel)
-  const hasBlobToken = Boolean(env.BLOB_READ_WRITE_TOKEN)
 
   let stage = 'generate'
   try {
@@ -82,22 +79,13 @@ export async function POST(request: Request) {
     }
 
     stage = 'persist'
-    let imageUrl: string
-    if (hasBlobToken) {
-      imageUrl = await completeSceneImage({
-        storyId,
-        sceneId,
-        userId,
-        data,
-        mimeType,
-      })
-    } else {
-      imageUrl = `data:${mimeType};base64,${data.toString('base64')}`
-      const ok = await updateSceneForUser(storyId, sceneId, userId, { imageUrl })
-      if (!ok) {
-        return Response.json({ error: 'Failed to persist image' }, { status: 500 })
-      }
-    }
+    const imageUrl = await completeSceneImage({
+      storyId,
+      sceneId,
+      userId,
+      data,
+      mimeType,
+    })
 
     stage = 'clear-video'
     await clearSceneVideo(storyId, sceneId, userId)

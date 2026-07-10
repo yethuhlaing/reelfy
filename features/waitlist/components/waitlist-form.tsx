@@ -18,7 +18,7 @@ const WAITLIST_VIDEOS = [
 const TESTIMONIALS = [
   {
     quote:
-      "I shipped a full explainer in an afternoon. Reelify cut my production time from days to minutes.",
+      "I shipped a full explainer in an afternoon. Reelfy cut my production time from days to minutes.",
     name: "Sarah Chen",
     role: "YouTube Creator",
   },
@@ -30,7 +30,7 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "I teach online and needed quick concept videos. Reelify is the first tool that feels built for educators.",
+      "I teach online and needed quick concept videos. Reelfy is the first tool that feels built for educators.",
     name: "Dr. Amara Okafor",
     role: "Course Creator",
   },
@@ -165,7 +165,7 @@ export default function WaitlistForm() {
       <div className="relative z-10 flex min-h-screen min-w-0 flex-col p-8 lg:justify-between lg:bg-background lg:p-12">
         <div>
           <Link href="/" className="inline-block transition-opacity hover:opacity-80">
-            <img src="/logos/logo.png" alt="Reelify" className="h-8 w-auto" />
+            <img src="/logos/logo.png" alt="Reelfy" className="h-8 w-auto" />
           </Link>
         </div>
 

@@ -823,11 +823,11 @@
 }
 
 /* Landing footer — blends with page background */
-#reelify-footer {
+#reelfy-footer {
   color: var(--foreground);
 }
 
-#reelify-footer .footer-link {
+#reelfy-footer .footer-link {
   position: relative;
   display: inline-block;
   color: var(--foreground);
@@ -843,7 +843,7 @@
   }
 }
 
-#reelify-footer .footer-link::after {
+#reelfy-footer .footer-link::after {
   content: "";
   position: absolute;
   left: 0;
@@ -854,10 +854,10 @@
   transition: width 0.3s ease;
 }
 
-#reelify-footer .footer-link:hover {
+#reelfy-footer .footer-link:hover {
   color: var(--coral);
 }
 
-#reelify-footer .footer-link:hover::after {
+#reelfy-footer .footer-link:hover::after {
   width: 100%;
 }

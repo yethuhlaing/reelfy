@@ -27,7 +27,7 @@ const OUTCOMES = [
 ] as const;
 
 const OLD_WAY = ["Storyboard", "Record & edit", "Export & revise"] as const;
-const REELIFY_WAY = ["Describe your idea", "AI builds the video", "Download MP4"] as const;
+const REELFY_WAY = ["Describe your idea", "AI builds the video", "Download MP4"] as const;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -199,7 +199,7 @@ export default function Hero() {
                 ))}
               </div>
               <p className="max-w-xs text-sm leading-relaxed text-white/70">
-                Reelify is the AI video platform for creators — generate
+                Reelfy is the AI video platform for creators — generate
                 explainers, lofi tracks, ASMR, and cartoon videos in seconds. No
                 editing skills needed.
               </p>
@@ -351,7 +351,7 @@ export default function Hero() {
             >
               Days in Premiere.
               <br />
-              <span className="text-white/75">Minutes in Reelify.</span>
+              <span className="text-white/75">Minutes in Reelfy.</span>
             </h2>
           </div>
 
@@ -419,11 +419,11 @@ export default function Hero() {
             <div className="mb-5 flex items-center gap-2 text-coral-light">
               <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
               <span className="font-mono text-[10px] uppercase tracking-[0.2em]">
-                With Reelify
+                With Reelfy
               </span>
             </div>
             <ul className="space-y-4">
-              {REELIFY_WAY.map((step, index) => (
+              {REELFY_WAY.map((step, index) => (
                 <li
                   key={step}
                   className="flex items-center gap-4 border-b border-white/10 pb-4 last:border-0 last:pb-0"

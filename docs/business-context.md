@@ -1,4 +1,4 @@
-# Reelify — Business & Product Context
+# Reelfy — Business & Product Context
 
 > **Canonical reference for copy, UI, prompts, and feature work.**  
 > When writing landing text, in-app labels, SEO, or AI prompts, start here.  
@@ -11,24 +11,24 @@
 
 | Field | Value |
 |-------|--------|
-| **Product name** | Reelify |
-| **Website** | https://reelify.me |
-| **Twitter** | @reelify |
+| **Product name** | Reelfy |
+| **Website** | https://reelfy.me |
+| **Twitter** | @reelfy |
 | **Category** | AI content creation platform (video + audio) |
 | **Primary keyword** | AI video generator for creators |
-| **Repo name** | `stickman` (legacy/internal; public brand is **Reelify**) |
+| **Repo name** | `stickman` (legacy/internal; public brand is **Reelfy**) |
 
 ### One-liner
 
-**Reelify is the AI video platform for creators** — generate explainers, lofi tracks, ASMR, and cartoon videos in seconds, with no editing skills needed.
+**Reelfy is the AI video platform for creators** — generate explainers, lofi tracks, ASMR, and cartoon videos in seconds, with no editing skills needed.
 
 ### Elevator pitch (short)
 
-Reelify is an all-in-one AI content creation platform built for **YouTubers, educators, and digital creators**. Turn ideas into publish-ready stickman explainers, long-form lofi background videos, ASMR audio, and cartoon animations from a single web studio — no timeline editing required.
+Reelfy is an all-in-one AI content creation platform built for **YouTubers, educators, and digital creators**. Turn ideas into publish-ready stickman explainers, long-form lofi background videos, ASMR audio, and cartoon animations from a single web studio — no timeline editing required.
 
 ### Elevator pitch (long)
 
-Creators spend hours on storyboards, voiceover, music beds, and export settings. Reelify automates that pipeline: you describe the story or vibe, AI plans scenes or loops, generates visuals and audio, and delivers downloadable MP4s. Start free on credits, upgrade when you need watermark-free exports, higher limits, and priority generation.
+Creators spend hours on storyboards, voiceover, music beds, and export settings. Reelfy automates that pipeline: you describe the story or vibe, AI plans scenes or loops, generates visuals and audio, and delivers downloadable MP4s. Start free on credits, upgrade when you need watermark-free exports, higher limits, and priority generation.
 
 ---
 
@@ -79,7 +79,7 @@ Use this tone across landing pages, emails, and in-app copy:
 ### Hero & primary headlines (marketing)
 
 - **Headline pattern:** “Animate Your Story With AI”
-- **Supporting line:** Reelify is the AI video platform for creators — generate explainers, lofi tracks, ASMR, and cartoon videos in seconds. No editing skills needed.
+- **Supporting line:** Reelfy is the AI video platform for creators — generate explainers, lofi tracks, ASMR, and cartoon videos in seconds. No editing skills needed.
 - **Social proof placeholders (landing):** “10K+ videos this month”, “+20K tracks & loops generated this week” — treat as marketing stats unless wired to real analytics.
 
 ---
@@ -179,10 +179,10 @@ Use for meta descriptions, comparison pages, and app store–style lists:
 
 ## SEO & metadata cheat sheet
 
-**Default title:** `Reelify — AI Video Generator for Creators`  
-**Default description:** Create explainer videos, lofi music, ASMR songs, and cartoon videos with AI in seconds. Reelify is the all-in-one AI content creation platform built for YouTubers, educators, and digital creators.
+**Default title:** `Reelfy — AI Video Generator for Creators`  
+**Default description:** Create explainer videos, lofi music, ASMR songs, and cartoon videos with AI in seconds. Reelfy is the all-in-one AI content creation platform built for YouTubers, educators, and digital creators.
 
-**Homepage title variant:** `Reelify — AI Video Generator for Creators | Explainers, Lofi, ASMR & Cartoon`
+**Homepage title variant:** `Reelfy — AI Video Generator for Creators | Explainers, Lofi, ASMR & Cartoon`
 
 Import helpers from `@/shared/lib/seo`:
 
@@ -196,7 +196,7 @@ Import helpers from `@/shared/lib/seo`:
 
 When adding UI copy, docs, or prompts:
 
-1. **Brand name:** Always **Reelify** in user-facing strings (not “StickStory” or repo name).
+1. **Brand name:** Always **Reelfy** in user-facing strings (not “StickStory” or repo name).
 2. **Audience:** Speak to creators who publish (YouTube, social, courses), not enterprise IT.
 3. **Format first:** Lead with what they get (e.g. “60s stickman explainer”) not model names.
 4. **Honest status:** If a format is `coming_soon`, say so; don’t link `/new` cards to dead routes.

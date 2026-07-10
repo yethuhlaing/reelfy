@@ -1,17 +1,17 @@
-const SITE_URL = process.env.PUBLIC_BASE_URL || 'https://reelify.me'
+const SITE_URL = process.env.PUBLIC_BASE_URL || 'https://reelfy.me'
 
 export const SEO = {
   siteUrl: SITE_URL,
-  siteName: 'Reelify',
-  twitterHandle: '@reelify',
+  siteName: 'Reelfy',
+  twitterHandle: '@reelfy',
 
   // Primary product keywords
   primaryKeyword: 'AI video generator for creators',
 
   defaults: {
-    title: 'Reelify — AI Video Generator for Creators',
+    title: 'Reelfy — AI Video Generator for Creators',
     description:
-      'Create explainer videos, lofi music, ASMR songs, and cartoon videos with AI in seconds. Reelify is the all-in-one AI content creation platform built for YouTubers, educators, and digital creators.',
+      'Create explainer videos, lofi music, ASMR songs, and cartoon videos with AI in seconds. Reelfy is the all-in-one AI content creation platform built for YouTubers, educators, and digital creators.',
     ogImage: `${SITE_URL}/og-image.png`,
   },
 
