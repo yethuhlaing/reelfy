@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import RuixenMoonChat from '@/features/dashboard/components/ai-chat'
 import { StoryForm } from '@/features/stories/components/story/StoryForm'
 import { LofiForm } from '@/features/lofi/components/LofiForm'
 import { LofiStockForm } from '@/features/lofi-stock/components/LofiStockForm'
 import { MemeForm } from '@/features/meme/components/MemeForm'
+import { BrainrotForm } from '@/features/brainrot/components/BrainrotForm'
 
 function CategoryForm({
   category,
@@ -21,14 +23,23 @@ function CategoryForm({
       return <LofiStockForm onBackToStart={onBackToStart} />
     case 'meme':
       return <MemeForm onBackToStart={onBackToStart} />
+    case 'brainrot':
+      return <BrainrotForm onBackToStart={onBackToStart} />
     default:
       return <StoryForm category={category} onBackToStart={onBackToStart} />
   }
 }
 
 export function NewPageClient() {
-  const [category, setCategory] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const initialCategory = searchParams.get('category')
+  const [category, setCategory] = useState<string | null>(initialCategory)
   const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    const fromUrl = searchParams.get('category')
+    if (fromUrl) setCategory(fromUrl)
+  }, [searchParams])
 
   const transition = (fn: () => void) => {
     setVisible(false)

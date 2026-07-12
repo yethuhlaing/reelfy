@@ -174,6 +174,7 @@ export async function completeComposedVideo(params: {
   const videoUrl = await uploadComposedVideo(params.storyId, params.data)
   const ok = await updateStoryMeta(params.storyId, params.userId, {
     composedVideoUrl: videoUrl,
+    composedAt: new Date(),
     status: 'rendered',
   })
   if (!ok) {

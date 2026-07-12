@@ -1,0 +1,1 @@
+ALTER TABLE "brainrot_projects" ADD COLUMN "render_job_id" text;

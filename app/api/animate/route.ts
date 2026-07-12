@@ -70,7 +70,7 @@ export async function POST(request: Request) {
           operation: 'scene_video',
         },
       },
-      buildWebhookUrl('animate', job.id),
+      buildWebhookUrl('story/animate', job.id),
     )
     await markRunning(job.id, requestId, provider.falModel)
     return Response.json({ jobId: job.id })

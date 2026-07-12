@@ -106,7 +106,7 @@ export function OverflowMenu({ storyId, category, title, onRenamed, readOnly }: 
       </AlertDialog>
 
       <AlertDialog open={delOpen} onOpenChange={setDelOpen}>
-        <AlertDialogContent className="gap-0 border-[var(--border)] bg-[var(--surface)] p-0 shadow-2xl sm:max-w-md">
+        <AlertDialogContent className="gap-0 border-[var(--border)] bg-[var(--surface-solid)] p-0 shadow-2xl sm:max-w-md">
           <div className="space-y-4 px-6 pt-6 pb-5">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500">

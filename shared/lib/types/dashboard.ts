@@ -23,6 +23,16 @@ export interface DashboardMeme {
   createdAt: number
 }
 
+export interface DashboardBrainrot {
+  id: string
+  title: string
+  inputText: string
+  previewUrl: string
+  status: string
+  createdAt: number
+}
+
 export type DashboardGridItem =
   | { kind: 'story'; createdAt: number; story: DashboardStory }
   | { kind: 'meme'; createdAt: number; meme: DashboardMeme }
+  | { kind: 'brainrot'; createdAt: number; brainrot: DashboardBrainrot }

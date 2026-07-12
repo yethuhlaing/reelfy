@@ -198,6 +198,7 @@ export async function duplicateStoryForUser(storyId: string, userId: string): Pr
     storyInput: story.storyInput,
     options: story.options,
     composedVideoUrl: story.composedVideoUrl,
+    composedAt: story.composedAt,
     category: story.category,
     status: story.status,
     createdAt: now,
@@ -380,13 +381,14 @@ export async function updateSceneForUser(
 export async function updateStoryMeta(
   storyId: string,
   userId: string,
-  patch: { title?: string; tagline?: string; thumbnailUrl?: string | null; composedVideoUrl?: string | null; status?: string },
+  patch: { title?: string; tagline?: string; thumbnailUrl?: string | null; composedVideoUrl?: string | null; composedAt?: Date | null; status?: string },
 ): Promise<boolean> {
   const set: Record<string, unknown> = { updatedAt: new Date() }
   if (patch.title !== undefined) set.title = patch.title
   if (patch.tagline !== undefined) set.tagline = patch.tagline
   if (patch.thumbnailUrl !== undefined) set.thumbnailUrl = patch.thumbnailUrl
   if (patch.composedVideoUrl !== undefined) set.composedVideoUrl = patch.composedVideoUrl
+  if (patch.composedAt !== undefined) set.composedAt = patch.composedAt
   if (patch.status !== undefined) set.status = patch.status
 
   const rows = await db

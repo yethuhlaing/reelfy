@@ -47,7 +47,7 @@ export function NotificationBell() {
         {unread > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-[14px] rounded-full bg-[#ef4444] px-1 py-0.5 text-center text-[0.6rem] leading-none text-white">{unread > 9 ? '9+' : unread}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 top-9 z-[750] max-h-[420px] w-80 overflow-auto rounded-[10px] border border-[var(--border)] bg-[var(--surface)] shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
+        <div className="absolute right-0 top-9 z-[750] max-h-[420px] w-80 overflow-auto rounded-[10px] border border-[var(--border)] bg-[var(--surface-solid)] shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
           {items.length === 0 ? (
             <div className="p-5 text-center text-[0.85rem] text-[var(--muted)]">No recent activity</div>
           ) : (

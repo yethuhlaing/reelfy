@@ -1,0 +1,1 @@
+ALTER TABLE "stories" ADD COLUMN "composed_at" timestamp with time zone;

@@ -33,6 +33,7 @@ export interface WorkspaceCtx {
   enqueueAnimate?: (sceneId: string) => Promise<void> | void
   retryVoice?: (sceneId: string) => Promise<void> | void
   retryImage?: (sceneId: string) => Promise<void> | void
+  generateAllVoiceovers?: () => Promise<{ ok: number; failed: number }>
 }
 
 const Ctx = createContext<WorkspaceCtx | null>(null)
@@ -51,6 +52,7 @@ interface ProviderProps {
   enqueueAnimate?: WorkspaceCtx['enqueueAnimate']
   retryVoice?: WorkspaceCtx['retryVoice']
   retryImage?: WorkspaceCtx['retryImage']
+  generateAllVoiceovers?: WorkspaceCtx['generateAllVoiceovers']
   children: ReactNode
 }
 
@@ -68,6 +70,7 @@ export function WorkspaceProvider({
   enqueueAnimate,
   retryVoice,
   retryImage,
+  generateAllVoiceovers,
   children,
 }: ProviderProps) {
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null)
@@ -105,6 +108,7 @@ export function WorkspaceProvider({
         enqueueAnimate,
         retryVoice,
         retryImage,
+        generateAllVoiceovers,
       }}
     >
       {children}

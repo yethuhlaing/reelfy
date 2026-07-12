@@ -41,6 +41,11 @@ export interface Scene extends ScenePlan {
   voiceoverWordTimings?: WordTiming[] | null
   pendingJobId?: string
   lastError?: string
+  // Client-only: last voiceover-generation error for this scene. Not persisted;
+  // set on failed fetch, cleared on success. Drives inline + export failure UI.
+  voiceoverError?: string
+  // Client-only: true while a voiceover is being (re)generated for this scene.
+  voiceoverPending?: boolean
 }
 
 export interface StoryData {
@@ -50,6 +55,13 @@ export interface StoryData {
   thumbnailPrompt: string | null
   thumbnailUrl: string | null
   scenes: Scene[]
+  // Last successfully exported/composed MP4. Persisted server-side; surfaced so
+  // the finished video stays reachable after the export modal closes.
+  composedVideoUrl?: string | null
+  // Epoch ms when composedVideoUrl was rendered, and when the story last changed.
+  // updatedAt > composedAt ⇒ scenes edited since export ⇒ video is stale.
+  composedAt?: number | null
+  updatedAt?: number | null
 }
 
 export type VoiceTone = 'inspirational' | 'casual' | 'documentary' | 'pitch'

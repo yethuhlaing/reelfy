@@ -113,8 +113,8 @@ export default function VideoSection() {
             aria-hidden
           />
 
-          <div className="absolute inset-0 z-10 bg-gradient-to-r from-background via-background/92 to-background/25 md:w-[72%] lg:w-[58%]" />
-          <div className="absolute inset-0 z-10 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
+          <div className="absolute inset-0 z-10 bg-[linear-gradient(to_right,var(--background)_0%,color-mix(in_oklab,var(--background)_78%,transparent)_42%,transparent_68%)]" />
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-background/70 via-transparent to-transparent" />
 
           <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 sm:p-10 lg:p-12">
             <ol className="grid max-w-xl gap-3 sm:grid-cols-3 sm:gap-4">

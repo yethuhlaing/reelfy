@@ -11,6 +11,7 @@ export type CreateCategoryLink = {
 /** Available “create” entries shown in the sidebar (routes to /new?category=…) */
 export const CREATE_CATEGORY_LINKS: CreateCategoryLink[] = [
   { id: 'stickman', navLabel: 'Animated characters', glyph: '◈' },
+  { id: 'brainrot', navLabel: 'Brainrot', glyph: '▶' },
   { id: 'lofi', navLabel: 'Chill music & visuals', icon: Music2 },
   { id: 'lofi-stock', navLabel: 'Stock music & visuals', glyph: '♪' },
   { id: 'meme', navLabel: 'Meme generator', icon: Laugh },
@@ -34,6 +35,10 @@ export function storyHref(id: string, opts?: { starting?: boolean; category?: st
 
 export function memeHref(id: string): string {
   return `/dashboard/meme/${id}`
+}
+
+export function brainrotHref(id: string): string {
+  return `/dashboard/brainrot/${id}`
 }
 
 export function getCategoryNavLabel(id: string): string {

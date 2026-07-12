@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     const submitted = await fal.queue.submit(COMPOSE_MODEL_ID, {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       input: buildComposeInput(rehosted) as any,
-      webhookUrl: buildWebhookUrl('compose', job.id),
+      webhookUrl: buildWebhookUrl('story/compose', job.id),
     })
     await markRunning(job.id, submitted.request_id, COMPOSE_MODEL_ID)
     return Response.json({ jobId: job.id })

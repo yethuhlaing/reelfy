@@ -7,6 +7,8 @@ export async function fetchStory(storyId: string): Promise<{
   category: string
   status?: string
   composedVideoUrl?: string | null
+  composedAt?: number | null
+  lastUpdated?: number | null
 } | null> {
   const res = await fetch(`/api/stories/${storyId}`)
   if (!res.ok) return null

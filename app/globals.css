@@ -75,7 +75,7 @@
   --font-heading: var(--font-urbanist), 'Urbanist', system-ui, sans-serif;
   --font-body: var(--font-urbanist), 'Urbanist', system-ui, sans-serif;
   --font-mono: var(--font-jb-mono), 'JetBrains Mono', ui-monospace, monospace;
-  --popover: var(--surface);
+  --popover: var(--surface-solid);
   --popover-foreground: var(--text);
   --gradient-border: linear-gradient(135deg, rgba(223,115,46,0.4), rgba(255,255,255,0.06));
   /* shadcn / ElevenLabs UI semantic tokens */
@@ -198,7 +198,8 @@
 
 [data-slot='popover-content'],
 [data-slot='dropdown-menu-content'],
-[data-slot='dropdown-menu-sub-content'] {
+[data-slot='dropdown-menu-sub-content'],
+[data-slot='alert-dialog-content'] {
   z-index: 800 !important;
   border: 1px solid var(--border) !important;
   background: var(--surface-solid) !important;

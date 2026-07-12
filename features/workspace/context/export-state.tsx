@@ -26,6 +26,9 @@ interface Ctx {
   startExport: (storyId: string, scenes: Scene[], opts: ExportOptions) => Promise<void>
   cancelExport: () => void
   reset: () => void
+  modalOpen: boolean
+  openModal: () => void
+  closeModal: () => void
 }
 
 const ExportCtx = createContext<Ctx | null>(null)
@@ -46,6 +49,7 @@ async function probeAudioDuration(url: string): Promise<number> {
 
 export function ExportStateProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ExportState>(initial)
+  const [modalOpen, setModalOpen] = useState(false)
   const runIdRef = useRef(0)
   const esRef = useRef<EventSource | null>(null)
 
@@ -220,9 +224,12 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
     setState(initial)
   }, [closeStream])
 
+  const openModal = useCallback(() => setModalOpen(true), [])
+  const closeModal = useCallback(() => setModalOpen(false), [])
+
   const value = useMemo(
-    () => ({ state, startExport, cancelExport, reset }),
-    [state, startExport, cancelExport, reset],
+    () => ({ state, startExport, cancelExport, reset, modalOpen, openModal, closeModal }),
+    [state, startExport, cancelExport, reset, modalOpen, openModal, closeModal],
   )
 
   return <ExportCtx.Provider value={value}>{children}</ExportCtx.Provider>

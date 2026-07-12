@@ -1,6 +1,6 @@
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed'
 
-export type JobType = 'animate' | 'compose' | 'export'
+export type JobType = 'animate' | 'compose' | 'export' | 'brainrot-export'
 
 export interface Job<P = unknown, R = unknown> {
   id: string
@@ -61,5 +61,17 @@ export interface ExportPayload {
 }
 
 export interface ExportResult {
+  videoUrl: string
+}
+
+export interface BrainrotExportPayload {
+  projectId: string
+  userId: string
+  captionPosition: 'top' | 'middle' | 'bottom'
+  phase: 'compose' | 'subtitle'
+  composedVideoUrl?: string
+}
+
+export interface BrainrotExportResult {
   videoUrl: string
 }

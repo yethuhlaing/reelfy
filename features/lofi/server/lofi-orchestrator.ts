@@ -187,7 +187,7 @@ async function submitVisual(
   baseUrl: string,
 ): Promise<VisualSubmitResult> {
   const isImage = asset.model.includes('flux') || asset.model.includes('gemini') || asset.model.includes('sdxl')
-  const webhookUrl = `${baseUrl}/api/webhooks/fal/lofi-asset/${asset.id}`
+  const webhookUrl = `${baseUrl}/api/webhooks/fal/lofi/asset/${asset.id}`
 
   if (isImage) {
     const provider = getImageProvider(asset.model)
@@ -298,7 +298,7 @@ async function submitAssets(
           const result = await provider.submit({
             prompt: row.prompt,
             durationSec: row.durationSec,
-            webhookUrl: `${baseUrl}/api/webhooks/fal/lofi-asset/${row.id}`,
+            webhookUrl: `${baseUrl}/api/webhooks/fal/lofi/asset/${row.id}`,
           })
           await updateLofiAsset(row.id, {
             falJobId: result.jobId,
@@ -432,7 +432,7 @@ async function retryAsset(asset: {
   if (!video) return
 
   const baseUrl = webhookBaseUrl()
-  const webhookUrl = `${baseUrl}/api/webhooks/fal/lofi-asset/${asset.id}`
+  const webhookUrl = `${baseUrl}/api/webhooks/fal/lofi/asset/${asset.id}`
 
   try {
     if (asset.kind === 'music') {
@@ -678,7 +678,7 @@ async function runArrangementAndRender(videoId: string) {
   try {
     await fal.queue.submit('fal-ai/ffmpeg-api/compose', {
       input: { tracks } as any,
-      webhookUrl: `${baseUrl}/api/webhooks/fal/lofi-render/${videoId}`,
+      webhookUrl: `${baseUrl}/api/webhooks/fal/lofi/render/${videoId}`,
     })
     await publishVideoStatus(videoId, 'rendering')
   } catch (err) {

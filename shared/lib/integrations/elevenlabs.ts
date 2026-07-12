@@ -23,8 +23,8 @@ function alignmentToWordTimings(alignment: ElevenLabsAlignment | null | undefine
     throw new Error('ElevenLabs response missing character alignment data')
   }
 
-  const startTimesSec = alignment?.character_start_times_seconds
-  const endTimesSec = alignment?.character_end_times_seconds
+  const startTimesSec = alignment?.character_start_times_seconds ?? []
+  const endTimesSec = alignment?.character_end_times_seconds ?? []
   const timings: WordTiming[] = []
 
   let wordStart = 0
@@ -60,11 +60,20 @@ export interface VoiceoverResult {
   wordTimings: WordTiming[]
 }
 
+export type VoiceSettingsOverride = {
+  // ElevenLabs playback speed. 1.0 = normal, 1.2 = max (faster), 0.7 = min.
+  speed?: number
+  stability?: number
+  similarityBoost?: number
+  style?: number
+}
+
 export async function generateVoiceover(
   text: string,
   signal?: AbortSignal,
   costContext?: ApiCostContext,
   selectedVoiceId?: string,
+  voiceSettings?: VoiceSettingsOverride,
 ): Promise<VoiceoverResult> {
   const voiceId = selectedVoiceId ?? env.ELEVENLABS_VOICE_ID ?? DEFAULT_ELEVENLABS_VOICE_ID
 
@@ -78,9 +87,10 @@ export async function generateVoiceover(
       text,
       model_id: 'eleven_flash_v2_5',
       voice_settings: {
-        stability: 0.4,
-        similarity_boost: 0.75,
-        style: 0.3,
+        stability: voiceSettings?.stability ?? 0.4,
+        similarity_boost: voiceSettings?.similarityBoost ?? 0.75,
+        style: voiceSettings?.style ?? 0.3,
+        ...(voiceSettings?.speed != null ? { speed: voiceSettings.speed } : {}),
       },
     }),
     signal,

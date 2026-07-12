@@ -34,6 +34,7 @@ export async function GET(
     storyInput: story.storyInput,
     options: parseOptions(story.options),
     composedVideoUrl: story.composedVideoUrl,
+    composedAt: story.composedAt ? story.composedAt.getTime() : null,
     savedAt: story.createdAt.getTime(),
     lastUpdated: story.updatedAt.getTime(),
     storyData: rowToStoryData(story, sceneRows),

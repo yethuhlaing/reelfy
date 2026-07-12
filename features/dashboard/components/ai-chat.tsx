@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/shared/ui/text-area";
 import { Button } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
+import { CREATE_CATEGORY_LINKS } from "@/shared/lib/categories";
 import {
   ArrowUpIcon,
   Paperclip,
@@ -15,28 +16,25 @@ import {
 
 const PENDING_PROMPT_KEY = "new:pending-prompt";
 
-const CATEGORIES = [
-  {
-    id: "stickman",
-    label: "Stickman",
-    icon: <span className="font-bold text-base leading-none">◈</span>,
-  },
-  {
-    id: "lofi",
-    label: "Lofi",
-    icon: <Music2 className="w-4 h-4" />,
-  },
-  {
-    id: "lofi-stock",
-    label: "Lofi Stock",
-    icon: <Library className="w-4 h-4" />,
-  },
-  {
-    id: "meme",
-    label: "Meme",
-    icon: <Laugh className="w-4 h-4" />,
-  },
-];
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  stickman: <span className="font-bold text-base leading-none">◈</span>,
+  brainrot: <span className="font-bold text-base leading-none">▶</span>,
+  lofi: <Music2 className="w-4 h-4" />,
+  "lofi-stock": <Library className="w-4 h-4" />,
+  meme: <Laugh className="w-4 h-4" />,
+};
+
+const CATEGORIES = CREATE_CATEGORY_LINKS.map((c) => ({
+  id: c.id,
+  label: c.navLabel,
+  icon: c.glyph ? (
+    <span className="font-bold text-base leading-none">{c.glyph}</span>
+  ) : c.icon ? (
+    <c.icon className="w-4 h-4" />
+  ) : (
+    CATEGORY_ICONS[c.id] ?? null
+  ),
+}));
 
 interface AutoResizeProps {
   minHeight: number;

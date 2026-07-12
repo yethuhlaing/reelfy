@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Download } from 'lucide-react'
+import { X, Download, AlertTriangle, Loader2, RefreshCw, Mic, ExternalLink } from 'lucide-react'
 import type { Scene } from '@/shared/lib/types'
 import { useExportState, type ExportOptions } from '@/features/workspace/context/export-state'
+import { useWorkspace } from '@/features/workspace/context/workspace-context'
 import { StickmanScribble } from './media/StickmanScribble'
 import { Button } from '@/shared/ui/button'
 
@@ -15,20 +16,57 @@ interface Props {
   scenes: Scene[]
 }
 
-export function ExportModal({ open, onClose, storyId, scenes }: Props) {
+export function ExportModal({ open, onClose, storyId, scenes: scenesProp }: Props) {
   const { state, startExport, cancelExport, reset } = useExportState()
+  const { storyData, setStoryData, retryVoice, generateAllVoiceovers } = useWorkspace()
   const [includeIntro, setIncludeIntro] = useState(true)
   const [rangeOn, setRangeOn] = useState(false)
   const [from, setFrom] = useState(1)
-  const [to, setTo] = useState(scenes.length)
+  const [to, setTo] = useState(scenesProp.length)
+  const [genVoiceovers, setGenVoiceovers] = useState(false)
+
+  // Prefer live scenes from the workspace so voiceover pending/error/URL changes
+  // reflect in the modal (props are a snapshot taken when the button mounted).
+  const scenes = storyData?.scenes ?? scenesProp
   const isStaticMode = scenes.every((s) => !s.videoUrl)
 
   useEffect(() => { setTo(scenes.length) }, [scenes.length])
+
+  // Export requires every scene's voiceover (even out-of-range scenes are part of
+  // the story), and generateAllVoiceovers covers the whole story — so the guard
+  // and the button count both operate over all scenes, not just the range.
+  const missingVoiceovers = scenes.filter((s) => !s.voiceoverUrl)
+  const failedVoiceovers = scenes.filter((s) => !s.voiceoverUrl && s.voiceoverError)
+
+  const runGenerateVoiceovers = async () => {
+    if (!generateAllVoiceovers) return
+    setGenVoiceovers(true)
+    try {
+      await generateAllVoiceovers()
+    } finally {
+      setGenVoiceovers(false)
+    }
+  }
+
+  // Export done → stamp the URL + fresh timestamps onto storyData so the finished
+  // video survives modal close (server already persisted it) and reads as current
+  // (composedAt ≈ updatedAt ⇒ not stale) without needing a reload.
+  useEffect(() => {
+    if (state.status === 'done' && state.downloadUrl) {
+      setStoryData((prev) => {
+        if (!prev || prev.composedVideoUrl === state.downloadUrl) return prev
+        const now = Date.now()
+        return { ...prev, composedVideoUrl: state.downloadUrl, composedAt: now, updatedAt: now }
+      })
+    }
+  }, [state.status, state.downloadUrl, setStoryData])
 
   if (!open || typeof document === 'undefined') return null
 
   const showProgress = state.status === 'rendering' || state.status === 'preparing' || state.status === 'done' || state.status === 'failed'
   const totalSec = scenes.reduce((acc, s) => acc + (s.voiceoverDuration ?? 0), 0)
+
+  const missingSceneNumbers = missingVoiceovers.map((m) => scenes.indexOf(m) + 1)
 
   return createPortal(
     <div className="fixed inset-0 z-[900] flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
@@ -65,9 +103,73 @@ export function ExportModal({ open, onClose, storyId, scenes }: Props) {
             <div className="my-2 flex items-center gap-2.5 text-[0.78rem] text-[var(--muted)]">
               Est. duration: {Math.round(totalSec)}s
             </div>
+
+            {missingVoiceovers.length > 0 && (
+              <div className="my-3 rounded-lg border border-[color-mix(in_srgb,var(--danger)_35%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_6%,var(--surface2))] p-3">
+                <div className="flex items-start gap-2 text-[0.82rem] text-[var(--text)]">
+                  <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+                  <span>
+                    {missingVoiceovers.length} scene{missingVoiceovers.length > 1 ? 's' : ''} missing
+                    voiceover{missingVoiceovers.length > 1 ? 's' : ''} (scene {missingSceneNumbers.join(', ')}).
+                    Generate them before exporting.
+                  </span>
+                </div>
+
+                <Button
+                  className="mt-2.5 w-full"
+                  disabled={genVoiceovers || !generateAllVoiceovers}
+                  onClick={runGenerateVoiceovers}
+                >
+                  {genVoiceovers ? (
+                    <><Loader2 size={14} className="animate-spin" /> Generating {missingVoiceovers.length}…</>
+                  ) : (
+                    <><Mic size={14} /> Generate {missingVoiceovers.length} missing voiceover{missingVoiceovers.length > 1 ? 's' : ''}</>
+                  )}
+                </Button>
+
+                {failedVoiceovers.length > 0 && !genVoiceovers && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    <p className="text-[0.72rem] font-semibold uppercase tracking-wide text-[var(--danger)]">
+                      Failed — retry individually
+                    </p>
+                    {failedVoiceovers.map((s) => {
+                      const num = scenes.indexOf(s) + 1
+                      return (
+                        <div
+                          key={s.id}
+                          className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2.5 text-[0.78rem]"
+                        >
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <span className="font-semibold">Scene {num}</span>
+                            <span className="rounded bg-[var(--surface2)] px-1.5 py-0.5 text-[0.68rem] capitalize text-[var(--muted)]">
+                              {s.emotion} · {s.characters} char
+                            </span>
+                          </div>
+                          <p className="mb-1 line-clamp-2 text-[var(--muted)]">“{s.voiceover}”</p>
+                          <p className="mb-2 text-[0.72rem] text-[var(--danger)]">{s.voiceoverError}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1.5 text-[0.72rem]"
+                            disabled={s.voiceoverPending}
+                            onClick={() => void retryVoice?.(s.id)}
+                          >
+                            {s.voiceoverPending
+                              ? <><Loader2 size={12} className="animate-spin" /> Retrying…</>
+                              : <><RefreshCw size={12} /> Retry scene {num}</>}
+                          </Button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button
+                disabled={missingVoiceovers.length > 0 || genVoiceovers}
                 onClick={() => {
                   const opts: ExportOptions = {
                     resolution: '1080p',
@@ -100,14 +202,34 @@ export function ExportModal({ open, onClose, storyId, scenes }: Props) {
               </div>
             )}
             {state.status === 'done' && state.downloadUrl && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Render complete.</p>
-                <Button asChild>
-                  <a href={state.downloadUrl} download={`story-${storyId}.mp4`}>
-                    <Download size={14} /> Download MP4
-                  </a>
-                </Button>
-                <div className="mt-4 flex justify-end gap-2">
+              <div className="flex flex-col gap-3">
+                <p className="text-[0.85rem] text-[var(--muted)]">Render complete.</p>
+                <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-black">
+                  <video
+                    key={state.downloadUrl}
+                    src={state.downloadUrl}
+                    poster={storyData?.thumbnailUrl ?? undefined}
+                    controls
+                    playsInline
+                    className="block aspect-video w-full bg-black"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild>
+                    <a href={state.downloadUrl} download={`story-${storyId}.mp4`}>
+                      <Download size={14} /> Download MP4
+                    </a>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <a href={state.downloadUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink size={14} /> Open in new tab
+                    </a>
+                  </Button>
+                </div>
+                <p className="text-[0.75rem] text-[var(--muted)]">
+                  Also available anytime in the <span className="font-medium text-[var(--text)]">Video</span> tab.
+                </p>
+                <div className="mt-2 flex justify-end gap-2">
                   <Button variant="outline" onClick={() => { reset(); onClose() }}>Close</Button>
                   <Button variant="outline" onClick={reset}>Render again</Button>
                 </div>

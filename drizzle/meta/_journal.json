@@ -71,6 +71,34 @@
       "when": 1783174000000,
       "tag": "0009_meme_generations",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783710324014,
+      "tag": "0010_hot_multiple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783717485289,
+      "tag": "0011_gray_reaper",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783797708789,
+      "tag": "0012_tan_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1783808259988,
+      "tag": "0013_flawless_invisible_woman",
+      "breakpoints": true
     }
   ]
 }

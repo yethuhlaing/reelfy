@@ -8,6 +8,7 @@ import { WorkspaceTopBar } from '@/features/workspace/components/WorkspaceTopBar
 import { WorkspaceProvider, useWorkspace } from '@/features/workspace/context/workspace-context'
 import { SceneGrid } from '@/features/workspace/components/cards/SceneGrid'
 import { VoiceoverBar } from '@/features/workspace/components/media/VoiceoverBar'
+import { ExportedVideoPanel } from '@/features/workspace/components/media/ExportedVideoPanel'
 import { ThumbnailDrawer } from '@/features/workspace/components/drawers/ThumbnailDrawer'
 import { VoiceDrawer } from '@/features/workspace/components/drawers/VoiceDrawer'
 import { SceneDrawer } from '@/features/workspace/components/drawers/SceneDrawer'
@@ -64,7 +65,7 @@ function WorkspaceInner({ storyId, category }: Props) {
   const [failedError, setFailedError] = useState<string | null>(null)
   const [stages, setStages] = useState<Stage[]>(INITIAL_STAGES)
   const [imageProgress, setImageProgress] = useState<{ done: number; total: number } | null>(null)
-  const [activeTab, setActiveTab] = useState<'scenes' | 'script'>('scenes')
+  const [activeTab, setActiveTab] = useState<'scenes' | 'script' | 'video'>('scenes')
   const [playState, setPlayState] = useState({ isPlaying: false, currentIndex: -1 })
   const [thumbOpen, setThumbOpen] = useState(thumbFlag)
   const [sceneDrawerOpen, setSceneDrawerOpen] = useState(false)
@@ -76,7 +77,9 @@ function WorkspaceInner({ storyId, category }: Props) {
   const storyDataRef = useRef<StoryData | null>(null)
   const inflightVoiceover = useRef<Map<string, Promise<string>>>(new Map())
   const generateAbortRef = useRef<AbortController | null>(null)
-  const voiceoverAbortRef = useRef<AbortController | null>(null)
+  // Each voiceover fetch owns its controller. Stop aborts the whole set, but a
+  // dead controller never lingers to poison the next call (the shared-ref bug).
+  const voiceoverControllers = useRef<Set<AbortController>>(new Set())
   const playbackCleanupRef = useRef<(() => void) | null>(null)
   const startedRef = useRef(false)
 
@@ -102,7 +105,12 @@ function WorkspaceInner({ storyId, category }: Props) {
     fetchStory(storyId)
       .then((data) => {
         if (cancelled || !data) return
-        setStoryData(data.storyData)
+        setStoryData({
+          ...data.storyData,
+          composedVideoUrl: data.composedVideoUrl ?? null,
+          composedAt: data.composedAt ?? null,
+          updatedAt: data.lastUpdated ?? null,
+        })
         if (data.options) setOptions(data.options)
         setStoryInput(data.storyInput ?? '')
         // Story left in a failed state on a previous run — show retry UI, not a blank screen.
@@ -342,26 +350,39 @@ function WorkspaceInner({ storyId, category }: Props) {
       const key = `${storyId}:${sceneId}`
       const existing = inflightVoiceover.current.get(key)
       if (existing) return existing
-      if (!voiceoverAbortRef.current || voiceoverAbortRef.current.signal.aborted) {
-        voiceoverAbortRef.current = new AbortController()
-      }
-      const signal = voiceoverAbortRef.current.signal
+      // Fresh controller per request — never reuse a possibly-aborted one.
+      const ctrl = new AbortController()
+      voiceoverControllers.current.add(ctrl)
       const p = (async () => {
         const res = await fetch('/api/voiceover', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, sceneId, storyId }),
-          signal,
+          signal: ctrl.signal,
         })
-        if (!res.ok) throw new Error((await res.text()) || 'Voiceover failed')
+        if (!res.ok) {
+          // 499 = server saw the request cancelled; surface a clear message.
+          if (res.status === 499) throw new Error('Voiceover cancelled')
+          throw new Error((await res.text()) || 'Voiceover failed')
+        }
         const data = (await res.json()) as { url: string }
         return data.url
       })()
       inflightVoiceover.current.set(key, p)
-      try { return await p } finally { inflightVoiceover.current.delete(key) }
+      try {
+        return await p
+      } finally {
+        inflightVoiceover.current.delete(key)
+        voiceoverControllers.current.delete(ctrl)
+      }
     },
     [storyId],
   )
+
+  const abortAllVoiceovers = useCallback(() => {
+    for (const ctrl of voiceoverControllers.current) ctrl.abort()
+    voiceoverControllers.current.clear()
+  }, [])
 
   const playScene = useCallback(
     async (index: number) => {
@@ -374,10 +395,26 @@ function WorkspaceInner({ storyId, category }: Props) {
       try {
         let url = scene.voiceoverUrl
         if (!url) {
-          url = await fetchVoiceoverUrl(scene.id, scene.voiceover)
           setStoryData((prev) =>
             prev
-              ? { ...prev, scenes: prev.scenes.map((s) => (s.id === scene.id ? { ...s, voiceoverUrl: url } : s)) }
+              ? { ...prev, scenes: prev.scenes.map((s) => (s.id === scene.id ? { ...s, voiceoverPending: true, voiceoverError: undefined } : s)) }
+              : prev,
+          )
+          try {
+            url = await fetchVoiceoverUrl(scene.id, scene.voiceover)
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Voiceover failed'
+            setStoryData((prev) =>
+              prev
+                ? { ...prev, scenes: prev.scenes.map((s) => (s.id === scene.id ? { ...s, voiceoverError: msg, voiceoverPending: false } : s)) }
+                : prev,
+            )
+            setPlayState({ isPlaying: false, currentIndex: -1 })
+            return
+          }
+          setStoryData((prev) =>
+            prev
+              ? { ...prev, scenes: prev.scenes.map((s) => (s.id === scene.id ? { ...s, voiceoverUrl: url, voiceoverPending: false, voiceoverError: undefined } : s)) }
               : prev,
           )
         }
@@ -547,17 +584,50 @@ function WorkspaceInner({ storyId, category }: Props) {
   }
 
   const retryVoice = async (sceneId: string) => {
-    const scene = storyData?.scenes.find((s) => s.id === sceneId)
+    const scene = storyDataRef.current?.scenes.find((s) => s.id === sceneId)
     if (!scene) return
-    patchScene(sceneId, { voiceoverUrl: null, voiceoverDuration: undefined })
+    patchScene(sceneId, {
+      voiceoverUrl: null,
+      voiceoverDuration: undefined,
+      voiceoverError: undefined,
+      voiceoverPending: true,
+    })
     try {
       const url = await fetchVoiceoverUrl(sceneId, scene.voiceover)
-      patchScene(sceneId, { voiceoverUrl: url })
+      patchScene(sceneId, { voiceoverUrl: url, voiceoverError: undefined, voiceoverPending: false })
       toast.success('Voiceover refreshed')
     } catch (err) {
-      toast.error('Voiceover failed', { description: err instanceof Error ? err.message : 'Try again' })
+      const msg = err instanceof Error ? err.message : 'Try again'
+      patchScene(sceneId, { voiceoverError: msg, voiceoverPending: false })
+      toast.error('Voiceover failed', { description: msg })
     }
   }
+
+  // Generate voiceovers for every scene still missing one (or previously failed).
+  // Sequential to avoid hammering ElevenLabs rate limits. Errors are recorded
+  // per-scene (voiceoverError) so the export UI can show exactly which failed.
+  const generateAllVoiceovers = useCallback(async (): Promise<{ ok: number; failed: number }> => {
+    const data = storyDataRef.current
+    if (!data) return { ok: 0, failed: 0 }
+    const targets = data.scenes.filter((s) => !s.voiceoverUrl)
+    let ok = 0
+    let failed = 0
+    for (const scene of targets) {
+      patchScene(scene.id, { voiceoverError: undefined, voiceoverPending: true })
+      try {
+        const url = await fetchVoiceoverUrl(scene.id, scene.voiceover)
+        patchScene(scene.id, { voiceoverUrl: url, voiceoverError: undefined, voiceoverPending: false })
+        ok += 1
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed'
+        patchScene(scene.id, { voiceoverError: msg, voiceoverPending: false })
+        failed += 1
+      }
+    }
+    if (ok > 0 && failed === 0) toast.success(`Generated ${ok} voiceover${ok > 1 ? 's' : ''}`)
+    else if (failed > 0) toast.error(`${failed} voiceover${failed > 1 ? 's' : ''} failed`, { description: 'Check the failed scenes and retry.' })
+    return { ok, failed }
+  }, [fetchVoiceoverUrl, patchScene])
 
   const retryImage = async (sceneId: string) => {
     const scene = storyData?.scenes.find((s) => s.id === sceneId)
@@ -634,6 +704,16 @@ function WorkspaceInner({ storyId, category }: Props) {
 
   const actions = deriveWorkspaceActions(storyData, isGenerating, playState.isPlaying, false, false)
 
+  const composedVideoUrl = storyData?.composedVideoUrl ?? null
+  const hasVideo = !!composedVideoUrl
+  // Stale when the story changed after the export. Small skew guard so the export's
+  // own updatedAt bump (composedAt ≈ updatedAt) doesn't false-positive.
+  const videoStale =
+    hasVideo &&
+    !!storyData?.composedAt &&
+    !!storyData?.updatedAt &&
+    storyData.updatedAt - storyData.composedAt > 2000
+
   return (
     <WorkspaceProvider
       storyId={storyId}
@@ -649,6 +729,7 @@ function WorkspaceInner({ storyId, category }: Props) {
       enqueueAnimate={enqueueAnimate}
       retryVoice={retryVoice}
       retryImage={retryImage}
+      generateAllVoiceovers={generateAllVoiceovers}
     >
       <ExportStateProvider>
       <WorkspaceTopBar
@@ -661,16 +742,19 @@ function WorkspaceInner({ storyId, category }: Props) {
       />
 
       <div className="border-b border-[var(--border)] px-5">
-        <div className="inline-flex gap-[18px]">
-          {(['scenes', 'script'] as const).map((t) => (
+        <div className="inline-flex gap-7">
+          {(['scenes', 'script', ...(hasVideo ? (['video'] as const) : [])] as const).map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`cursor-pointer border-b-2 bg-transparent py-2.5 font-[var(--font-heading)] text-[0.85rem] font-semibold ${
-                activeTab === t ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--muted)]'
+              className={`inline-flex cursor-pointer items-center gap-1.5 border-b-2 bg-transparent px-1 py-2.5 font-[var(--font-heading)] text-[0.85rem] font-semibold transition-colors ${
+                activeTab === t ? 'border-[var(--accent)] text-[var(--text)]' : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
               }`}
             >
-              {t === 'scenes' ? 'Scenes' : 'Script'}
+              {t === 'scenes' ? 'Scenes' : t === 'script' ? 'Script' : 'Video'}
+              {t === 'video' && videoStale && (
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--danger)]" title="Video may be outdated" />
+              )}
             </button>
           ))}
         </div>
@@ -692,12 +776,46 @@ function WorkspaceInner({ storyId, category }: Props) {
           </div>
         )}
         {failedError && !isGenerating ? (
-          <div className="mx-auto flex max-w-[460px] flex-col items-center gap-4 rounded-[18px] border border-[color-mix(in_srgb,var(--danger)_35%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_6%,var(--surface))] px-6 py-9 text-center">
+          <div className="mx-auto flex max-w-[480px] flex-col items-center gap-4 rounded-[18px] border border-[color-mix(in_srgb,var(--danger)_35%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_6%,var(--surface))] px-6 py-9 text-center">
             <div className="grid h-11 w-11 place-items-center rounded-full bg-[color-mix(in_srgb,var(--danger)_15%,transparent)] text-[var(--danger)]">
               <AlertTriangle size={20} />
             </div>
             <h3 className="font-[var(--font-heading)] text-lg">Generation failed</h3>
             <p className="max-w-[380px] text-[0.85rem] leading-relaxed text-[var(--muted)]">{failedError}</p>
+
+            {(storyInput || options) && (
+              <div className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-left">
+                {storyInput && (
+                  <div className="mb-2.5">
+                    <p className="mb-1 text-[0.68rem] font-semibold uppercase tracking-wide text-[var(--muted)]">Prompt</p>
+                    <p className="line-clamp-3 text-[0.82rem] text-[var(--text)]">{storyInput}</p>
+                  </div>
+                )}
+                {options && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: 'Text model', value: options.textModel },
+                      { label: 'Image model', value: options.imageModel },
+                      { label: 'Tone', value: options.tone },
+                      { label: 'Style', value: options.style },
+                      { label: 'Format', value: options.format },
+                      { label: 'Scenes', value: options.density },
+                    ]
+                      .filter((c) => c.value)
+                      .map((c) => (
+                        <span
+                          key={c.label}
+                          className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.7rem]"
+                        >
+                          <span className="text-[var(--muted)]">{c.label}:</span>
+                          <span className="font-medium text-[var(--text)]">{c.value}</span>
+                        </span>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="mt-1 flex flex-wrap items-center justify-center gap-2.5">
               <button
                 onClick={retryGeneration}
@@ -714,7 +832,24 @@ function WorkspaceInner({ storyId, category }: Props) {
             </div>
           </div>
         ) : storyData ? (
-          activeTab === 'scenes' ? (
+          activeTab === 'video' && composedVideoUrl ? (
+            <ExportedVideoPanel
+              videoUrl={composedVideoUrl}
+              posterUrl={storyData.thumbnailUrl}
+              composedAt={storyData.composedAt}
+              stale={videoStale}
+              storyId={storyId}
+            />
+          ) : activeTab === 'script' ? (
+            <div className="flex max-w-[760px] flex-col gap-3.5">
+              {storyData.scenes.map((scene, i) => (
+                <div key={scene.id} className="flex gap-3.5">
+                  <span className="min-w-7 font-[var(--font-heading)] text-[var(--muted)]">{i + 1}</span>
+                  <p className="text-[0.95rem]">{scene.voiceover}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
             <SceneGrid
               scenes={storyData.scenes}
               playingIndex={playState.isPlaying ? playState.currentIndex : null}
@@ -732,15 +867,6 @@ function WorkspaceInner({ storyId, category }: Props) {
                 return jid && jid !== 'pending' ? jobStartedAtRef.current.get(jid) : undefined
               }}
             />
-          ) : (
-            <div className="flex max-w-[760px] flex-col gap-3.5">
-              {storyData.scenes.map((scene, i) => (
-                <div key={scene.id} className="flex gap-3.5">
-                  <span className="min-w-7 font-[var(--font-heading)] text-[var(--muted)]">{i + 1}</span>
-                  <p className="text-[0.95rem]">{scene.voiceover}</p>
-                </div>
-              ))}
-            </div>
           )
         ) : isGenerating ? null : (
           <div className="flex flex-col items-center gap-[18px] rounded-[18px] border border-dashed border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_80%,transparent)] px-5 py-[60px] text-center">
@@ -755,7 +881,7 @@ function WorkspaceInner({ storyId, category }: Props) {
         currentIndex={playState.currentIndex}
         totalScenes={storyData?.scenes.length ?? 0}
         isPlaying={playState.isPlaying}
-        onStop={() => { voiceoverAbortRef.current?.abort(); stopPlayback() }}
+        onStop={() => { abortAllVoiceovers(); stopPlayback() }}
       />
 
       {!playState.isPlaying && <PlayAllFab state={actions.playAll} onClick={playAll} />}

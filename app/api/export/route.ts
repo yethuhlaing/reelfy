@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     const submitted = await fal.queue.submit(EXPORT_MODEL_ID, {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       input: { tracks } as any,
-      webhookUrl: buildWebhookUrl('export', job.id),
+      webhookUrl: buildWebhookUrl('story/export', job.id),
     })
     await markRunning(job.id, submitted.request_id, EXPORT_MODEL_ID)
     return Response.json({ jobId: job.id })

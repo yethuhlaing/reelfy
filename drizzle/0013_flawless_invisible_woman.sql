@@ -1,0 +1,1 @@
+ALTER TABLE "brainrot_projects" ALTER COLUMN "input_text" SET DEFAULT '';

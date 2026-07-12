@@ -139,6 +139,9 @@ export const stories = pgTable('stories', {
   storyInput: text('story_input').notNull().default(''),
   options: text('options').notNull().default('{}'),
   composedVideoUrl: text('composed_video_url'),
+  // When the current composedVideoUrl was rendered. Compared against updatedAt to
+  // detect whether scenes changed since the last export (stale-video signal).
+  composedAt: timestamp('composed_at', { withTimezone: true }),
   category: text('category').notNull().default('stickman'),
   status: text('status').notNull().default('draft'),
   createdAt,
@@ -395,6 +398,43 @@ export const memes = pgTable(
   }),
 )
 
+export type BrainrotStatus = 'draft' | 'script_ready' | 'rendering' | 'complete' | 'failed'
+
+export const brainrotProjects = pgTable(
+  'brainrot_projects',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').notNull().default(''),
+    inputText: text('input_text').notNull().default(''),
+    script: text('script').notNull().default(''),
+    format: text('format').notNull(),
+    backgroundCategory: text('background_category').notNull().default(''),
+    characterVoiceId: text('character_voice_id').notNull().default(''),
+    captionPosition: text('caption_position').notNull().default('bottom'),
+    voiceoverUrl: text('voiceover_url'),
+    voiceoverDurationSec: numeric('voiceover_duration_sec', { precision: 8, scale: 3 }),
+    voiceoverWordTimings: jsonb('voiceover_word_timings'),
+    backgroundVideoId: text('background_video_id'),
+    chunkStartIndex: integer('chunk_start_index'),
+    chunkUrls: jsonb('chunk_urls'),
+    outputVideoUrl: text('output_video_url'),
+    status: text('status').notNull().default('draft'),
+    // Last export job id. Lets the server reconcile a stuck 'rendering' project
+    // directly against fal on read — the safety net when the completion webhook
+    // never arrives (e.g. local dev with no public tunnel URL).
+    renderJobId: text('render_job_id'),
+    creditsCharged: integer('credits_charged').notNull().default(0),
+    createdAt,
+    updatedAt,
+  },
+  (table) => ({
+    userCreatedIdx: index('brainrot_projects_user_created_idx').on(table.userId, table.createdAt),
+  }),
+)
+
 // One saved generation = user prompt + all variant options.
 export const memeGenerations = pgTable(
   'meme_generations',
@@ -432,6 +472,7 @@ export const schema = {
   memeTemplates,
   memes,
   memeGenerations,
+  brainrotProjects,
 }
 
 export type DatabaseSchema = typeof schema

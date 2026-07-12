@@ -88,6 +88,25 @@ export async function markFailed(id: string, error: string): Promise<void> {
   await updateJob(id, { status: 'failed' as JobStatus, error })
 }
 
+export async function updateJobProvider<P>(
+  id: string,
+  providerRequestId: string,
+  providerEndpoint: string,
+  payload: P,
+): Promise<void> {
+  const existing = await getJob<P>(id)
+  if (!existing) return
+  const next = {
+    ...existing,
+    payload,
+    providerRequestId,
+    providerEndpoint,
+    status: 'running' as JobStatus,
+    updatedAt: Date.now(),
+  }
+  await writeJob(next as Job)
+}
+
 export async function getJobIdsForStory(storyId: string): Promise<string[]> {
   const ids = await redis.smembers<string[]>(storyJobsKey(storyId))
   if (!Array.isArray(ids)) return []

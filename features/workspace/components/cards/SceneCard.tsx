@@ -1,8 +1,10 @@
 'use client'
 
+import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react'
 import type { Scene, Emotion } from '@/shared/lib/types'
 import { SceneStateBadge } from '../status/SceneStateBadge'
 import { SceneCardActions } from './SceneCardActions'
+import { useWorkspace } from '@/features/workspace/context/workspace-context'
 
 interface SceneCardProps {
   scene: Scene
@@ -39,6 +41,7 @@ export function SceneCard({
   readOnly,
   jobStartedAt,
 }: SceneCardProps) {
+  const { retryVoice } = useWorkspace()
   return (
     <div
       className={`group relative cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] backdrop-blur-md shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.25)] transition-all duration-200 hover:border-[var(--border-strong)] hover:shadow-[0_1px_2px_rgba(0,0,0,0.06),0_12px_32px_-12px_rgba(0,0,0,0.35)] ${isPlaying ? 'outline outline-2 outline-[var(--accent)]' : ''}`}
@@ -93,6 +96,23 @@ export function SceneCard({
             {scene.characters} {scene.characters === 1 ? 'character' : 'characters'}
           </span>
         </div>
+
+        {scene.voiceoverPending ? (
+          <div className="flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface2)] px-2 py-1 text-[11px] text-[var(--muted)]">
+            <Loader2 size={12} className="animate-spin" /> Generating voiceover…
+          </div>
+        ) : scene.voiceoverError ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); void retryVoice?.(scene.id) }}
+            disabled={readOnly}
+            title={scene.voiceoverError}
+            className="flex items-center gap-1.5 rounded-md border border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_10%,var(--surface2))] px-2 py-1 text-[11px] font-medium text-[var(--danger)] transition hover:bg-[color-mix(in_srgb,var(--danger)_18%,var(--surface2))] disabled:opacity-45"
+          >
+            <AlertTriangle size={12} /> Voiceover failed
+            <RefreshCw size={11} className="ml-0.5" /> Retry
+          </button>
+        ) : null}
       </div>
 
       {isPlaying && (
