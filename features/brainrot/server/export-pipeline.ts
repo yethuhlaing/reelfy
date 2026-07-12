@@ -122,7 +122,7 @@ export async function submitBrainrotSubtitles(input: {
       font_size: 72,
       font_color: 'white',
       highlight_color: 'yellow',
-      enable_animation: true,
+      enable_animation: false,
     },
     webhookUrl: input.webhookUrl,
   })
