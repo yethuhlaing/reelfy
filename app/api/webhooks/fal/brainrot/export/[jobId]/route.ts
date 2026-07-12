@@ -1,3 +1,4 @@
+import { after } from 'next/server'
 import { getJob, markFailed } from '@/shared/lib/jobs/store'
 import { readFalHeaders, verifyFalWebhook } from '@/shared/lib/jobs/verify-fal'
 import {
@@ -61,17 +62,25 @@ export async function POST(
     return new Response('ok')
   }
 
-  try {
-    if (job.payload.phase === 'compose') {
-      await handleBrainrotComposeWebhook(jobId, falVideoUrl)
-    } else {
-      await finalizeBrainrotExport(jobId, falVideoUrl)
+  // fal's webhook timeout is 15s. Finalizing the subtitle phase downloads the
+  // full rendered mp4 and re-uploads it to R2, which blows past that budget and
+  // makes fal record the delivery as "failed" (then retry 10x). Ack immediately
+  // and do the heavy work after the response. The handlers are idempotent (they
+  // early-return on completed/failed jobs and on phase mismatch), and the SSE
+  // reconciler is a backstop if this background run dies.
+  after(async () => {
+    try {
+      if (job.payload.phase === 'compose') {
+        await handleBrainrotComposeWebhook(jobId, falVideoUrl)
+      } else {
+        await finalizeBrainrotExport(jobId, falVideoUrl)
+      }
+    } catch (err) {
+      console.error('Brainrot export webhook failed', err)
+      await markFailed(jobId, err instanceof Error ? err.message : 'Export finalize failed')
+      await updateBrainrotProject(job.payload.projectId, job.payload.userId, { status: 'failed' })
     }
-  } catch (err) {
-    console.error('Brainrot export webhook failed', err)
-    await markFailed(jobId, err instanceof Error ? err.message : 'Export finalize failed')
-    await updateBrainrotProject(job.payload.projectId, job.payload.userId, { status: 'failed' })
-  }
+  })
 
   return new Response('ok')
 }

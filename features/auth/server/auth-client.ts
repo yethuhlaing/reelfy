@@ -5,7 +5,7 @@ import { env } from '@/shared/lib/env'
 import { auth } from './auth'
 
 export const authClient = createAuthClient({
-  baseURL: env.NEXT_PUBLIC_BETTER_AUTH_URL,
+  baseURL: env.BETTER_AUTH_URL,
   plugins: [inferAdditionalFields<typeof auth>(), polarClient()],
 })
 

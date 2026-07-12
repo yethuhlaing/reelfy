@@ -120,14 +120,12 @@ async function main() {
 
   const trimmed = tunnelUrl.replace(/\/$/, '')
   updateEnvKey('WEBHOOK_BASE_URL', trimmed)
-  updateEnvKey('PUBLIC_BASE_URL', trimmed)
 
   console.log(`[dev] WEBHOOK_BASE_URL → ${trimmed}`)
   console.log('[dev] Updated .env — Fal webhooks will use this URL until you stop dev')
 
   nextProc = runNext({
     WEBHOOK_BASE_URL: trimmed,
-    PUBLIC_BASE_URL: trimmed,
   })
 
   nextProc.on('exit', (code) => shutdown(code ?? 0))

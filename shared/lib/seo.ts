@@ -1,4 +1,4 @@
-const SITE_URL = process.env.PUBLIC_BASE_URL || 'https://reelfy.me'
+const SITE_URL = 'https://reelfyme.com'
 
 export const SEO = {
   siteUrl: SITE_URL,

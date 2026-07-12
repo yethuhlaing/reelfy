@@ -34,7 +34,6 @@ export const env = createEnv({
     R2_SECRET_ACCESS_KEY: optionalNonEmpty,
     R2_BUCKET_NAME: optionalNonEmpty,
     WEBHOOK_BASE_URL: optionalUrl,
-    PUBLIC_BASE_URL: optionalUrl,
 
     // Defaults
     IMAGE_MODEL: z.enum(['flux-schnell-fal', 'flux-dev-fal', 'sdxl-lightning-fal']).optional(),
@@ -56,7 +55,7 @@ export const env = createEnv({
     SKIP_ENV_VALIDATION: z.enum(['0', '1']).optional(),
   },
   client: {
-    NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),
+    BETTER_AUTH_URL: z.string().url(),
     NEXT_PUBLIC_CDN_URL: optionalUrl,
   },
   runtimeEnv: {
@@ -79,7 +78,6 @@ export const env = createEnv({
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
     R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
     WEBHOOK_BASE_URL: process.env.WEBHOOK_BASE_URL,
-    PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL,
     IMAGE_MODEL: process.env.IMAGE_MODEL,
     MUSIC_MODEL: process.env.MUSIC_MODEL,
     POLAR_ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,
@@ -93,7 +91,7 @@ export const env = createEnv({
     PORT: process.env.PORT,
     WEBHOOK_SKIP_TUNNEL: process.env.WEBHOOK_SKIP_TUNNEL,
     SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
-    NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     NEXT_PUBLIC_CDN_URL: process.env.NEXT_PUBLIC_CDN_URL,
   },
   emptyStringAsUndefined: true,
@@ -102,9 +100,9 @@ export const env = createEnv({
 
 /** Fal webhooks + enqueue targets (dev tunnel writes WEBHOOK_BASE_URL). */
 export function webhookBaseUrl(): string {
-  const raw = env.WEBHOOK_BASE_URL ?? env.PUBLIC_BASE_URL
+  const raw = env.WEBHOOK_BASE_URL
   if (!raw) {
-    throw new Error('WEBHOOK_BASE_URL or PUBLIC_BASE_URL must be set')
+    throw new Error('WEBHOOK_BASE_URL must be set')
   }
   return raw.replace(/\/$/, '')
 }
