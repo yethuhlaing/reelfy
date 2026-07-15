@@ -13,7 +13,6 @@ export const env = createEnv({
 
     // Auth (Better Auth)
     BETTER_AUTH_SECRET: z.string().min(1),
-    BETTER_AUTH_URL: z.string().url(),
     GOOGLE_CLIENT_ID: optionalNonEmpty,
     GOOGLE_CLIENT_SECRET: optionalNonEmpty,
 
@@ -54,8 +53,10 @@ export const env = createEnv({
     WEBHOOK_SKIP_TUNNEL: z.enum(['0', '1']).optional(),
     SKIP_ENV_VALIDATION: z.enum(['0', '1']).optional(),
   },
-  client: {
+  shared: {
     BETTER_AUTH_URL: z.string().url(),
+  },
+  client: {
     NEXT_PUBLIC_CDN_URL: optionalUrl,
   },
   runtimeEnv: {
@@ -91,7 +92,6 @@ export const env = createEnv({
     PORT: process.env.PORT,
     WEBHOOK_SKIP_TUNNEL: process.env.WEBHOOK_SKIP_TUNNEL,
     SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
-    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     NEXT_PUBLIC_CDN_URL: process.env.NEXT_PUBLIC_CDN_URL,
   },
   emptyStringAsUndefined: true,

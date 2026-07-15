@@ -5,6 +5,9 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url))
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+  },
   // HMR websocket is blocked cross-origin by default; 127.0.0.1 vs localhost triggers reload loops.
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
   turbopack: {
