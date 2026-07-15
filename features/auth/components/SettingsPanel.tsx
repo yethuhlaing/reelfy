@@ -1,14 +1,14 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { CreditWallet } from '@/features/billing/components/CreditWallet'
 
 interface ConnectedAccount {
   id: string
@@ -121,21 +121,7 @@ export function SettingsPanel({ initialProfile, credits, connectedAccounts }: Se
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Credit balance</CardTitle>
-            <CardDescription>Current available generation credits.</CardDescription>
-            <CardAction>
-              <Button asChild size="sm">
-                <Link href="/pricing">Buy credits</Link>
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <p className="font-[var(--font-mono)] text-3xl font-semibold tabular-nums">{credits.toLocaleString()}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Credits are deducted when scenes are generated.</p>
-          </CardContent>
-        </Card>
+        <CreditWallet credits={credits} />
       </div>
 
       <Card>

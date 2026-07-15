@@ -65,7 +65,9 @@ export async function nextBrainrotChunkCursor(categoryId: string): Promise<numbe
 }
 
 export async function getFreeCreditsOnSignup(): Promise<number> {
-  const value = await getAppConfigValue(FREE_CREDITS_ON_SIGNUP_KEY, '0')
+  // Default: enough for a new user to finish one video (cheapest export ~19cr).
+  // One-time grant on signup — the free tier has no monthly refill.
+  const value = await getAppConfigValue(FREE_CREDITS_ON_SIGNUP_KEY, '25')
   const parsed = Number.parseInt(value, 10)
   return toNonNegativeInt(parsed)
 }

@@ -24,8 +24,8 @@ const PLANS: Record<ProductSlug, PlanConfig> = {
     productId: undefined,
     priceUsd: 0,
     interval: 'month',
-    monthlyCredits: 10,
-    features: ['10 credits/mo', 'Watermarked exports', 'Community support'],
+    monthlyCredits: 25,
+    features: ['25 free credits to start', 'Watermarked exports', 'Community support'],
   },
   starter: {
     slug: 'starter',
@@ -46,7 +46,7 @@ const PLANS: Record<ProductSlug, PlanConfig> = {
     priceUsd: 29,
     interval: 'month',
     monthlyCredits: 1000,
-    features: ['1000 credits/mo', 'All models', 'Priority queue', 'Metered overage'],
+    features: ['1000 credits/mo', 'All models', 'Priority queue'],
   },
   credits_small: {
     slug: 'credits_small',

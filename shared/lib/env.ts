@@ -54,7 +54,7 @@ export const env = createEnv({
     SKIP_ENV_VALIDATION: z.enum(['0', '1']).optional(),
   },
   shared: {
-    BETTER_AUTH_URL: z.string().url(),
+    APP_URL: z.string().url(),
   },
   client: {
     NEXT_PUBLIC_CDN_URL: optionalUrl,
@@ -63,7 +63,7 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     DATABASE_URL: process.env.DATABASE_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    APP_URL: process.env.APP_URL,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     FAL_KEY: process.env.FAL_KEY,

@@ -3,6 +3,7 @@ import { getImageProvider } from '@/shared/lib/providers/image/image'
 import { getTextProvider } from '@/shared/lib/providers/text/text'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getCredits, deductCredits } from '@/shared/lib/db/credits'
+import { VISUAL_PRICING } from '@/features/billing/server/credit-catalog'
 import { upsertStoryWithScenes, updateStoryMeta } from '@/features/stories/server/stories-db'
 import { toUserErrorMessage } from '@/shared/lib/user-error-message'
 import { fireAndForgetUsage } from '@/features/billing/server/usage'
@@ -10,10 +11,10 @@ import { clearStoryAssetsBeforeRegenerate, completeSceneImage } from '@/features
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-const IMAGE_MODEL_CREDITS: Record<ImageModel, number> = {
-  'flux-schnell-fal': 1,
-  'flux-dev-fal': 2,
-  'sdxl-lightning-fal': 1,
+// Credits per image model are derived from the central credit catalog (single
+// source of truth) so story generation can't drift from lofi/other features.
+function imageModelCredits(model: ImageModel): number {
+  return VISUAL_PRICING[model]?.credits ?? 1
 }
 
 // How many scene images to generate concurrently, and how long one image may take
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
 
   const textProvider = getTextProvider(textModel)
   const imageProvider = getImageProvider(imageModel)
-  const creditsPerScene = IMAGE_MODEL_CREDITS[imageModel ?? 'flux-schnell-fal'] ?? 1
+  const creditsPerScene = imageModelCredits(imageModel ?? 'flux-schnell-fal')
   const signal = request.signal
 
   const encoder = new TextEncoder()

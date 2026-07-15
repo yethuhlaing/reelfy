@@ -12,7 +12,8 @@ import {
   prepareBrainrotExportAssets,
   submitBrainrotCompose,
 } from '@/features/brainrot/server/export-pipeline'
-import { BRAINROT_EXPORT_CREDITS, COMPOSE_MODEL_ID } from '@/features/brainrot/constants'
+import { brainrotExportCredits } from '@/features/brainrot/constants'
+import { COMPOSE_MODEL_ID } from '@/features/brainrot/constants'
 import type { BrainrotCaptionPosition, BrainrotFormat } from '@/shared/lib/types/brainrot'
 import type { BrainrotExportPayload } from '@/shared/lib/jobs/types'
 import type { WordTiming } from '@/shared/lib/types'
@@ -102,7 +103,8 @@ export async function POST(request: Request) {
     captionPosition,
   })
 
-  const creditsToCharge = captionOnly ? 0 : BRAINROT_EXPORT_CREDITS
+  const wordCount = trimmedScript.split(/\s+/).filter(Boolean).length
+  const creditsToCharge = captionOnly ? 0 : brainrotExportCredits(wordCount)
   let balance = await getCredits(userId)
   let jobId: string | null = null
 

@@ -5,14 +5,9 @@ import { getStoryForUser, parseOptions } from '@/features/stories/server/stories
 import { clearSceneVideo, completeSceneImage } from '@/features/stories/server/story-assets'
 import { fireAndForgetUsage } from '@/features/billing/server/usage'
 import type { ImageModel } from '@/shared/lib/types'
+import { VISUAL_PRICING } from '@/features/billing/server/credit-catalog'
 export const runtime = 'nodejs'
 export const maxDuration = 120
-
-const IMAGE_MODEL_CREDITS: Record<ImageModel, number> = {
-  'flux-schnell-fal': 1,
-  'flux-dev-fal': 2,
-  'sdxl-lightning-fal': 1,
-}
 
 export async function POST(request: Request) {
   const session = await requireUserSession(request)
@@ -44,7 +39,7 @@ export async function POST(request: Request) {
 
   const options = parseOptions(result.story.options)
   const imageModel = (options?.imageModel ?? 'flux-schnell-fal') as ImageModel
-  const credits = IMAGE_MODEL_CREDITS[imageModel] ?? 1
+  const credits = VISUAL_PRICING[imageModel]?.credits ?? 1
 
   const balance = await getCredits(userId)
   if (balance < credits) {

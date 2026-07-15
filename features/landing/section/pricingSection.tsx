@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/shared/ui/card";
 import { cn } from "@/shared/lib/utils";
 import NumberFlow from "@number-flow/react";
@@ -7,67 +8,9 @@ import { motion } from "motion/react";
 import { useId, useRef, useState } from "react";
 import { VerticalCutReveal } from "../components/vertical-cut-reveal";
 import { TimelineContent } from "@/shared/components/timeline-animation";
+import { PLAN_DISPLAY } from "@/features/billing/plans-display";
 
-const plans = [
-  {
-    name: "Starter",
-    description:
-      "Great for small businesses and startups looking to get started with AI",
-    price: 12,
-    yearlyPrice: 99,
-    buttonText: "Get started",
-    buttonVariant: "outline" as const,
-    includes: [
-      "Free includes:",
-      "Unlimted Cards",
-      "Custom background & stickers",
-      "2-factor authentication",
-      "Free includes:",
-      "Unlimted Cards",
-      "Custom background & stickers",
-      "2-factor authentication",
-    ],
-  },
-  {
-    name: "Business",
-    description:
-      "Best value for growing businesses that need more advanced features",
-    price: 48,
-    yearlyPrice: 399,
-    buttonText: "Get started",
-    buttonVariant: "default" as const,
-    popular: true,
-    includes: [
-      "Everything in Starter, plus:",
-      "Advanced checklists",
-      "Custom fields",
-      "Servedless functions",
-      "Everything in Starter, plus:",
-      "Advanced checklists",
-      "Custom fields",
-      "Servedless functions",
-    ],
-  },
-  {
-    name: "Enterprise",
-    description:
-      "Advanced plan with enhanced security and unlimited access for large teams",
-    price: 96,
-    yearlyPrice: 899,
-    buttonText: "Get started",
-    buttonVariant: "outline" as const,
-    includes: [
-      "Everything in Business, plus:",
-      "Multi-board management",
-      "Multi-board guest",
-      "Attachment permissions",
-      "Everything in Business, plus:",
-      "Multi-board management",
-      "Multi-board guest",
-      "Attachment permissions",
-    ],
-  },
-];
+const plans = PLAN_DISPLAY;
 
 const PricingSwitch = ({ onSwitch }: { onSwitch: (value: string) => void }) => {
   const [selected, setSelected] = useState("0");
@@ -113,7 +56,12 @@ const PricingSwitch = ({ onSwitch }: { onSwitch: (value: string) => void }) => {
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />
           )}
-          <span className="relative flex items-center gap-2">Yearly</span>
+          <span className="relative flex items-center gap-2">
+            Yearly
+            <span className="rounded-full bg-coral/15 px-1.5 py-0.5 text-[10px] font-semibold text-coral">
+              2 months free
+            </span>
+          </span>
         </button>
       </div>
     </div>
@@ -245,13 +193,13 @@ export default function PricingSection() {
               <Card
                 className={cn(
                   "relative h-full border-0 bg-card/80 text-card-foreground shadow-none ring-1 ring-white/[0.06]",
-                  plan.popular &&
+                  plan.highlight &&
                     "z-20 ring-coral/20 shadow-[0_-8px_80px_-12px_var(--coral-glow)]",
                 )}
               >
-                {plan.popular && (
+                {plan.highlight && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-coral px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
-                    Popular
+                    Most popular
                   </span>
                 )}
                 <CardHeader className="text-left">
@@ -263,53 +211,58 @@ export default function PricingSection() {
                       $
                       <NumberFlow
                         format={{ currency: "USD" }}
-                        value={isYearly ? plan.yearlyPrice : plan.price}
+                        value={isYearly ? plan.yearlyUsd : plan.priceUsd}
                         className="text-4xl font-semibold"
                       />
                     </span>
                     <span className="ml-1 text-muted-foreground">
-                      /{isYearly ? "year" : "month"}
+                      {plan.priceUsd === 0 ? "forever" : `/${isYearly ? "year" : "month"}`}
                     </span>
                   </div>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    {plan.description}
+
+                  {/* Credit allotment — the heart of the model, shown up front. */}
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-coral/10 px-3 py-1 text-xs font-semibold text-coral ring-1 ring-coral/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-coral" aria-hidden />
+                    {plan.monthlyCredits.toLocaleString()} credits
+                    {plan.priceUsd === 0 ? " to start" : " / month"}
+                  </div>
+
+                  <p className="mb-4 mt-3 text-sm text-muted-foreground">
+                    {plan.tagline}
                   </p>
                 </CardHeader>
 
                 <CardContent className="pt-0">
-                  <button
-                    type="button"
+                  <Link
+                    href="/pricing"
                     className={cn(
-                      "mb-6 w-full rounded-xl p-4 text-sm font-semibold transition-opacity hover:opacity-90",
-                      plan.popular
+                      "mb-6 flex w-full items-center justify-center rounded-xl p-4 text-sm font-semibold transition-opacity hover:opacity-90",
+                      plan.highlight
                         ? "bg-coral text-white shadow-[0_8px_24px_var(--coral-glow)]"
                         : "bg-secondary/80 text-foreground",
                     )}
                   >
-                    {plan.buttonText}
-                  </button>
+                    {plan.priceUsd === 0 ? "Get started free" : "Get started"}
+                  </Link>
 
-                  <div className="space-y-3 border-t border-white/[0.06] pt-4">
-                    <h4 className="mb-3 text-base font-medium">
-                      {plan.includes[0]}
-                    </h4>
-                    <ul className="space-y-2">
-                      {plan.includes.slice(1).map((feature, featureIndex) => (
-                        <li
-                          key={featureIndex}
-                          className="flex items-center gap-2"
-                        >
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full bg-coral/70"
-                            aria-hidden
-                          />
-                          <span className="text-sm text-muted-foreground">
-                            {feature}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <ul className="space-y-2 border-t border-white/[0.06] pt-4">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center gap-2">
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full bg-coral/70"
+                          aria-hidden
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Credits fund every generator; nudge toward top-ups. */}
+                  <p className="mt-4 text-xs text-muted-foreground/70">
+                    Need more? Top up with credit packs anytime.
+                  </p>
                 </CardContent>
               </Card>
             </TimelineContent>

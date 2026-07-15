@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/shared/ui/text-area";
 import { Button } from "@/shared/ui/button";
@@ -27,6 +28,8 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 const CATEGORIES = CREATE_CATEGORY_LINKS.map((c) => ({
   id: c.id,
   label: c.navLabel,
+  description: c.description ?? "",
+  image: c.image,
   icon: c.glyph ? (
     <span className="font-bold text-base leading-none">{c.glyph}</span>
   ) : c.icon ? (
@@ -97,94 +100,118 @@ export default function RuixenMoonChat({ onCategorySelect }: RuixenMoonChatProps
   };
 
   return (
-    <div className="relative flex min-h-0 w-full flex-1 flex-col items-center">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/ai-chat.png')" }}
-      />
-      <div className="relative z-10 flex flex-1 w-full flex-col items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-semibold text-foreground drop-shadow-sm">
-            Ruixen AI
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Build something amazing — just start typing below.
-          </p>
-        </div>
-      </div>
-
-      <div className="relative z-10 w-full max-w-3xl mb-[20vh]">
-        <div className="relative bg-[var(--surface)] backdrop-blur-md rounded-xl border border-[var(--border)]">
-          <Textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => {
-              setMessage(e.target.value);
-              adjustHeight();
-            }}
-            placeholder="Type your request..."
-            className={cn(
-              "w-full px-4 py-3 resize-none border-none",
-              "bg-transparent text-foreground text-sm",
-              "focus-visible:ring-0 focus-visible:ring-offset-0",
-              "placeholder:text-muted-foreground min-h-[48px]"
-            )}
-            style={{ overflow: "hidden" }}
-          />
-
-          <div className="flex items-center justify-between p-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:bg-[var(--surface2)]"
-            >
-              <Paperclip className="w-4 h-4" />
-            </Button>
-
-            <Button
-              disabled
+    <div className="flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto bg-background px-6 py-10">
+      <div className="w-full max-w-5xl">
+        <div className="mx-auto mt-10 w-full max-w-3xl">
+          <div className="relative rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+            <Textarea
+              ref={textareaRef}
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                adjustHeight();
+              }}
+              placeholder="Type your request..."
               className={cn(
-                "flex items-center gap-1 px-3 py-2 rounded-lg transition-colors",
-                "bg-[var(--surface2)] text-muted-foreground cursor-not-allowed"
+                "w-full px-4 py-3 resize-none border-none",
+                "bg-transparent text-foreground text-sm",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+                "placeholder:text-muted-foreground min-h-[48px]"
               )}
-            >
-              <ArrowUpIcon className="w-4 h-4" />
-              <span className="sr-only">Send</span>
-            </Button>
+              style={{ overflow: "hidden" }}
+            />
+
+            <div className="flex items-center justify-between p-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:bg-[var(--surface2)]"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+
+              <Button
+                disabled
+                className={cn(
+                  "flex items-center gap-1 px-3 py-2 rounded-lg transition-colors",
+                  "bg-[var(--surface2)] text-muted-foreground cursor-not-allowed"
+                )}
+              >
+                <ArrowUpIcon className="w-4 h-4" />
+                <span className="sr-only">Send</span>
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-center flex-wrap gap-3 mt-6">
-          {CATEGORIES.map((cat) => (
-            <CategoryButton
-              key={cat.id}
-              icon={cat.icon}
-              label={cat.label}
-              onClick={() => handleCategoryClick(cat.id)}
-            />
-          ))}
+        <div className="mt-12">
+          <h2 className="text-lg font-semibold text-foreground">Templates</h2>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {CATEGORIES.map((cat) => (
+              <TemplateCard
+                key={cat.id}
+                icon={cat.icon}
+                image={cat.image}
+                label={cat.label}
+                description={cat.description}
+                onClick={() => handleCategoryClick(cat.id)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-interface CategoryButtonProps {
+interface TemplateCardProps {
   icon: React.ReactNode;
+  image?: string;
   label: string;
+  description: string;
   onClick: () => void;
 }
 
-function CategoryButton({ icon, label, onClick }: CategoryButtonProps) {
+function TemplateCard({
+  icon,
+  image,
+  label,
+  description,
+  onClick,
+}: TemplateCardProps) {
   return (
-    <Button
-      variant="outline"
+    <button
+      type="button"
       onClick={onClick}
-      className="flex items-center gap-2 rounded-full border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:text-foreground hover:bg-[var(--surface2)]"
+      className={cn(
+        "group flex flex-col items-stretch text-left transition-opacity focus-visible:outline-none",
+        "focus-visible:ring-2 focus-visible:ring-foreground/20 rounded-2xl"
+      )}
     >
-      {icon}
-      <span className="text-xs">{label}</span>
-    </Button>
+      <div
+        className={cn(
+          "relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface2)]",
+          "transition-colors group-hover:border-foreground/20"
+        )}
+      >
+        {image ? (
+          <Image
+            src={image}
+            alt={label}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center text-2xl text-foreground">
+            {icon}
+          </span>
+        )}
+      </div>
+      <span className="mt-3 text-sm font-medium text-foreground">{label}</span>
+      <span className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+        {description}
+      </span>
+    </button>
   );
 }

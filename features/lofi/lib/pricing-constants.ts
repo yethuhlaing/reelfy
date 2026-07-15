@@ -1,23 +1,9 @@
-export const RENDER_CREDITS = 5
-export const RENDER_COST_USD = 0.5
+import { MUSIC_PRICING, VISUAL_PRICING } from '@/features/billing/server/credit-catalog'
+
+export { RENDER_CREDITS, RENDER_COST_USD } from '@/features/billing/server/credit-catalog'
+export { MUSIC_PRICING, VISUAL_PRICING }
+
 export const MIN_MUSIC_LOOPS = 10
-
-export const MUSIC_PRICING: Record<string, { creditsPerLoop: number; costPerLoopUsd: number }> = {
-  minimax: { creditsPerLoop: 5, costPerLoopUsd: 0.1 },
-  'stable-audio': { creditsPerLoop: 2, costPerLoopUsd: 0.05 },
-  cassette: { creditsPerLoop: 1, costPerLoopUsd: 0.01 },
-  freetouse: { creditsPerLoop: 0, costPerLoopUsd: 0 },
-}
-
-export const VISUAL_PRICING: Record<string, { credits: number; costUsd: number }> = {
-  'flux-schnell-fal': { credits: 1, costUsd: 0.003 },
-  'flux-dev-fal': { credits: 5, costUsd: 0.05 },
-  'gemini-2.5-flash-image': { credits: 2, costUsd: 0.01 },
-  'sdxl-lightning-fal': { credits: 1, costUsd: 0.003 },
-  'ltx-video-fal': { credits: 5, costUsd: 0.1 },
-  'longcat-fal': { credits: 10, costUsd: 0.2 },
-  'kling-fal': { credits: 25, costUsd: 0.5 },
-}
 
 const DURATION_MIN_MIN = 5
 const DURATION_MAX_MIN = 120

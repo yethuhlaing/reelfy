@@ -7,11 +7,12 @@ import { toast } from 'sonner'
 import { Stepper } from '@/shared/ui/stepper'
 import {
   BRAINROT_CAPTION_POSITION_OPTIONS,
-  BRAINROT_EXPORT_CREDITS,
+  BRAINROT_EXPORT_MIN_CREDITS,
   BRAINROT_FORMAT_OPTIONS,
   BRAINROT_SCRIPT_MAX_WORDS,
   BRAINROT_SECONDS_PER_WORD,
   BRAINROT_WRITE_CREDITS,
+  brainrotExportCredits,
 } from '@/features/brainrot/constants'
 import { brainrotHref } from '@/shared/lib/categories'
 import type { BrainrotCaptionPosition, BrainrotFormat } from '@/shared/lib/types/brainrot'
@@ -135,6 +136,8 @@ export function BrainrotForm({ onBackToStart }: { onBackToStart?: () => void }) 
   const currentStepIndex = STEPS.findIndex((s) => s.id === step)
   const wordCount = countWords(script)
   const overLimit = wordCount > BRAINROT_SCRIPT_MAX_WORDS
+  // Export cost is bucketed by script length; show the live price for this script.
+  const exportCredits = wordCount > 0 ? brainrotExportCredits(wordCount) : BRAINROT_EXPORT_MIN_CREDITS
 
   const stopPreview = () => {
     audioRef.current?.pause()
@@ -301,7 +304,7 @@ export function BrainrotForm({ onBackToStart }: { onBackToStart?: () => void }) 
         </span>
         <h1 style={{ marginTop: 10 }}>New brainrot reel</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Gameplay background + AI voice + viral captions. {BRAINROT_EXPORT_CREDITS} credits per export.
+          Gameplay background + AI voice + viral captions. From {BRAINROT_EXPORT_MIN_CREDITS} credits per export.
         </p>
       </div>
 
@@ -586,7 +589,7 @@ export function BrainrotForm({ onBackToStart }: { onBackToStart?: () => void }) 
               ) : (
                 <Sparkles size={16} />
               )}
-              Generate video · {BRAINROT_EXPORT_CREDITS} credits
+              Generate video · {exportCredits} credits
             </button>
           ) : (
             <button

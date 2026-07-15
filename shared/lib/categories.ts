@@ -6,15 +6,49 @@ export type CreateCategoryLink = {
   navLabel: string
   icon?: LucideIcon
   glyph?: string
+  /** Short blurb shown on the /new template cards */
+  description?: string
+  /** Template card thumbnail under /public/images/templates/ */
+  image?: string
 }
 
 /** Available “create” entries shown in the sidebar (routes to /new?category=…) */
 export const CREATE_CATEGORY_LINKS: CreateCategoryLink[] = [
-  { id: 'stickman', navLabel: 'Animated characters', glyph: '◈' },
-  { id: 'brainrot', navLabel: 'Brainrot', glyph: '▶' },
-  { id: 'lofi', navLabel: 'Chill music & visuals', icon: Music2 },
-  { id: 'lofi-stock', navLabel: 'Stock music & visuals', glyph: '♪' },
-  { id: 'meme', navLabel: 'Meme generator', icon: Laugh },
+  {
+    id: 'stickman',
+    navLabel: 'Animated characters',
+    glyph: '◈',
+    description: 'Turn a script into an animated stickman story.',
+    image: '/images/templates/stickman.webp',
+  },
+  {
+    id: 'brainrot',
+    navLabel: 'Brainrot',
+    glyph: '▶',
+    description: 'Generate viral brainrot clips with captions.',
+    image: '/images/templates/brainrot.webp',
+  },
+  {
+    id: 'lofi',
+    navLabel: 'Chill music & visuals',
+    icon: Music2,
+    description: 'Create a looping lofi music and visuals video.',
+    image: '/images/templates/lofi.webp',
+  },
+  {
+    id: 'lofi-stock',
+    navLabel: 'Stock music & visuals',
+    glyph: '♪',
+    description: 'Pair stock footage with a chill soundtrack.',
+    image: '/images/templates/lofi-stock.webp',
+  },
+  {
+    id: 'meme',
+    navLabel: 'Meme generator',
+    icon: Laugh,
+    description: 'Spin up shareable memes in seconds.',
+    image: '/images/templates/meme.webp',
+  },
 ]
 
 /** Sidebar heading above create links — matches /new picker */

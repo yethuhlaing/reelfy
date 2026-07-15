@@ -1,5 +1,13 @@
-export const BRAINROT_EXPORT_CREDITS = 3
-export const BRAINROT_WRITE_CREDITS = 1
+// Credit costs are derived from real COGS in the central credit catalog. Export
+// cost is variable (bucketed by script length) — see brainrotExportCredits().
+export {
+  BRAINROT_WRITE_CREDITS,
+  BRAINROT_EXPORT_MIN_CREDITS,
+  BRAINROT_EXPORT_BUCKETS,
+  brainrotBucketForWords,
+  brainrotExportCredits,
+} from '@/features/billing/server/credit-catalog'
+
 export const BRAINROT_TARGET_WORDS_MIN = 90
 export const BRAINROT_TARGET_WORDS_MAX = 120
 export const BRAINROT_CHUNK_SEC = 30

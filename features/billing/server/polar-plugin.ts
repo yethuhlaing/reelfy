@@ -10,7 +10,7 @@ import {
 import { env } from '@/shared/lib/env'
 
 const webhookSecret = env.POLAR_WEBHOOK_SECRET
-const successUrl = env.POLAR_SUCCESS_URL ?? `${env.BETTER_AUTH_URL}/dashboard?checkout=success`
+const successUrl = env.POLAR_SUCCESS_URL ?? `${env.APP_URL}/dashboard?checkout=success`
 
 const products = polarProductsList()
 

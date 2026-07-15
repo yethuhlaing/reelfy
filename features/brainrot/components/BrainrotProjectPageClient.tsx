@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { BrainrotProject } from '@/shared/lib/types/brainrot'
-import { BRAINROT_EXPORT_CREDITS } from '@/features/brainrot/constants'
+import { BRAINROT_EXPORT_MIN_CREDITS } from '@/features/brainrot/constants'
 import { getGameplayCategory } from '@/shared/data/gameplay-catalog'
 import { brainrotVoiceOverride } from '@/shared/data/brainrot-voices'
 
@@ -235,7 +235,7 @@ export function BrainrotProjectPageClient({ project: initial }: { project: Brain
               onClick={() => router.push('/new?category=brainrot')}
               className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-ink,#fff)] transition hover:opacity-90"
             >
-              <RotateCcw size={15} /> Start a new reel · {BRAINROT_EXPORT_CREDITS} credits
+              <RotateCcw size={15} /> Start a new reel · from {BRAINROT_EXPORT_MIN_CREDITS} credits
             </button>
           )}
         </div>

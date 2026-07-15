@@ -119,7 +119,7 @@ export async function submitBrainrotSubtitles(input: {
       y_offset: subtitleYOffset(position),
       words_per_subtitle: 1,
       font_name: 'Montserrat',
-      font_size: 72,
+      font_size: 84,
       font_color: 'white',
       highlight_color: 'yellow',
       enable_animation: false,
