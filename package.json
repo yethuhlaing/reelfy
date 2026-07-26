@@ -20,9 +20,11 @@
     "seed:memes": "tsx scripts/seed-memes.ts",
     "prepare:brainrot": "tsx scripts/prepare-brainrot-backgrounds.ts",
     "recompress:brainrot": "tsx scripts/recompress-brainrot-backgrounds.ts",
-    "ingest:brainrot": "tsx scripts/ingest-brainrot-backgrounds.ts"
+    "ingest:brainrot": "tsx scripts/ingest-brainrot-backgrounds.ts",
+    "trigger:dev": "trigger dev"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.15",
     "@aws-sdk/client-s3": "^3.1084.0",
     "@fal-ai/client": "^1.6.1",
     "@google/generative-ai": "^0.24.1",
@@ -42,8 +44,11 @@
     "@react-three/fiber": "^9.6.1",
     "@resvg/resvg-js": "^2.6.2",
     "@t3-oss/env-nextjs": "^0.13.11",
+    "@trigger.dev/react-hooks": "^4.5.4",
+    "@trigger.dev/sdk": "^4.5.4",
     "@upstash/redis": "^1.38.0",
     "@vercel/functions": "^3.6.0",
+    "ai": "^7.0.28",
     "better-auth": "^1.6.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -70,6 +75,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.2",
+    "@trigger.dev/build": "^4.5.4",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -78,6 +84,7 @@
     "postcss": "^8.5",
     "postcss-load-config": "^6.0.0",
     "tailwindcss": "^4.3.2",
+    "trigger.dev": "^4.5.4",
     "tsx": "^4.22.3",
     "typescript": "5.7.3"
   }

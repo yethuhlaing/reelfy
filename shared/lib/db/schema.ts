@@ -39,11 +39,16 @@ const createdAt = timestamp('created_at', { withTimezone: true }).notNull().defa
 const updatedAt = timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 
 // BetterAuth tables
-export const rateLimit = pgTable('rate_limit', {
-  key: text('key').primaryKey(),
-  count: integer('count').notNull(),
-  lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
-})
+export const rateLimit = pgTable(
+  'rate_limit',
+  {
+    id: text('id').primaryKey(),
+    key: text('key').notNull(),
+    count: integer('count').notNull(),
+    lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
+  },
+  (table) => [uniqueIndex('rate_limit_key_unique').on(table.key)],
+)
 export const user = pgTable(
   'user',
   {
@@ -453,6 +458,66 @@ export const memeGenerations = pgTable(
   }),
 )
 
+export const runs = pgTable('runs', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  storyId: text('story_id').references(() => stories.id, { onDelete: 'set null' }),
+  prompt: text('prompt').notNull(),
+  pipeline: text('pipeline'),
+  brief: jsonb('brief'),
+  stage: text('stage').notNull().default('route'),
+  status: text('status').notNull().default('running'),
+  decisionLog: jsonb('decision_log').notNull().default(sql`'[]'::jsonb`),
+  gateToken: text('gate_token'),
+  triggerRunId: text('trigger_run_id'),
+  costEstimate: integer('cost_estimate').notNull().default(0),
+  costActual: integer('cost_actual').notNull().default(0),
+  error: text('error'),
+  createdAt,
+  updatedAt,
+})
+
+export const creditHolds = pgTable(
+  'credit_holds',
+  {
+    id: text('id').primaryKey(),
+    runId: text('run_id')
+      .notNull()
+      .references(() => runs.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    amount: integer('amount').notNull(),
+    consumed: integer('consumed').notNull().default(0),
+    released: boolean('released').notNull().default(false),
+    createdAt,
+    updatedAt,
+  },
+  (t) => ({
+    runIdx: uniqueIndex('credit_holds_run_uidx').on(t.runId),
+  }),
+)
+
+export const creditCharges = pgTable(
+  'credit_charges',
+  {
+    id: text('id').primaryKey(),
+    runId: text('run_id')
+      .notNull()
+      .references(() => runs.id, { onDelete: 'cascade' }),
+    assetId: text('asset_id').notNull(),
+    operation: text('operation').notNull(),
+    credits: integer('credits').notNull(),
+    costUsd: numeric('cost_usd', { precision: 10, scale: 4 }).notNull().default('0'),
+    createdAt,
+  },
+  (t) => ({
+    runAssetUidx: uniqueIndex('credit_charges_run_asset_uidx').on(t.runId, t.assetId),
+  }),
+)
+
 export const schema = {
   user,
   session,
@@ -473,6 +538,9 @@ export const schema = {
   memes,
   memeGenerations,
   brainrotProjects,
+  runs,
+  creditHolds,
+  creditCharges,
 }
 
 export type DatabaseSchema = typeof schema

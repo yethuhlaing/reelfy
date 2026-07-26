@@ -81,10 +81,40 @@ interface RuixenMoonChatProps {
 export default function RuixenMoonChat({ onCategorySelect }: RuixenMoonChatProps) {
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 48,
     maxHeight: 150,
   });
+
+  const handleSend = async () => {
+    const prompt = message.trim();
+    if (!prompt || sending) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to start run");
+      }
+      if (data.publicAccessToken) {
+        try {
+          sessionStorage.setItem(`run-token:${data.runId}`, data.publicAccessToken);
+        } catch {}
+      }
+      router.push(`/dashboard/run/${data.runId}`);
+    } catch (e) {
+      setSendError(e instanceof Error ? e.message : "Failed to start run");
+    } finally {
+      setSending(false);
+    }
+  };
 
   const handleCategoryClick = (categoryId: string) => {
     if (message.trim()) {
@@ -111,7 +141,13 @@ export default function RuixenMoonChat({ onCategorySelect }: RuixenMoonChatProps
                 setMessage(e.target.value);
                 adjustHeight();
               }}
-              placeholder="Type your request..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleSend();
+                }
+              }}
+              placeholder="Describe the video you want to create..."
               className={cn(
                 "w-full px-4 py-3 resize-none border-none",
                 "bg-transparent text-foreground text-sm",
@@ -131,10 +167,13 @@ export default function RuixenMoonChat({ onCategorySelect }: RuixenMoonChatProps
               </Button>
 
               <Button
-                disabled
+                disabled={!message.trim() || sending}
+                onClick={() => void handleSend()}
                 className={cn(
                   "flex items-center gap-1 px-3 py-2 rounded-lg transition-colors",
-                  "bg-[var(--surface2)] text-muted-foreground cursor-not-allowed"
+                  message.trim() && !sending
+                    ? "bg-foreground text-background hover:opacity-90"
+                    : "bg-[var(--surface2)] text-muted-foreground cursor-not-allowed"
                 )}
               >
                 <ArrowUpIcon className="w-4 h-4" />
@@ -142,6 +181,9 @@ export default function RuixenMoonChat({ onCategorySelect }: RuixenMoonChatProps
               </Button>
             </div>
           </div>
+          {sendError && (
+            <p className="mt-2 text-sm text-red-400">{sendError}</p>
+          )}
         </div>
 
         <div className="mt-12">

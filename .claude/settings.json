@@ -19,7 +19,8 @@
       "Bash(git commit -m ' *)",
       "Bash(npx tsx *)",
       "Bash(pnpm db:generate)",
-      "Bash(rtk lint *)"
+      "Bash(rtk lint *)",
+      "mcp__trigger__get_run_details"
     ],
     "additionalDirectories": [
       "/Users/yethuhlaing/projects/stickman/app/api/export/[jobId]"

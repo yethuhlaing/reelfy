@@ -12,6 +12,27 @@ import { env } from '@/shared/lib/env'
 const googleClientId = env.GOOGLE_CLIENT_ID
 const googleClientSecret = env.GOOGLE_CLIENT_SECRET
 
+/**
+ * Given the canonical app URL, return the set of trusted origins including both
+ * the apex and the `www` subdomain so auth requests from either are accepted.
+ */
+function buildTrustedOrigins(appUrl: string): string[] {
+  const origins = new Set<string>()
+  try {
+    const url = new URL(appUrl)
+    origins.add(url.origin)
+    const host = url.hostname
+    if (host.startsWith('www.')) {
+      origins.add(`${url.protocol}//${host.slice(4)}`)
+    } else {
+      origins.add(`${url.protocol}//www.${host}`)
+    }
+  } catch {
+    origins.add(appUrl)
+  }
+  return [...origins]
+}
+
 // if (!googleClientId || !googleClientSecret) {
 //   throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required')
 // }
@@ -29,7 +50,9 @@ export const auth = betterAuth({
   }),
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.APP_URL,
-  trustedOrigins: [env.APP_URL],
+  // Accept both the canonical apex origin and its www subdomain. Requests may
+  // arrive at www.reelfyme.com before the host-level redirect to the apex.
+  trustedOrigins: buildTrustedOrigins(env.APP_URL),
   socialProviders: {
     google: {
       clientId: googleClientId!,

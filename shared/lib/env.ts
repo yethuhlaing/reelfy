@@ -52,6 +52,8 @@ export const env = createEnv({
     PORT: z.string().optional(),
     WEBHOOK_SKIP_TUNNEL: z.enum(['0', '1']).optional(),
     SKIP_ENV_VALIDATION: z.enum(['0', '1']).optional(),
+
+    TRIGGER_SECRET_KEY: optionalNonEmpty,
   },
   shared: {
     APP_URL: z.string().url(),
@@ -92,6 +94,7 @@ export const env = createEnv({
     PORT: process.env.PORT,
     WEBHOOK_SKIP_TUNNEL: process.env.WEBHOOK_SKIP_TUNNEL,
     SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
+    TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,
     NEXT_PUBLIC_CDN_URL: process.env.NEXT_PUBLIC_CDN_URL,
   },
   emptyStringAsUndefined: true,

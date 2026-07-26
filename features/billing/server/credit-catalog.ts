@@ -59,6 +59,10 @@ export type OperationKey =
   | 'brainrot_write'
   | 'brainrot_export'
   | 'lofi_render'
+  | 'scene_image'
+  | 'scene_voice'
+  | 'scene_video'
+  | 'chat_compose'
 
 /** Rate cards for provider costs used to build op COGS. */
 export const RATES = {
