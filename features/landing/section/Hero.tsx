@@ -29,6 +29,23 @@ const OUTCOMES = [
 const OLD_WAY = ["Storyboard", "Record & edit", "Export & revise"] as const;
 const REELFY_WAY = ["Describe your idea", "AI builds the video", "Download MP4"] as const;
 
+const heroImageReveal = {
+  hidden: { opacity: 0, scale: 1.08 },
+  show: { opacity: 1, scale: 1 },
+};
+
+const heroLineReveal = {
+  hidden: { opacity: 0, y: 32 },
+  show: { opacity: 1, y: 0 },
+};
+
+const heroHeadlineStagger = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.14, delayChildren: 0.2 },
+  },
+};
+
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   show: { opacity: 1, y: 0 },
@@ -113,18 +130,26 @@ export default function Hero() {
       id="hero-section"
       style={{ background: "var(--hero-sunset)" }}
     >
-      <div
-        className="hero-fade-in pointer-events-none absolute inset-0 z-0 h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:hidden"
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-0 h-full min-h-[100dvh] w-full origin-center select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:hidden"
         aria-hidden
+        variants={heroImageReveal}
+        initial="hidden"
+        animate="show"
+        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
       />
-      <div
+      <motion.div
         className={cn(
-          "hero-fade-in pointer-events-none absolute z-0 hidden h-full min-h-[100dvh] w-full select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:block",
+          "pointer-events-none absolute z-0 hidden h-full min-h-[100dvh] w-full origin-[52%_22%] select-none bg-[url('/images/hero.webp')] bg-cover bg-center bg-no-repeat lg:block",
           "lg:inset-auto lg:right-[6%] lg:top-[6%] lg:h-[94%] lg:min-h-0 lg:w-[58%] lg:bg-contain lg:bg-[center_top]",
           "lg:[mask-image:radial-gradient(ellipse_85%_80%_at_52%_22%,black_58%,transparent_92%)]",
           "lg:[-webkit-mask-image:radial-gradient(ellipse_85%_80%_at_52%_22%,black_58%,transparent_92%)]",
         )}
         aria-hidden
+        variants={heroImageReveal}
+        initial="hidden"
+        animate="show"
+        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
       />
 
       {/* Top vignette — nav & headline legibility */}
@@ -148,22 +173,23 @@ export default function Hero() {
       <div className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-full flex-col justify-between gap-6 px-8 pb-10 pt-10">
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 flex flex-col justify-start">
-            <h1 className="mt-44 font-display text-[12vw] font-black uppercase leading-[0.88] tracking-tighter sm:mt-20 sm:text-[11vw] md:mt-24 md:text-[10vw] lg:mt-24 lg:text-[128px] xl:text-[140px]">
-              {/* Static text with a transform-only CSS rise. This is the LCP
-                  element — it must paint on the first frame and never change
-                  width. The old HyperText letter-scramble made LCP wait for the
-                  JS animation to finish (~6.6s) and caused ~0.29 CLS from
-                  per-frame letter-width jitter. */}
-              <span className="hero-rise block text-white" style={{ animationDelay: "0.05s" }}>
-                Animate
-              </span>
-              <span className="hero-rise block text-white" style={{ animationDelay: "0.12s" }}>
-                Your Story
-              </span>
-              <span className="hero-rise block text-white" style={{ animationDelay: "0.19s" }}>
-                With AI
-              </span>
-            </h1>
+            <motion.h1
+              className="mt-44 font-display text-[12vw] font-black uppercase leading-[0.88] tracking-tighter sm:mt-20 sm:text-[11vw] md:mt-24 md:text-[10vw] lg:mt-24 lg:text-[128px] xl:text-[140px]"
+              variants={heroHeadlineStagger}
+              initial="hidden"
+              animate="show"
+            >
+              {["Animate", "Your Story", "With AI"].map((line) => (
+                <motion.span
+                  key={line}
+                  className="block text-white"
+                  variants={heroLineReveal}
+                  transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {line}
+                </motion.span>
+              ))}
+            </motion.h1>
           </div>
         </div>
 
