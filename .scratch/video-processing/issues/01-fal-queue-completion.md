@@ -1,7 +1,7 @@
 # What fal exposes after a queue request finishes
 
 Type: research
-Status: claimed
+Status: resolved
 
 ## Question
 
@@ -15,3 +15,7 @@ Need, from fal’s own docs/API (not blog posts):
 - Failure vs still-in-progress vs result-expired: how those look on the wire.
 
 This unblocks the reconcile contract. Write findings as a Markdown asset under `.scratch/video-processing/research/` and link it from the answer.
+
+## Answer
+
+Findings: [fal-queue-completion](../research/fal-queue-completion.md). Folded into [Video processing kernel](../spec.md) (reconcile, webhook ack, cancel, provider pair).

@@ -1,7 +1,7 @@
 # How the client reattaches to a Run
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 03, 06, 09
 
 ## Question
@@ -9,3 +9,7 @@ Blocked by: 03, 06, 09
 On page load (refresh, new device, shared URL, no `jobId` in memory), how does the client find and resume the in-flight or just-finished Run?
 
 Today animate stores `pendingJobId` only in component state. The answer should make that illegal under the contract.
+
+## Answer
+
+Synthesized in [Video processing kernel](../spec.md): load Target includes current Run; `?jobId=` is not required; tab-only handles are illegal.
