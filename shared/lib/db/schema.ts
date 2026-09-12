@@ -518,6 +518,54 @@ export const creditCharges = pgTable(
   }),
 )
 
+export type VideoRunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'aborted'
+export type VideoRunTargetKind = 'scene' | 'story' | 'brainrotProject' | 'lofiVideo'
+
+// Video processing Runs — the durable record of one user-facing video action
+// (animate a scene, export a story, export a brainrot project, generate a lofi
+// video). Distinct from the chat `runs` table above, which is chat production.
+//
+// This is the source of truth: Redis jobs expire after 24h, so a Run that only
+// lived there was lost on refresh. The inner fal calls are Steps, held as JSON
+// on the Run; the current Step carries the provider pair reconcile needs.
+export const videoRuns = pgTable(
+  'video_runs',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+
+    // Identity: a Run is unique in-flight per Target.
+    targetKind: text('target_kind').notNull(),
+    targetId: text('target_id').notNull(),
+    // The whole TargetRef, so the kernel can rehydrate the ids a sink needs
+    // (a scene Run also needs its story id) without a per-kind column each.
+    target: jsonb('target').notNull(),
+
+    status: text('status').notNull().default('pending'),
+    steps: jsonb('steps').notNull().default(sql`'[]'::jsonb`),
+
+    error: text('error'),
+    retryable: boolean('retryable'),
+
+    creditsReserved: integer('credits_reserved').notNull().default(0),
+    creditsConsumed: integer('credits_consumed').notNull().default(0),
+
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    index('video_runs_target_idx').on(table.targetKind, table.targetId, table.createdAt),
+    // At most one in-flight Run per Target. This is what makes a second click,
+    // or a refresh that races a start, join the existing Run instead of
+    // enqueueing a second fal request.
+    uniqueIndex('video_runs_target_inflight_uidx')
+      .on(table.targetKind, table.targetId)
+      .where(sql`${table.status} in ('pending', 'running')`),
+  ],
+)
+
 export const schema = {
   user,
   session,
@@ -541,6 +589,7 @@ export const schema = {
   runs,
   creditHolds,
   creditCharges,
+  videoRuns,
 }
 
 export type DatabaseSchema = typeof schema
