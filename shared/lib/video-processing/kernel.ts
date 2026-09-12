@@ -10,7 +10,7 @@
  * that never arrives still becomes a video (or a real failure) on the next read.
  */
 
-import { RunNotFoundError, RunNotRetryableError } from './errors'
+import { InFlightRunExistsError, RunNotFoundError, RunNotRetryableError } from './errors'
 import type {
   Credits,
   FalQueue,
@@ -332,7 +332,19 @@ export function createVideoKernel(deps: KernelDeps): VideoKernel {
       updatedAt: timestamp,
     }
 
-    const created = await deps.store.create(run)
+    let created: Run
+    try {
+      created = await deps.store.create(run)
+    } catch (err) {
+      // Two concurrent starts both read no Run and both tried to insert. The
+      // store's one-in-flight-per-Target constraint picked a winner; the loser
+      // joins it rather than surfacing a conflict the user did not cause.
+      if (err instanceof InFlightRunExistsError) {
+        const winner = await deps.store.findCurrentByTarget(target)
+        if (winner && isInFlight(winner)) return winner
+      }
+      throw err
+    }
 
     if (created.creditsReserved > 0) {
       try {

@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { RunNotRetryableError } from './errors'
+import { InFlightRunExistsError, RunNotRetryableError } from './errors'
 import {
   FakeCredits,
   FakeFalQueue,
@@ -20,7 +20,7 @@ import {
   stepFromPrevious,
 } from './fakes'
 import { createVideoKernel } from './kernel'
-import type { StepPlan, TargetRef } from './types'
+import type { Run, RunStore, StepPlan, TargetRef } from './types'
 
 const scene: TargetRef = { kind: 'scene', userId: 'u1', storyId: 's1', sceneId: 'sc1' }
 const story: TargetRef = { kind: 'story', userId: 'u1', storyId: 's1' }
@@ -119,6 +119,54 @@ describe('start', () => {
     assert.equal(run.error, 'fal is down')
     assert.equal(run.steps[0].providerRequestId, undefined)
     assert.equal(credits.totalOf('release'), 3)
+  })
+
+  it('joins the winning Run when two starts race the store', async () => {
+    const fal = new FakeFalQueue()
+    const inner = new FakeRunStore()
+    const winner: Run = {
+      id: 'winner',
+      target: scene,
+      status: 'running',
+      steps: [],
+      creditsReserved: 0,
+      creditsConsumed: 0,
+      createdAt: 1,
+      updatedAt: 1,
+    }
+    await inner.save(winner)
+
+    // The losing start: it reads no Run, then its insert is rejected by the
+    // store's one-in-flight-per-Target constraint.
+    let firstLookup = true
+    const racing: RunStore = {
+      create: async () => {
+        throw new InFlightRunExistsError('winner')
+      },
+      findCurrentByTarget: async (target) => {
+        if (firstLookup) {
+          firstLookup = false
+          return null
+        }
+        return inner.findCurrentByTarget(target)
+      },
+      findById: (runId) => inner.findById(runId),
+      save: (run) => inner.save(run),
+    }
+
+    const kernel = createVideoKernel({
+      fal,
+      store: racing,
+      credits: new FakeCredits(),
+      media: new FakeMediaStore(),
+      sink: new FakeResultSink(),
+      planner: fakePlanner(() => ({ steps: [step('animate', { credits: 5 })] })),
+    })
+
+    const run = await kernel.start(scene)
+
+    assert.equal(run.id, 'winner')
+    assert.equal(fal.submits.length, 0)
   })
 
   it('does not leave a Run in flight when credits cannot be reserved', async () => {
