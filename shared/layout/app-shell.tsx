@@ -10,6 +10,8 @@ import type { SessionUser } from '@/features/auth/server/auth-session'
 import type { Dictionary } from '@/i18n/get-dictionary'
 import type { Locale } from '@/i18n/config'
 import { LocaleProvider, useLocale } from '@/shared/providers/locale-provider'
+import { isMarketingPath } from '@/shared/lib/marketing-path'
+import { cn } from '@/shared/lib/utils'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -112,7 +114,16 @@ export function AppShell({ children, currentUser, locale, dictionary }: AppShell
   const isPublicHomeRoute = pathname === '/'
 
   if (isAuthRoute || isWaitlistRoute || isPublicHomeRoute) {
-    return <div className="flex min-h-screen min-w-0 flex-col">{children}</div>
+    return (
+      <div
+        className={cn(
+          'flex min-h-screen min-w-0 flex-col',
+          isMarketingPath(pathname) && 'marketing-root dark',
+        )}
+      >
+        {children}
+      </div>
+    )
   }
 
   return (
