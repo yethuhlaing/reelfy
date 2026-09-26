@@ -39,8 +39,15 @@ export interface Scene extends ScenePlan {
   videoUrl?: string | null
   voiceoverDuration?: number
   voiceoverWordTimings?: WordTiming[] | null
+  /**
+   * Current animate Run id, hydrated from the server. In-flight only.
+   * Not a tab-local handle — Story GET sets this from the kernel.
+   */
   pendingJobId?: string
+  /** Set from a failed animate Run; survives reload because the Run is durable. */
   lastError?: string
+  /** Run.createdAt, so the “stuck” timer survives refresh. */
+  runCreatedAt?: number
   // Client-only: last voiceover-generation error for this scene. Not persisted;
   // set on failed fetch, cleared on success. Drives inline + export failure UI.
   voiceoverError?: string

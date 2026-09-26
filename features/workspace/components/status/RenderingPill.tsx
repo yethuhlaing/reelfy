@@ -1,6 +1,6 @@
 'use client'
 
-import { Download } from 'lucide-react'
+import { AlertTriangle, Download } from 'lucide-react'
 import { useExportState } from '@/features/workspace/context/export-state'
 
 interface Props {
@@ -9,6 +9,17 @@ interface Props {
 
 export function RenderingPill({ onClick }: Props) {
   const { state } = useExportState()
+  if (state.status === 'failed') {
+    return (
+      <button
+        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--danger)_40%,var(--border))] bg-[color-mix(in_srgb,var(--danger)_8%,var(--surface2))] px-2.5 py-1 text-xs text-[var(--danger)] transition hover:bg-[var(--surface)]"
+        onClick={onClick}
+        title="Open export error"
+      >
+        <AlertTriangle size={12} /> Export failed
+      </button>
+    )
+  }
   if (state.status !== 'rendering' && state.status !== 'preparing') return null
   return (
     <button

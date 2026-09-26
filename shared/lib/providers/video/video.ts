@@ -12,6 +12,7 @@ export interface VideoProvider {
   id: string
   falModel: string
   costEstimateUsd: number
+  queueInput(imageUrl: string, prompt: string, opts: VideoOpts): Record<string, unknown>
   generate(imageUrl: string, prompt: string, opts: VideoOpts): Promise<string>
   enqueue(
     imageUrl: string,

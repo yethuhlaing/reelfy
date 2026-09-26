@@ -13,7 +13,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --import tsx --test shared/lib/video-processing/*.test.ts",
+    "test": "SKIP_ENV_VALIDATION=1 node --import tsx --test shared/lib/video-processing/*.test.ts features/stories/server/*.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "optimize:marketing-videos": "tsx scripts/optimize-marketing-videos.ts",

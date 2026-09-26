@@ -1,4 +1,5 @@
 import type { GenerateOptions, Scene, StoryData, WordTiming } from '@/shared/lib/types'
+import type { StoryExportHydration } from '@/features/stories/lib/story-export-view'
 
 export async function fetchStory(storyId: string): Promise<{
   storyInput: string
@@ -9,6 +10,7 @@ export async function fetchStory(storyId: string): Promise<{
   composedVideoUrl?: string | null
   composedAt?: number | null
   lastUpdated?: number | null
+  exportRun?: StoryExportHydration | null
 } | null> {
   const res = await fetch(`/api/stories/${storyId}`)
   if (!res.ok) return null

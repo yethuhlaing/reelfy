@@ -671,3 +671,88 @@ describe('credits', () => {
     assert.equal(credits.balance, 994)
   })
 })
+
+describe('story export: one compose Step', () => {
+  it('still has the Run composing after every client is gone', async () => {
+    const { kernel } = setup([step('compose', { credits: 4 })])
+
+    const started = await kernel.start(story)
+    // Drop every client: nothing survives but the store. Page load is `get`.
+    const reattached = present(await kernel.get(story))
+    const progress = present(await kernel.progress(started.id))
+
+    assert.equal(reattached.id, started.id)
+    assert.equal(reattached.status, 'running')
+    assert.equal(progress.phase, 'composing')
+  })
+
+  it('applies the composed video when fal COMPLETED and the webhook missed', async () => {
+    const { kernel, fal, sink } = setup([step('compose')])
+
+    await kernel.start(story)
+    fal.completeWithVideo(fal.lastRequestId(), 'https://fal.test/export.mp4')
+
+    const run = present(await kernel.get(story))
+
+    assert.equal(run.status, 'completed')
+    assert.equal(sink.videoUrlFor(story), 'rehosted:https://fal.test/export.mp4')
+  })
+
+  it('returns the existing Run on a second start without composing or reserving again', async () => {
+    const { kernel, fal, credits } = setup([step('compose', { credits: 4 })])
+
+    const first = await kernel.start(story)
+    const second = await kernel.start(story)
+
+    assert.equal(second.id, first.id)
+    assert.equal(fal.submits.length, 1)
+    assert.equal(credits.countOf('reserve'), 1)
+    assert.equal(credits.totalOf('reserve'), 4)
+  })
+
+  it('ignores a late fal success after cancel', async () => {
+    const { kernel, fal, sink, credits } = setup([step('compose', { credits: 4 })])
+
+    const started = await kernel.start(story)
+    await kernel.cancel(started.id)
+    fal.completeWithVideo(fal.lastRequestId(), 'https://fal.test/too-late.mp4')
+
+    const run = await kernel.onWebhook({
+      runId: started.id,
+      stepId: started.steps[0].id,
+      body: { status: 'OK', payload: { video_url: 'https://fal.test/too-late.mp4' } },
+    })
+
+    assert.equal(run.status, 'aborted')
+    assert.equal(sink.applied.length, 0)
+    assert.equal(credits.totalOf('release'), 4)
+    assert.deepEqual(fal.cancels, [{ endpoint: 'fal-ai/test/compose', requestId: 'fal-req-1' }])
+  })
+
+  it('retries compose on the same Run after a failure', async () => {
+    const { kernel, fal } = setup([step('compose')])
+
+    const started = await kernel.start(story)
+    fal.completeWithError(fal.lastRequestId(), 'compose blew up')
+    const failed = present(await kernel.get(story))
+    assert.equal(failed.status, 'failed')
+
+    const retried = await kernel.retry(started.id)
+
+    assert.equal(retried.id, started.id)
+    assert.equal(retried.status, 'running')
+    assert.equal(fal.submits.length, 2)
+    assert.equal(retried.steps[0].providerRequestId, 'fal-req-2')
+  })
+
+  it('does not complete while fal is still IN_PROGRESS', async () => {
+    const { kernel, fal, sink } = setup([step('compose')])
+
+    await kernel.start(story)
+    fal.inProgress(fal.lastRequestId())
+    const run = present(await kernel.get(story))
+
+    assert.equal(run.status, 'running')
+    assert.equal(sink.applied.length, 0)
+  })
+})

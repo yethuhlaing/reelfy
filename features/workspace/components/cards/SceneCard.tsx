@@ -12,6 +12,7 @@ interface SceneCardProps {
   isPlaying: boolean
   onClick: () => void
   onAnimate?: () => void
+  onCancel?: () => void
   onRegenImage?: () => void
   onPlay?: () => void
   readOnly?: boolean
@@ -36,6 +37,7 @@ export function SceneCard({
   isPlaying,
   onClick,
   onAnimate,
+  onCancel,
   onRegenImage,
   onPlay,
   readOnly,
@@ -81,6 +83,7 @@ export function SceneCard({
           onPlay={onPlay}
           onRegenImage={onRegenImage}
           onAnimate={onAnimate}
+          onCancel={onCancel}
           readOnly={readOnly}
         />
       </div>

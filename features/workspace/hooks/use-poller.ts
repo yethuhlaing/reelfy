@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import type { Job, JobStatus } from '@/shared/lib/jobs/types'
+import type { Job } from '@/shared/lib/jobs/types'
 
 const BASE_INTERVAL_MS = 3000
 const MAX_INTERVAL_MS = 15000
@@ -16,23 +16,25 @@ export interface PollerOptions {
   pending: PendingJob[]
   onCompleted: (jobId: string, job: Job) => void
   onFailed: (jobId: string, error: string) => void
+  path?: (jobId: string) => string
 }
 
 export function useJobPoller({
   pending,
   onCompleted,
   onFailed,
+  path = (jobId) => `/api/jobs/${jobId}`,
 }: PollerOptions): void {
   const pendingRef = useRef(pending)
-  const handlersRef = useRef({ onCompleted, onFailed })
+  const handlersRef = useRef({ onCompleted, onFailed, path })
 
   useEffect(() => {
     pendingRef.current = pending
   }, [pending])
 
   useEffect(() => {
-    handlersRef.current = { onCompleted, onFailed }
-  }, [onCompleted, onFailed])
+    handlersRef.current = { onCompleted, onFailed, path }
+  }, [onCompleted, onFailed, path])
 
   useEffect(() => {
     if (pending.length === 0) return
@@ -51,12 +53,21 @@ export function useJobPoller({
       await Promise.all(
         current.map(async ({ jobId }) => {
           try {
-            const res = await fetch(`/api/jobs/${jobId}`, { cache: 'no-store' })
+            const res = await fetch(handlersRef.current.path(jobId), { cache: 'no-store' })
             if (!res.ok) return
-            const job = (await res.json()) as Job
-            const status: JobStatus = job.status
-            if (status === 'completed') handlersRef.current.onCompleted(jobId, job)
-            else if (status === 'failed') handlersRef.current.onFailed(jobId, job.error ?? 'Job failed')
+            const job = (await res.json()) as {
+              status: string
+              error?: string
+              result?: Job['result']
+            }
+            const status = job.status
+            if (status === 'completed') handlersRef.current.onCompleted(jobId, job as Job)
+            else if (status === 'failed' || status === 'aborted') {
+              handlersRef.current.onFailed(
+                jobId,
+                status === 'aborted' ? '' : (job.error ?? 'Job failed'),
+              )
+            }
           } catch {
             // network blip, retry next tick
           }

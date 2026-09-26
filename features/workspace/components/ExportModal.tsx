@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function ExportModal({ open, onClose, storyId, scenes: scenesProp }: Props) {
-  const { state, startExport, cancelExport, reset } = useExportState()
+  const { state, startExport, cancelExport, retryExport, reset } = useExportState()
   const { storyData, setStoryData, retryVoice, generateAllVoiceovers } = useWorkspace()
   const [includeIntro, setIncludeIntro] = useState(true)
   const [rangeOn, setRangeOn] = useState(false)
@@ -239,8 +239,8 @@ export function ExportModal({ open, onClose, storyId, scenes: scenesProp }: Prop
               <div>
                 <div className="my-2 rounded-lg border border-[#ef4444] bg-[rgba(239,68,68,0.12)] px-3 py-2 text-[#fca5a5]">{state.error ?? 'Export failed'}</div>
                 <div className="mt-4 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => { reset(); onClose() }}>Close</Button>
-                  <Button onClick={reset}>Retry</Button>
+                  <Button variant="outline" onClick={onClose}>Close</Button>
+                  <Button onClick={() => { if (state.runId) void retryExport(); else reset() }}>Retry</Button>
                 </div>
               </div>
             )}

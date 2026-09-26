@@ -92,7 +92,7 @@ function cacheBust(url: string): string {
   return `${url}?v=${Date.now()}`
 }
 
-async function uploadSceneVideo(
+export async function uploadSceneVideo(
   storyId: string,
   sceneId: string,
   data: Buffer,
@@ -135,7 +135,7 @@ export async function uploadComposedVideo(storyId: string, data: Buffer): Promis
   return cacheBust(url)
 }
 
-async function persistSceneVideo(
+export async function persistSceneVideo(
   storyId: string,
   sceneId: string,
   userId: string,
@@ -166,17 +166,25 @@ export async function completeSceneVideo(params: {
   return videoUrl
 }
 
+export async function persistComposedVideo(
+  storyId: string,
+  userId: string,
+  videoUrl: string,
+): Promise<boolean> {
+  return updateStoryMeta(storyId, userId, {
+    composedVideoUrl: videoUrl,
+    composedAt: new Date(),
+    status: 'rendered',
+  })
+}
+
 export async function completeComposedVideo(params: {
   storyId: string
   userId: string
   data: Buffer
 }): Promise<string> {
   const videoUrl = await uploadComposedVideo(params.storyId, params.data)
-  const ok = await updateStoryMeta(params.storyId, params.userId, {
-    composedVideoUrl: videoUrl,
-    composedAt: new Date(),
-    status: 'rendered',
-  })
+  const ok = await persistComposedVideo(params.storyId, params.userId, videoUrl)
   if (!ok) {
     throw new Error('Failed to persist composed video URL')
   }

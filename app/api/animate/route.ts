@@ -1,11 +1,11 @@
-import { createJob, markRunning } from '@/shared/lib/jobs/store'
-import { buildWebhookUrl } from '@/shared/lib/jobs/webhook-url'
-import { getVideoProvider } from '@/shared/lib/providers/video/video'
-import type { AnimatePayload } from '@/shared/lib/jobs/types'
-import type { VideoModel, VideoQuality } from '@/shared/lib/types'
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
 import { getStoryForUser } from '@/features/stories/server/stories-db'
-import { clearSceneVideo } from '@/features/stories/server/story-assets'
+import {
+  startOrRetryAnimate,
+  type SceneTarget,
+} from '@/features/stories/server/animate-kernel'
+import { InsufficientCreditsError } from '@/shared/lib/video-processing/errors'
+
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
@@ -21,62 +21,35 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return badRequest('Invalid JSON')
 
-  const { storyId, sceneId, imageUrl, motionPrompt, videoModel, videoQuality } = body as {
-    storyId?: string
-    sceneId?: string
-    imageUrl?: string
-    motionPrompt?: string
-    videoModel?: VideoModel
-    videoQuality?: VideoQuality
-  }
-
-  const dims = videoQuality === '1080p'
-    ? { width: 1920, height: 1080 }
-    : { width: 1280, height: 720 }
-
-  if (!storyId || !sceneId || !imageUrl || !motionPrompt) {
-    return badRequest('Missing required fields: storyId, sceneId, imageUrl, motionPrompt')
+  const { storyId, sceneId } = body as { storyId?: string; sceneId?: string }
+  if (!storyId || !sceneId) {
+    return badRequest('Missing required fields: storyId, sceneId')
   }
 
   const story = await getStoryForUser(storyId, userId)
   if (!story) return badRequest('Story not found')
-
-  await clearSceneVideo(storyId, sceneId, userId)
-
-  const payload: AnimatePayload = {
-    storyId,
-    sceneId,
-    imageUrl,
-    motionPrompt,
-    videoModel,
-    userId,
+  if (!story.scenes.some((scene) => scene.id === sceneId)) {
+    return badRequest('Scene not found')
   }
 
-  const job = await createJob<AnimatePayload>('animate', payload)
+  const target: SceneTarget = { kind: 'scene', userId, storyId, sceneId }
 
   try {
-    const provider = getVideoProvider(videoModel)
-    const { requestId } = await provider.enqueue(
-      imageUrl,
-      motionPrompt,
-      {
-        numFrames: 121,
-        fps: 24,
-        ...dims,
-        costContext: {
-          userId,
-          storyId,
-          sceneId,
-          operation: 'scene_video',
-        },
-      },
-      buildWebhookUrl('story/animate', job.id),
-    )
-    await markRunning(job.id, requestId, provider.falModel)
-    return Response.json({ jobId: job.id })
+    const run = await startOrRetryAnimate(target)
+    return Response.json({
+      runId: run.id,
+      status: run.status,
+      error: run.error,
+    })
   } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      return Response.json(
+        { error: err.message, balance: err.balance, required: err.required },
+        { status: 402 },
+      )
+    }
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('Animate enqueue failed', msg)
+    console.error('Animate start failed', msg)
     return new Response(JSON.stringify({ error: msg }), { status: 500 })
   }
 }

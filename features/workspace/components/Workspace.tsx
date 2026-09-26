@@ -23,6 +23,7 @@ import { AudioPlayerProvider, useAudioPlayer } from '@/shared/ui/audio-player'
 import { readSSE } from '@/shared/lib/sse'
 import { clearPendingStory, getPendingStory } from '@/features/stories/server/pending-story'
 import { fetchStory, patchSceneFields } from '@/features/stories/client/stories-client'
+import type { StoryExportHydration } from '@/features/stories/lib/story-export-view'
 import { notifications } from '@/shared/lib/notifications'
 import { shouldShowToastFor } from '@/shared/lib/utils'
 import { usePathname } from 'next/navigation'
@@ -30,6 +31,10 @@ import { useJobPoller, type PendingJob } from '@/features/workspace/hooks/use-po
 import type { AnimateResult, Job } from '@/shared/lib/jobs/types'
 import type { GenerateOptions, Stage, StageId, StoryData } from '@/shared/lib/types'
 import { storyHref } from '@/shared/lib/categories'
+
+function videoRunPath(runId: string) {
+  return `/api/video-runs/${runId}`
+}
 
 const INITIAL_STAGES: Stage[] = [
   { id: 'analyze', label: 'Analyze story', status: 'pending' },
@@ -72,6 +77,7 @@ function WorkspaceInner({ storyId, category }: Props) {
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
+  const [exportRun, setExportRun] = useState<StoryExportHydration | null>(null)
 
   const isPlayingAllRef = useRef(false)
   const storyDataRef = useRef<StoryData | null>(null)
@@ -111,6 +117,7 @@ function WorkspaceInner({ storyId, category }: Props) {
           composedAt: data.composedAt ?? null,
           updatedAt: data.lastUpdated ?? null,
         })
+        setExportRun(data.exportRun ?? null)
         if (data.options) setOptions(data.options)
         setStoryInput(data.storyInput ?? '')
         // Story left in a failed state on a previous run — show retry UI, not a blank screen.
@@ -157,6 +164,7 @@ function WorkspaceInner({ storyId, category }: Props) {
 
   useJobPoller({
     pending: pendingAnimateJobs,
+    path: videoRunPath,
     onCompleted: (jobId, job: Job) => {
       const sid = sceneByJobId(jobId)
       if (!sid) return
@@ -168,7 +176,7 @@ function WorkspaceInner({ storyId, category }: Props) {
               ...prev,
               scenes: prev.scenes.map((s) =>
                 s.id === sid
-                  ? { ...s, videoUrl: result.videoUrl, pendingJobId: undefined, lastError: undefined }
+                  ? { ...s, videoUrl: result.videoUrl, pendingJobId: undefined, lastError: undefined, runCreatedAt: undefined }
                   : s,
               ),
             }
@@ -195,11 +203,14 @@ function WorkspaceInner({ storyId, category }: Props) {
           ? {
               ...prev,
               scenes: prev.scenes.map((s) =>
-                s.id === sid ? { ...s, pendingJobId: undefined, lastError: error } : s,
+                s.id === sid
+                  ? { ...s, pendingJobId: undefined, lastError: error || undefined, runCreatedAt: undefined }
+                  : s,
               ),
             }
           : prev,
       )
+      if (!error) return
       const idx = storyDataRef.current?.scenes.findIndex((s) => s.id === sid) ?? -1
       const link = storyHref(storyId)
       notifications.add({
@@ -534,7 +545,7 @@ function WorkspaceInner({ storyId, category }: Props) {
   }
 
   const enqueueAnimate = async (sceneId: string) => {
-    if (!storyData || !options) return
+    if (!storyData) return
     const scene = storyData.scenes.find((s) => s.id === sceneId)
     if (!scene) return
     if (scene.pendingJobId) {
@@ -549,29 +560,55 @@ function WorkspaceInner({ storyId, category }: Props) {
       toast.error('Add a motion prompt', { description: 'Describe movement in the scene drawer.' })
       return
     }
-    patchScene(sceneId, { lastError: undefined, videoUrl: undefined, pendingJobId: 'pending' })
+    patchScene(sceneId, { lastError: undefined, pendingJobId: 'pending' })
     try {
       const res = await fetch('/api/animate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storyId,
-          sceneId,
-          imageUrl: scene.imageUrl,
-          motionPrompt: scene.motionPrompt,
-          videoModel: options.videoModel,
-          videoQuality: options.videoQuality,
-        }),
+        body: JSON.stringify({ storyId, sceneId }),
       })
+      if (res.status === 402) {
+        const d = (await res.json().catch(() => ({}))) as { balance?: number; required?: number }
+        patchScene(sceneId, { pendingJobId: undefined, lastError: undefined })
+        toast.error('Not enough credits', {
+          description: `Need ${d.required ?? '?'} credits (balance: ${d.balance ?? 0})`,
+        })
+        return
+      }
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
         patchScene(sceneId, { pendingJobId: undefined, lastError: d.error ?? `HTTP ${res.status}` })
         return
       }
-      const { jobId } = (await res.json()) as { jobId: string }
-      patchScene(sceneId, { pendingJobId: jobId })
+      const data = (await res.json()) as { runId: string; status: string; error?: string }
+      if (data.status === 'failed') {
+        patchScene(sceneId, { pendingJobId: undefined, lastError: data.error ?? 'Animation failed' })
+        return
+      }
+      patchScene(sceneId, { pendingJobId: data.runId, lastError: undefined, runCreatedAt: Date.now() })
     } catch (err) {
       patchScene(sceneId, { pendingJobId: undefined, lastError: err instanceof Error ? err.message : 'Enqueue failed' })
+    }
+  }
+
+  const cancelAnimate = async (sceneId: string) => {
+    const scene = storyData?.scenes.find((s) => s.id === sceneId)
+    if (!scene?.pendingJobId) return
+    patchScene(sceneId, { pendingJobId: undefined, lastError: undefined, runCreatedAt: undefined })
+    try {
+      const res = await fetch('/api/animate/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storyId, sceneId }),
+      })
+      if (!res.ok) {
+        const d = (await res.json().catch(() => ({}))) as { error?: string }
+        toast.error('Could not stop', { description: d.error ?? `HTTP ${res.status}` })
+        patchScene(sceneId, { pendingJobId: scene.pendingJobId, runCreatedAt: scene.runCreatedAt })
+      }
+    } catch (err) {
+      toast.error('Could not stop', { description: err instanceof Error ? err.message : 'Try again' })
+      patchScene(sceneId, { pendingJobId: scene.pendingJobId, runCreatedAt: scene.runCreatedAt })
     }
   }
 
@@ -727,11 +764,22 @@ function WorkspaceInner({ storyId, category }: Props) {
       setPlayState={setPlayState}
       playScene={playScene}
       enqueueAnimate={enqueueAnimate}
+      cancelAnimate={cancelAnimate}
       retryVoice={retryVoice}
       retryImage={retryImage}
       generateAllVoiceovers={generateAllVoiceovers}
     >
-      <ExportStateProvider>
+      <ExportStateProvider
+        storyId={storyId}
+        initialRun={exportRun}
+        onComposedVideo={(url) => {
+          setStoryData((prev) => {
+            if (!prev || prev.composedVideoUrl === url) return prev
+            const now = Date.now()
+            return { ...prev, composedVideoUrl: url, composedAt: now, updatedAt: now }
+          })
+        }}
+      >
       <WorkspaceTopBar
         onAnimateAll={animateAll}
         onToggleThumbnail={() => setThumbOpen((v) => !v)}
@@ -855,6 +903,7 @@ function WorkspaceInner({ storyId, category }: Props) {
               playingIndex={playState.isPlaying ? playState.currentIndex : null}
               onSceneClick={openScene}
               onAnimateScene={enqueueAnimate}
+              onCancelScene={cancelAnimate}
               onRegenImageScene={retryImage}
               onPlayScene={playScene}
               readOnly={false}
@@ -863,6 +912,7 @@ function WorkspaceInner({ storyId, category }: Props) {
               }
               jobStartedAt={(sid) => {
                 const s = storyData?.scenes.find((x) => x.id === sid)
+                if (s?.runCreatedAt) return s.runCreatedAt
                 const jid = s?.pendingJobId
                 return jid && jid !== 'pending' ? jobStartedAtRef.current.get(jid) : undefined
               }}

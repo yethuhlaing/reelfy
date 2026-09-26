@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Play, RefreshCw, Sparkles, AlertCircle } from 'lucide-react'
+import { Play, RefreshCw, Sparkles, AlertCircle, Square } from 'lucide-react'
 import { toast } from 'sonner'
 import { Drawer } from './Drawer'
 import { useWorkspace } from '@/features/workspace/context/workspace-context'
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
-  const { storyId, storyData, activeSceneId, patchScene, readOnly, retryImage } = useWorkspace()
+  const { storyId, storyData, activeSceneId, patchScene, readOnly, retryImage, cancelAnimate } = useWorkspace()
   const scene = storyData?.scenes.find((s) => s.id === activeSceneId) ?? null
   const idx = storyData?.scenes.findIndex((s) => s.id === activeSceneId) ?? -1
 
@@ -34,7 +34,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
 
   if (!scene) return null
 
-  const commit = () => {
+  const commit = async () => {
     const localPatch: Partial<Scene> = {}
     const apiPatch: {
       imagePrompt?: string
@@ -59,7 +59,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
       patchScene(scene.id, localPatch)
     }
     if (storyId && Object.keys(apiPatch).length) {
-      void patchSceneFields(storyId, scene.id, apiPatch)
+      await patchSceneFields(storyId, scene.id, apiPatch)
     }
   }
 
@@ -73,11 +73,11 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
       toast.error('Add an image prompt', { description: 'Describe the still frame above.' })
       return
     }
-    commit()
+    void commit()
     retryImage?.(scene.id)
   }
 
-  const handleAnimate = () => {
+  const handleAnimate = async () => {
     if (readOnly) return
     if (scene.pendingJobId) {
       toast.message('This scene is already animating')
@@ -91,8 +91,13 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
       toast.error('Add a motion prompt', { description: 'Describe movement, camera, and mood.' })
       return
     }
-    commit()
+    await commit()
     onAnimate?.(scene.id)
+  }
+
+  const handleStop = () => {
+    if (readOnly) return
+    void cancelAnimate?.(scene.id)
   }
 
   return (
@@ -112,7 +117,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
         <textarea
           value={imagePrompt}
           onChange={(e) => setImagePrompt(e.target.value)}
-          onBlur={commit}
+          onBlur={() => { void commit() }}
           disabled={readOnly}
           placeholder="Describe the still frame: character, setting, composition, style…"
           style={ta}
@@ -123,7 +128,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
         <textarea
           value={voiceover}
           onChange={(e) => setVoiceover(e.target.value)}
-          onBlur={commit}
+          onBlur={() => { void commit() }}
           disabled={readOnly}
           style={ta}
         />
@@ -133,7 +138,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
         <textarea
           value={motion}
           onChange={(e) => setMotion(e.target.value)}
-          onBlur={commit}
+          onBlur={() => { void commit() }}
           disabled={readOnly}
           placeholder="Describe movement, camera, mood…"
           style={ta}
@@ -160,15 +165,27 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
         >
           <RefreshCw size={14} /> {scene.imageUrl ? 'Regen image' : 'Generate image'}
         </button>
-        <button
-          type="button"
-          className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-2.5 font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
-          onClick={handleAnimate}
-          disabled={readOnly}
-          title="Animate this scene"
-        >
-          <Sparkles size={14} /> {scene.pendingJobId ? 'Animating…' : scene.videoUrl ? 'Re-animate' : 'Animate'}
-        </button>
+        {scene.pendingJobId ? (
+          <button
+            type="button"
+            className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[#b91c1c] bg-[#b91c1c] px-2.5 font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={handleStop}
+            disabled={readOnly}
+            title="Stop animation"
+          >
+            <Square size={14} /> Stop
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-transparent bg-[var(--accent)] px-2.5 font-semibold text-[var(--accent-ink)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={() => { void handleAnimate() }}
+            disabled={readOnly}
+            title="Animate this scene"
+          >
+            <Sparkles size={14} /> {scene.lastError ? 'Retry' : scene.videoUrl ? 'Re-animate' : 'Animate'}
+          </button>
+        )}
       </div>
 
       {scene.lastError && (

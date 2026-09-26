@@ -18,6 +18,9 @@ export const klingFal: VideoProvider = {
   id: 'kling-fal',
   falModel: MODEL_ID,
   costEstimateUsd: 0.2,
+  queueInput(imageUrl, prompt, opts) {
+    return buildInput(imageUrl, prompt, opts)
+  },
   async generate(imageUrl, prompt, opts) {
     const { costContext } = opts
     const result = await fal.subscribe(MODEL_ID, {

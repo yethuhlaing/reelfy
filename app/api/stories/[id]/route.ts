@@ -6,7 +6,9 @@ import {
   updateStoryMeta,
   updateStoryVoice,
 } from '@/features/stories/server/stories-db'
+import { hydrateScenesWithAnimateRuns } from '@/features/stories/server/animate-kernel'
 import { deleteStoryWithAssets } from '@/features/stories/server/story-assets'
+import { hydrateStoryExport } from '@/features/stories/server/story-export'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -22,11 +24,30 @@ export async function GET(
     return Response.json({ error: 'Missing story id' }, { status: 400 })
   }
 
-  const result = await getStoryForUser(storyId, session.user.id)
-  if (!result) {
+  const owned = await getStoryForUser(storyId, session.user.id)
+  if (!owned) {
     return Response.json({ error: 'Not found' }, { status: 404 })
   }
+
+  let exportRun = null
+  try {
+    exportRun = (await hydrateStoryExport(session.user.id, storyId)).exportRun
+  } catch (err) {
+    console.error('Story export hydrate failed', err)
+  }
+
+  const result = (await getStoryForUser(storyId, session.user.id)) ?? owned
   const { story, scenes: sceneRows } = result
+  const storyData = rowToStoryData(story, sceneRows)
+  try {
+    storyData.scenes = await hydrateScenesWithAnimateRuns(
+      session.user.id,
+      storyId,
+      storyData.scenes,
+    )
+  } catch (err) {
+    console.error('Animate hydrate failed', err)
+  }
   return Response.json({
     id: story.id,
     category: story.category,
@@ -37,7 +58,8 @@ export async function GET(
     composedAt: story.composedAt ? story.composedAt.getTime() : null,
     savedAt: story.createdAt.getTime(),
     lastUpdated: story.updatedAt.getTime(),
-    storyData: rowToStoryData(story, sceneRows),
+    storyData,
+    exportRun,
   })
 }
 

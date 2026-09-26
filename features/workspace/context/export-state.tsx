@@ -1,9 +1,10 @@
 'use client'
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import type { Scene } from '@/shared/lib/types'
-import { patchSceneFields } from '@/features/stories/client/stories-client'
+import type { StoryExportHydration } from '@/features/stories/lib/story-export-view'
+import { fetchStory, patchSceneFields } from '@/features/stories/client/stories-client'
 
 export type ExportPhase = 'idle' | 'preparing' | 'rendering' | 'done' | 'failed'
 
@@ -15,16 +16,19 @@ export interface ExportOptions {
 
 export interface ExportState {
   storyId: string | null
+  runId: string | null
   status: ExportPhase
   progress: number
   downloadUrl?: string
   error?: string
+  retryable?: boolean
 }
 
 interface Ctx {
   state: ExportState
   startExport: (storyId: string, scenes: Scene[], opts: ExportOptions) => Promise<void>
   cancelExport: () => void
+  retryExport: () => Promise<void>
   reset: () => void
   modalOpen: boolean
   openModal: () => void
@@ -32,7 +36,7 @@ interface Ctx {
 }
 
 const ExportCtx = createContext<Ctx | null>(null)
-const initial: ExportState = { storyId: null, status: 'idle', progress: 0 }
+const initial: ExportState = { storyId: null, runId: null, status: 'idle', progress: 0 }
 
 async function probeAudioDuration(url: string): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -47,13 +51,42 @@ async function probeAudioDuration(url: string): Promise<number> {
   })
 }
 
-export function ExportStateProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<ExportState>(initial)
-  const [modalOpen, setModalOpen] = useState(false)
-  const runIdRef = useRef(0)
-  const esRef = useRef<EventSource | null>(null)
+function stateFromHydration(storyId: string, hydration: StoryExportHydration): ExportState | null {
+  if (hydration.status === 'aborted') return null
+  if (hydration.status === 'running') {
+    return { storyId, runId: hydration.runId, status: 'rendering', progress: 45 }
+  }
+  return {
+    storyId,
+    runId: hydration.runId,
+    status: 'failed',
+    progress: 0,
+    error: hydration.error,
+    retryable: hydration.retryable,
+  }
+}
 
-  const isRunActive = useCallback((runId: number) => runIdRef.current === runId, [])
+interface ProviderProps {
+  children: ReactNode
+  storyId: string
+  initialRun?: StoryExportHydration | null
+  onComposedVideo?: (videoUrl: string) => void
+}
+
+export function ExportStateProvider({ children, storyId, initialRun, onComposedVideo }: ProviderProps) {
+  const [state, setState] = useState<ExportState>(() => {
+    if (!initialRun) return initial
+    return stateFromHydration(storyId, initialRun) ?? initial
+  })
+  const [modalOpen, setModalOpen] = useState(false)
+  const generationRef = useRef(0)
+  const esRef = useRef<EventSource | null>(null)
+  const stateRef = useRef(state)
+  stateRef.current = state
+  const onComposedVideoRef = useRef(onComposedVideo)
+  onComposedVideoRef.current = onComposedVideo
+
+  const isCurrent = useCallback((generation: number) => generationRef.current === generation, [])
 
   const closeStream = useCallback(() => {
     if (esRef.current) {
@@ -62,12 +95,147 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const startExport: Ctx['startExport'] = useCallback(async (storyId, scenes, opts) => {
-    runIdRef.current += 1
-    const runId = runIdRef.current
+  const regetStory = useCallback(async (): Promise<
+    | { kind: 'running'; run: StoryExportHydration }
+    | { kind: 'failed'; run: StoryExportHydration }
+    | { kind: 'completed'; videoUrl: string }
+    | { kind: 'idle' }
+    | { kind: 'unknown' }
+  > => {
+    const data = await fetchStory(storyId)
+    if (!data) return { kind: 'unknown' }
+    if (data.exportRun?.status === 'running') return { kind: 'running', run: data.exportRun }
+    if (data.exportRun?.status === 'failed') return { kind: 'failed', run: data.exportRun }
+    if (data.exportRun?.status === 'aborted') return { kind: 'idle' }
+    if (data.composedVideoUrl) {
+      onComposedVideoRef.current?.(data.composedVideoUrl)
+      return { kind: 'completed', videoUrl: data.composedVideoUrl }
+    }
+    return { kind: 'idle' }
+  }, [storyId])
+
+  const watchRun = useCallback((runId: string, generation: number) => {
     closeStream()
 
-    setState({ storyId, status: 'preparing', progress: 0 })
+    const RECONNECT_DELAY = 1200
+
+    return new Promise<void>((resolve, reject) => {
+      const finish = (es: EventSource) => {
+        es.close()
+        if (esRef.current === es) esRef.current = null
+      }
+
+      const failIfStillCurrent = (err: Error) => {
+        if (!isCurrent(generation)) return resolve()
+        reject(err)
+      }
+
+      const connect = () => {
+        if (!isCurrent(generation)) return resolve()
+
+        const es = new EventSource(`/api/export/${runId}/stream`)
+        esRef.current = es
+
+        es.onmessage = (event) => {
+          if (!isCurrent(generation)) {
+            finish(es)
+            return resolve()
+          }
+          let data: { status: string; videoUrl?: string; error?: string }
+          try {
+            data = JSON.parse(event.data as string)
+          } catch {
+            return
+          }
+          if (data.status === 'done' && data.videoUrl) {
+            setState({
+              storyId,
+              runId,
+              status: 'done',
+              progress: 100,
+              downloadUrl: data.videoUrl,
+            })
+            onComposedVideoRef.current?.(data.videoUrl)
+            finish(es)
+            resolve()
+          } else if (data.status === 'failed') {
+            finish(es)
+            failIfStillCurrent(new Error(data.error ?? 'Export failed'))
+          } else if (data.status === 'aborted') {
+            finish(es)
+            setState(initial)
+            resolve()
+          } else if (data.status === 'reconnect') {
+            finish(es)
+            setTimeout(connect, 100)
+          } else if (data.status === 'progress') {
+            setState((prev) =>
+              isCurrent(generation) && prev.status === 'rendering'
+                ? { ...prev, progress: Math.min(90, Math.max(prev.progress, 45)) }
+                : prev,
+            )
+          }
+        }
+
+        es.onerror = () => {
+          if (!isCurrent(generation)) {
+            finish(es)
+            return resolve()
+          }
+          finish(es)
+          // A dropped stream is not a failed export. Re-get the Run; only fail
+          // if the server says it failed.
+          void regetStory()
+            .then((result) => {
+              if (!isCurrent(generation)) return resolve()
+              if (result.kind === 'completed') {
+                setState({
+                  storyId,
+                  runId,
+                  status: 'done',
+                  progress: 100,
+                  downloadUrl: result.videoUrl,
+                })
+                return resolve()
+              }
+              if (result.kind === 'failed') {
+                return failIfStillCurrent(new Error(result.run.error ?? 'Export failed'))
+              }
+              if (result.kind === 'idle') {
+                setState(initial)
+                return resolve()
+              }
+              setTimeout(connect, RECONNECT_DELAY)
+            })
+            .catch(() => {
+              if (!isCurrent(generation)) return resolve()
+              setTimeout(connect, RECONNECT_DELAY)
+            })
+        }
+      }
+
+      connect()
+    })
+  }, [closeStream, isCurrent, regetStory, storyId])
+
+  const startWatching = useCallback(async (runId: string, generation: number) => {
+    setState((prev) => ({
+      ...prev,
+      storyId,
+      runId,
+      status: 'rendering',
+      progress: Math.max(prev.progress, 45),
+      error: undefined,
+    }))
+    await watchRun(runId, generation)
+  }, [storyId, watchRun])
+
+  const startExport: Ctx['startExport'] = useCallback(async (exportStoryId, scenes, opts) => {
+    generationRef.current += 1
+    const generation = generationRef.current
+    closeStream()
+
+    setState({ storyId: exportStoryId, runId: null, status: 'preparing', progress: 0 })
 
     try {
       const indexed = scenes.map((s, i) => ({ s, i: i + 1 }))
@@ -90,12 +258,12 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
       }> = []
 
       for (let idx = 0; idx < selected.length; idx++) {
-        if (!isRunActive(runId)) return
+        if (!isCurrent(generation)) return
         const s = selected[idx]
         let duration = s.voiceoverDuration ?? null
         if (!duration) {
           duration = await probeAudioDuration(s.voiceoverUrl!)
-          void patchSceneFields(storyId, s.id, { voiceoverDuration: duration })
+          void patchSceneFields(exportStoryId, s.id, { voiceoverDuration: duration })
         }
         const isAnimated = !!s.videoUrl
         scenesForExport.push({
@@ -106,20 +274,20 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
           duration,
         })
         setState((prev) =>
-          isRunActive(runId)
+          isCurrent(generation)
             ? { ...prev, progress: Math.round(((idx + 1) / selected.length) * 35) }
             : prev,
         )
       }
 
-      if (!isRunActive(runId)) return
+      if (!isCurrent(generation)) return
       setState((prev) => ({ ...prev, progress: 40 }))
 
       const res = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          storyId,
+          storyId: exportStoryId,
           scenes: scenesForExport,
           resolution: opts.resolution,
         }),
@@ -130,106 +298,133 @@ export function ExportStateProvider({ children }: { children: ReactNode }) {
         throw new Error((d as { error?: string }).error ?? `HTTP ${res.status}`)
       }
 
-      const { jobId } = (await res.json()) as { jobId: string }
-      if (!isRunActive(runId)) return
+      const started = (await res.json()) as { runId: string; status?: string; error?: string }
+      if (!isCurrent(generation)) return
 
-      setState({ storyId, status: 'rendering', progress: 45 })
+      if (started.status === 'failed') {
+        setState({
+          storyId: exportStoryId,
+          runId: started.runId,
+          status: 'failed',
+          progress: 0,
+          error: started.error ?? 'Export failed',
+          retryable: true,
+        })
+        toast.error('Export failed', { description: started.error ?? 'Export failed' })
+        return
+      }
 
-      // Render can outlive a single serverless function window, so the stream
-      // closes itself periodically and we reconnect — resuming from Redis.
-      // The browser connection lifetime is decoupled from render duration.
-      const OVERALL_DEADLINE = Date.now() + 20 * 60 * 1000 // 20 min hard cap
-      const RECONNECT_DELAY = 1200
-      const MAX_ERR_RETRIES = 8
-
-      await new Promise<void>((resolve, reject) => {
-        let errRetries = 0
-
-        const finish = (es: EventSource) => {
-          es.close()
-          if (esRef.current === es) esRef.current = null
-        }
-
-        const connect = () => {
-          if (!isRunActive(runId)) return resolve()
-          if (Date.now() > OVERALL_DEADLINE) {
-            return reject(new Error('Export timed out'))
-          }
-
-          const es = new EventSource(`/api/export/${jobId}/stream`)
-          esRef.current = es
-
-          es.onmessage = (event) => {
-            if (!isRunActive(runId)) {
-              finish(es)
-              return resolve()
-            }
-            let data: { status: string; videoUrl?: string; error?: string }
-            try {
-              data = JSON.parse(event.data as string)
-            } catch {
-              return
-            }
-            if (data.status === 'done' && data.videoUrl) {
-              setState({ storyId, status: 'done', progress: 100, downloadUrl: data.videoUrl })
-              finish(es)
-              resolve()
-            } else if (data.status === 'failed') {
-              finish(es)
-              reject(new Error(data.error ?? 'Export failed'))
-            } else if (data.status === 'reconnect') {
-              // Server ended its window on purpose — reconnect immediately.
-              errRetries = 0
-              finish(es)
-              setTimeout(connect, 100)
-            } else if (data.status === 'progress') {
-              errRetries = 0 // heartbeat: connection healthy
-            }
-          }
-
-          es.onerror = () => {
-            if (!isRunActive(runId)) {
-              finish(es)
-              return resolve()
-            }
-            finish(es)
-            errRetries += 1
-            if (errRetries > MAX_ERR_RETRIES) {
-              reject(new Error('Stream connection lost'))
-              return
-            }
-            setTimeout(connect, RECONNECT_DELAY)
-          }
-        }
-
-        connect()
-      })
+      await startWatching(started.runId, generation)
     } catch (err) {
-      if (!isRunActive(runId)) return
+      if (!isCurrent(generation)) return
       const msg = err instanceof Error ? err.message : 'Export failed'
-      setState({ storyId, status: 'failed', progress: 0, error: msg })
+      setState((prev) => ({
+        storyId: exportStoryId,
+        runId: prev.runId,
+        status: 'failed',
+        progress: 0,
+        error: msg,
+        retryable: true,
+      }))
       toast.error('Export failed', { description: msg })
     }
-  }, [isRunActive, closeStream])
+  }, [closeStream, isCurrent, startWatching])
 
   const cancelExport: Ctx['cancelExport'] = useCallback(() => {
-    runIdRef.current += 1
+    const runId = stateRef.current.runId
+    generationRef.current += 1
+    closeStream()
+    setState(initial)
+    if (runId) {
+      void fetch(`/api/export/${runId}/cancel`, { method: 'POST' }).catch(() => {})
+    }
+  }, [closeStream])
+
+  const retryExport: Ctx['retryExport'] = useCallback(async () => {
+    const runId = stateRef.current.runId
+    if (!runId) {
+      generationRef.current += 1
+      closeStream()
+      setState(initial)
+      return
+    }
+    generationRef.current += 1
+    const generation = generationRef.current
+    closeStream()
+    setState((prev) => ({ ...prev, status: 'rendering', progress: 45, error: undefined }))
+
+    try {
+      const res = await fetch(`/api/export/${runId}/retry`, { method: 'POST' })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error((d as { error?: string }).error ?? `HTTP ${res.status}`)
+      }
+      const retried = (await res.json()) as { runId: string; status?: string; error?: string }
+      if (!isCurrent(generation)) return
+      if (retried.status === 'failed') {
+        throw new Error(retried.error ?? 'Export failed')
+      }
+      await startWatching(retried.runId, generation)
+    } catch (err) {
+      if (!isCurrent(generation)) return
+      const msg = err instanceof Error ? err.message : 'Export failed'
+      setState((prev) => ({
+        ...prev,
+        status: 'failed',
+        progress: 0,
+        error: msg,
+        retryable: true,
+      }))
+      toast.error('Export failed', { description: msg })
+    }
+  }, [closeStream, isCurrent, startWatching])
+
+  const reset = useCallback(() => {
+    generationRef.current += 1
     closeStream()
     setState(initial)
   }, [closeStream])
 
-  const reset = useCallback(() => {
-    runIdRef.current += 1
-    closeStream()
-    setState(initial)
-  }, [closeStream])
+  const hydratedRunId = useRef<string | null>(null)
+  useEffect(() => {
+    return () => {
+      generationRef.current += 1
+      esRef.current?.close()
+      esRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!initialRun) return
+    const next = stateFromHydration(storyId, initialRun)
+    if (!next) return
+    if (hydratedRunId.current === initialRun.runId && stateRef.current.status !== 'idle') return
+    hydratedRunId.current = initialRun.runId
+    generationRef.current += 1
+    const generation = generationRef.current
+    setState(next)
+    if (initialRun.status === 'running') {
+      void startWatching(initialRun.runId, generation).catch((err) => {
+        if (!isCurrent(generation)) return
+        const msg = err instanceof Error ? err.message : 'Export failed'
+        setState({
+          storyId,
+          runId: initialRun.runId,
+          status: 'failed',
+          progress: 0,
+          error: msg,
+          retryable: true,
+        })
+      })
+    }
+  }, [initialRun, isCurrent, startWatching, storyId])
 
   const openModal = useCallback(() => setModalOpen(true), [])
   const closeModal = useCallback(() => setModalOpen(false), [])
 
   const value = useMemo(
-    () => ({ state, startExport, cancelExport, reset, modalOpen, openModal, closeModal }),
-    [state, startExport, cancelExport, reset, modalOpen, openModal, closeModal],
+    () => ({ state, startExport, cancelExport, retryExport, reset, modalOpen, openModal, closeModal }),
+    [state, startExport, cancelExport, retryExport, reset, modalOpen, openModal, closeModal],
   )
 
   return <ExportCtx.Provider value={value}>{children}</ExportCtx.Provider>
