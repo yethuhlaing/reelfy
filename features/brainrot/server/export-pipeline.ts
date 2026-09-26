@@ -2,11 +2,7 @@ import { fal } from '@/shared/lib/providers/fal'
 import { generateVoiceover } from '@/shared/lib/integrations/elevenlabs'
 import type { BrainrotCaptionPosition } from '@/shared/lib/types/brainrot'
 import type { WordTiming } from '@/shared/lib/types'
-import {
-  BRAINROT_VOICE_SPEED,
-  COMPOSE_MODEL_ID,
-  SUBTITLE_MODEL_ID,
-} from '@/features/brainrot/constants'
+import { BRAINROT_VOICE_SPEED } from '@/features/brainrot/constants'
 import { pickSequentialChunks } from '@/features/brainrot/server/chunk-picker'
 import { nextBrainrotChunkCursor } from '@/shared/lib/db/config'
 import { uploadBrainrotVoiceover } from '@/features/brainrot/server/brainrot-assets'
@@ -14,7 +10,7 @@ import type { FalTrack } from '@/features/lofi/server/arrangement'
 
 type FalKeyframe = { timestamp: number; duration: number; url: string }
 
-function buildComposeTracks(
+export function buildComposeTracks(
   chunks: { url: string; durationMs: number }[],
   voiceoverUrl: string,
   totalDurationMs: number,
@@ -94,39 +90,23 @@ function subtitleYOffset(position: 'top' | 'center' | 'bottom'): number {
   return SUBTITLE_CENTER_DROP_PX
 }
 
-export async function submitBrainrotCompose(input: {
-  tracks: FalTrack[]
-  webhookUrl: string
-}): Promise<string> {
-  const submitted = await fal.queue.submit(COMPOSE_MODEL_ID, {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    input: { tracks: input.tracks } as any,
-    webhookUrl: input.webhookUrl,
-  })
-  return submitted.request_id
-}
-
-export async function submitBrainrotSubtitles(input: {
-  videoUrl: string
-  captionPosition: BrainrotCaptionPosition
-  webhookUrl: string
-}): Promise<string> {
-  const position = mapCaptionPositionToFal(input.captionPosition)
-  const submitted = await fal.queue.submit(SUBTITLE_MODEL_ID, {
-    input: {
-      video_url: input.videoUrl,
-      position,
-      y_offset: subtitleYOffset(position),
-      words_per_subtitle: 1,
-      font_name: 'Montserrat',
-      font_size: 84,
-      font_color: 'white',
-      highlight_color: 'yellow',
-      enable_animation: false,
-    },
-    webhookUrl: input.webhookUrl,
-  })
-  return submitted.request_id
+/** The fal input for the subtitle Step. Pure, so the planner stays testable. */
+export function buildSubtitleInput(
+  videoUrl: string,
+  captionPosition: BrainrotCaptionPosition,
+): Record<string, unknown> {
+  const position = mapCaptionPositionToFal(captionPosition)
+  return {
+    video_url: videoUrl,
+    position,
+    y_offset: subtitleYOffset(position),
+    words_per_subtitle: 1,
+    font_name: 'Montserrat',
+    font_size: 84,
+    font_color: 'white',
+    highlight_color: 'yellow',
+    enable_animation: false,
+  }
 }
 
 export async function prepareBrainrotExportAssets(input: {

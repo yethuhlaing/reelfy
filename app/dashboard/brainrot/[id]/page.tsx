@@ -1,8 +1,7 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { BrainrotProjectPageClient } from '@/features/brainrot/components/BrainrotProjectPageClient'
-import { getBrainrotProjectForUser } from '@/features/brainrot/server/brainrot-db'
-import { reconcileBrainrotExportFromFal } from '@/features/brainrot/server/export-finalize'
+import { hydrateBrainrotProject } from '@/features/brainrot/server/brainrot-export'
 import { getUserSession } from '@/shared/lib/db/user'
 
 export const dynamic = 'force-dynamic'
@@ -16,23 +15,15 @@ export default async function BrainrotDashboardPage({
   const session = await getUserSession('/dashboard')
   if (!session) return null
 
-  let project = await getBrainrotProjectForUser(id, session.user.id)
-  if (!project) notFound()
-
-  // Self-heal a project stuck in 'rendering' by polling fal directly. Covers the
-  // case where the completion webhook never reached us (no public URL in dev).
-  // Export runs in two phases (compose → subtitle); reconcile up to twice.
-  if (project.status === 'rendering' && project.renderJobId) {
-    for (let i = 0; i < 2; i++) {
-      const terminal = await reconcileBrainrotExportFromFal(project.renderJobId).catch(() => false)
-      if (terminal) break
-    }
-    project = (await getBrainrotProjectForUser(id, session.user.id)) ?? project
-  }
+  // Hydrating reconciles the current Run against fal, so a project opened
+  // mid-export shows the real phase — and one whose completion webhook never
+  // arrived shows the finished reel — without any job id in the URL.
+  const hydrated = await hydrateBrainrotProject(session.user.id, id)
+  if (!hydrated) notFound()
 
   return (
     <Suspense fallback={null}>
-      <BrainrotProjectPageClient project={project} />
+      <BrainrotProjectPageClient project={hydrated.project} exportRun={hydrated.exportRun} />
     </Suspense>
   )
 }

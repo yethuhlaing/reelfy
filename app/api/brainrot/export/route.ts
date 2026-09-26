@@ -1,7 +1,5 @@
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
-import { getCredits, deductCredits } from '@/shared/lib/db/credits'
-import { createJob, markFailed, markRunning } from '@/shared/lib/jobs/store'
-import { buildWebhookUrl } from '@/shared/lib/jobs/webhook-url'
+import { getCredits } from '@/shared/lib/db/credits'
 import { getGameplayCategory } from '@/shared/data/gameplay-catalog'
 import { isCuratedBrainrotVoice } from '@/shared/data/brainrot-voices'
 import {
@@ -9,14 +7,13 @@ import {
   updateBrainrotProject,
 } from '@/features/brainrot/server/brainrot-db'
 import {
-  prepareBrainrotExportAssets,
-  submitBrainrotCompose,
-} from '@/features/brainrot/server/export-pipeline'
-import { brainrotExportCredits } from '@/features/brainrot/constants'
-import { COMPOSE_MODEL_ID } from '@/features/brainrot/constants'
-import type { BrainrotCaptionPosition, BrainrotFormat } from '@/shared/lib/types/brainrot'
-import type { BrainrotExportPayload } from '@/shared/lib/jobs/types'
-import type { WordTiming } from '@/shared/lib/types'
+  brainrotTarget,
+  createBrainrotExportKernel,
+  resolveBrainrotExportChange,
+} from '@/features/brainrot/server/brainrot-export'
+import { InsufficientCreditsError } from '@/shared/lib/video-processing/errors'
+import { isInFlight } from '@/shared/lib/video-processing/types'
+import type { BrainrotCaptionPosition } from '@/shared/lib/types/brainrot'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -25,35 +22,10 @@ function badRequest(message: string) {
   return new Response(JSON.stringify({ error: message }), { status: 400 })
 }
 
-function isCaptionOnlyReexport(
-  existing: {
-    script: string
-    backgroundCategory: string
-    characterVoiceId: string
-    captionPosition: string
-    voiceoverUrl: string | null
-    voiceoverWordTimings: WordTiming[] | null
-    voiceoverDurationSec: number | null
-    backgroundVideoId: string | null
-    chunkStartIndex: number | null
-    chunkUrls: string[] | null
-  },
-  next: {
-    script: string
-    backgroundCategory: string
-    characterVoiceId: string
-    captionPosition: string
-  },
-): boolean {
-  return (
-    existing.script === next.script &&
-    existing.backgroundCategory === next.backgroundCategory &&
-    existing.characterVoiceId === next.characterVoiceId &&
-    existing.captionPosition !== next.captionPosition &&
-    !!existing.voiceoverUrl &&
-    !!existing.voiceoverWordTimings?.length &&
-    existing.voiceoverDurationSec != null &&
-    !!existing.chunkUrls?.length
+function insufficient(balance: number, required: number) {
+  return new Response(
+    JSON.stringify({ error: 'insufficient_credits', balance, required }),
+    { status: 402 },
   )
 }
 
@@ -65,13 +37,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return badRequest('Invalid JSON')
 
-  const {
-    projectId,
-    script,
-    backgroundCategory,
-    characterVoiceId,
-    captionPosition,
-  } = body as {
+  const { projectId, script, backgroundCategory, characterVoiceId, captionPosition } = body as {
     projectId?: string
     script?: string
     backgroundCategory?: string
@@ -94,109 +60,67 @@ export async function POST(request: Request) {
   const project = await getBrainrotProjectForUser(projectId, userId)
   if (!project) return badRequest('Project not found')
 
-  const trimmedScript = script.trim()
-  const position = captionPosition as BrainrotCaptionPosition
-  const captionOnly = isCaptionOnlyReexport(project, {
-    script: trimmedScript,
+  const target = brainrotTarget(userId, projectId)
+  const next = {
+    script: script.trim(),
     backgroundCategory,
     characterVoiceId,
     captionPosition,
-  })
+  }
+  const change = resolveBrainrotExportChange(project, next)
+  const kernel = createBrainrotExportKernel({ credits: change.credits })
 
-  const wordCount = trimmedScript.split(/\s+/).filter(Boolean).length
-  const creditsToCharge = captionOnly ? 0 : brainrotExportCredits(wordCount)
-  let balance = await getCredits(userId)
-  let jobId: string | null = null
-
-  if (creditsToCharge > 0) {
-    if (balance < creditsToCharge) {
-      return new Response(
-        JSON.stringify({
-          error: 'insufficient_credits',
-          balance,
-          required: creditsToCharge,
-        }),
-        { status: 402 },
-      )
-    }
-    const charge = await deductCredits(userId, creditsToCharge)
-    if (!charge.ok) {
-      return new Response(
-        JSON.stringify({
-          error: 'insufficient_credits',
-          balance: charge.balance,
-          required: creditsToCharge,
-        }),
-        { status: 402 },
-      )
-    }
-    balance = charge.balance
+  // A second Export while one is in flight joins it: no second compose, no
+  // second charge, and the first fal request is left alone. This runs before
+  // anything is written, so it cannot disturb the export already going.
+  const current = await kernel.get(target).catch(() => null)
+  if (current && isInFlight(current)) {
+    return Response.json({
+      projectId,
+      runId: current.id,
+      status: current.status,
+      balance: await getCredits(userId),
+    })
   }
 
+  const balance = await getCredits(userId)
+  if (balance < change.credits) return insufficient(balance, change.credits)
+
+  // Persist the options first: the planner reads the project, and only reuses
+  // the stored voiceover and chunks this write leaves behind.
+  await updateBrainrotProject(projectId, userId, {
+    script: next.script,
+    backgroundCategory,
+    characterVoiceId,
+    captionPosition: captionPosition as BrainrotCaptionPosition,
+    outputVideoUrl: null,
+    status: 'rendering',
+    creditsCharged: project.creditsCharged + change.credits,
+    ...(change.clearVoiceover
+      ? { voiceoverUrl: null, voiceoverDurationSec: null, voiceoverWordTimings: null }
+      : {}),
+    ...(change.clearChunks
+      ? { backgroundVideoId: null, chunkStartIndex: null, chunkUrls: null }
+      : {}),
+  })
+
   try {
-    const reuseVoiceover = captionOnly
-      ? {
-          voiceoverUrl: project.voiceoverUrl!,
-          voiceoverDurationSec: project.voiceoverDurationSec!,
-          wordTimings: project.voiceoverWordTimings!,
-          backgroundVideoId: project.backgroundVideoId,
-          chunkStartIndex: project.chunkStartIndex,
-          chunkUrls: project.chunkUrls,
-        }
-      : null
-
-    const assets = await prepareBrainrotExportAssets({
+    const run = await kernel.start(target)
+    return Response.json({
       projectId,
-      script: trimmedScript,
-      backgroundCategory,
-      characterVoiceId,
-      userId,
-      reuseVoiceover,
-      signal: request.signal,
+      runId: run.id,
+      status: run.status,
+      error: run.error,
+      balance: await getCredits(userId),
     })
-
-    await updateBrainrotProject(projectId, userId, {
-      script: trimmedScript,
-      backgroundCategory,
-      characterVoiceId,
-      captionPosition: position,
-      format: project.format as BrainrotFormat,
-      voiceoverUrl: assets.voiceoverUrl,
-      voiceoverDurationSec: assets.voiceoverDurationSec,
-      voiceoverWordTimings: assets.wordTimings,
-      backgroundVideoId: assets.backgroundVideoId,
-      chunkStartIndex: assets.chunkStartIndex,
-      chunkUrls: assets.chunkUrls,
-      outputVideoUrl: null,
-      status: 'rendering',
-      creditsCharged: project.creditsCharged + creditsToCharge,
-    })
-
-    const payload: BrainrotExportPayload = {
-      projectId,
-      userId,
-      captionPosition: position,
-      phase: 'compose',
-    }
-    const job = await createJob<BrainrotExportPayload>('brainrot-export', payload)
-    jobId = job.id
-    // Persist so a stuck 'rendering' project can be reconciled server-side later
-    // (dev has no public webhook URL, so the completion callback never arrives).
-    await updateBrainrotProject(projectId, userId, { renderJobId: job.id })
-
-    const composeRequestId = await submitBrainrotCompose({
-      tracks: assets.tracks,
-      webhookUrl: buildWebhookUrl('brainrot/export', job.id),
-    })
-    await markRunning(job.id, composeRequestId, COMPOSE_MODEL_ID)
-
-    return Response.json({ projectId, jobId: job.id, balance })
   } catch (err) {
-    if (creditsToCharge > 0) {
-      await deductCredits(userId, -creditsToCharge)
+    await updateBrainrotProject(projectId, userId, {
+      status: 'failed',
+      creditsCharged: project.creditsCharged,
+    }).catch(() => {})
+    if (err instanceof InsufficientCreditsError) {
+      return insufficient(err.balance, err.required)
     }
-    if (jobId) await markFailed(jobId, err instanceof Error ? err.message : 'Export failed')
-    await updateBrainrotProject(projectId, userId, { status: 'failed' })
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Export failed' }),
       { status: 500 },

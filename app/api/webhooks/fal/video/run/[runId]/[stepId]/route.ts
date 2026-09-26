@@ -2,6 +2,7 @@ import { after } from 'next/server'
 import { readFalHeaders, verifyFalWebhook } from '@/shared/lib/jobs/verify-fal'
 import { createAnimateKernel } from '@/features/stories/server/animate-kernel'
 import { createStoryExportKernel } from '@/features/stories/server/story-export'
+import { createBrainrotExportKernel } from '@/features/brainrot/server/brainrot-export'
 import { createPgRunStore } from '@/shared/lib/video-processing/run-store-pg'
 import type { VideoKernel } from '@/shared/lib/video-processing/kernel'
 import type { FalWebhookBody } from '@/shared/lib/video-processing/types'
@@ -12,6 +13,7 @@ export const maxDuration = 60
 function kernelForTarget(kind: string): VideoKernel {
   if (kind === 'scene') return createAnimateKernel()
   if (kind === 'story') return createStoryExportKernel()
+  if (kind === 'brainrotProject') return createBrainrotExportKernel()
   throw new Error(`No kernel for Target kind ${kind}`)
 }
 

@@ -1,6 +1,11 @@
-import { getJob } from '@/shared/lib/jobs/store'
-import { reconcileBrainrotExportFromFal } from '@/features/brainrot/server/export-finalize'
-import type { BrainrotExportResult } from '@/shared/lib/jobs/types'
+import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
+import {
+  brainrotTarget,
+  createBrainrotExportKernel,
+  phaseForRun,
+} from '@/features/brainrot/server/brainrot-export'
+import { getBrainrotProjectForUser } from '@/features/brainrot/server/brainrot-db'
+import { isInFlight } from '@/shared/lib/video-processing/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -9,16 +14,28 @@ const POLL_MS = 1500
 const WINDOW_MS = 240 * 1000
 const HEARTBEAT_MS = 15 * 1000
 
+/**
+ * Progress for the project's current export Run. Addressed by project, not by
+ * job id: a tab that reloaded, or one opened from the dashboard, attaches the
+ * same way. Each poll reconciles, so a missed webhook finishes the reel here
+ * too — and a dropped stream is never reported as a failure.
+ */
 export async function GET(
-  req: Request,
+  request: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
+  const session = await requireUserSession(request)
+  if (isAuthError(session)) return session
+  const userId = session.user.id
+
   const { id: projectId } = await ctx.params
-  const jobId = new URL(req.url).searchParams.get('jobId')
-  if (!jobId) {
-    return new Response(JSON.stringify({ error: 'Missing jobId query param' }), { status: 400 })
+  const project = await getBrainrotProjectForUser(projectId, userId)
+  if (!project) {
+    return new Response(JSON.stringify({ error: 'Project not found' }), { status: 404 })
   }
 
+  const target = brainrotTarget(userId, projectId)
+  const kernel = createBrainrotExportKernel()
   const encoder = new TextEncoder()
   let closed = false
   const startedAt = Date.now()
@@ -38,8 +55,7 @@ export async function GET(
       }
 
       let lastBeat = Date.now()
-      let lastReconcile = 0
-      const RECONCILE_MS = 5000
+      let lastPhase: string | null = null
 
       while (!closed) {
         if (Date.now() - startedAt >= WINDOW_MS) {
@@ -51,42 +67,47 @@ export async function GET(
         await new Promise<void>((r) => setTimeout(r, POLL_MS))
         if (closed) break
 
-        let job
+        let run
         try {
-          job = await getJob<unknown, BrainrotExportResult>(jobId)
+          run = await kernel.get(target)
         } catch {
-          send({ status: 'failed', error: 'Failed to read job status' })
-          close()
-          break
-        }
-
-        if (!job) {
-          send({ status: 'failed', error: 'Job not found' })
-          close()
-          break
-        }
-
-        if (job.status === 'completed') {
-          const videoUrl = job.result?.videoUrl
-          if (!videoUrl) send({ status: 'failed', error: 'No video URL in result' })
-          else send({ status: 'done', videoUrl, projectId })
-          close()
-          break
-        }
-
-        if (job.status === 'failed') {
-          send({ status: 'failed', error: job.error ?? 'Export failed' })
-          close()
-          break
-        }
-
-        if (Date.now() - lastReconcile >= RECONCILE_MS) {
-          lastReconcile = Date.now()
-          reconcileBrainrotExportFromFal(jobId).catch(() => {})
-        }
-
-        if (Date.now() - lastBeat >= HEARTBEAT_MS) {
+          // A read that failed is not an export that failed.
           send({ status: 'progress' })
+          continue
+        }
+
+        if (!run) {
+          send({ status: 'idle' })
+          close()
+          break
+        }
+
+        if (run.status === 'completed') {
+          const progress = await kernel.progress(run.id)
+          if (!progress?.videoUrl) send({ status: 'failed', error: 'No video URL in result' })
+          else send({ status: 'done', videoUrl: progress.videoUrl })
+          close()
+          break
+        }
+
+        if (run.status === 'failed') {
+          send({ status: 'failed', error: run.error ?? 'Export failed', retryable: run.retryable })
+          close()
+          break
+        }
+
+        if (!isInFlight(run)) {
+          send({ status: 'aborted' })
+          close()
+          break
+        }
+
+        // Compose handing over to subtitle is what the overlay is waiting to
+        // hear, so say it the moment it happens rather than on the next beat.
+        const phase = phaseForRun(run)
+        if (phase !== lastPhase || Date.now() - lastBeat >= HEARTBEAT_MS) {
+          send({ status: 'progress', phase })
+          lastPhase = phase
           lastBeat = Date.now()
         }
       }
@@ -102,7 +123,6 @@ export async function GET(
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
-      'X-Brainrot-Project-Id': projectId,
     },
   })
 }

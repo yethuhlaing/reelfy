@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -15,10 +15,14 @@ import {
   Mic,
   RotateCcw,
   Trash2,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { BrainrotProject } from '@/shared/lib/types/brainrot'
-import { BRAINROT_EXPORT_MIN_CREDITS } from '@/features/brainrot/constants'
+import type {
+  BrainrotExportHydration,
+  BrainrotExportPhase,
+} from '@/features/brainrot/lib/brainrot-export-view'
 import { getGameplayCategory } from '@/shared/data/gameplay-catalog'
 import { brainrotVoiceOverride } from '@/shared/data/brainrot-voices'
 
@@ -47,6 +51,17 @@ function statusMeta(status: string): { label: string; className: string } {
   }
 }
 
+const PHASE_COPY: Record<BrainrotExportPhase, { title: string; detail: string }> = {
+  composing: {
+    title: 'Compositing reel…',
+    detail: 'Laying gameplay under your voiceover.',
+  },
+  subtitling: {
+    title: 'Adding captions…',
+    detail: 'Burning word-by-word captions onto the reel.',
+  },
+}
+
 function formatDuration(sec: number | null): string | null {
   if (!sec || sec <= 0) return null
   const m = Math.floor(sec / 60)
@@ -69,44 +84,149 @@ function MetaRow({ icon: Icon, label, value }: { icon: typeof Mic; label: string
   )
 }
 
-export function BrainrotProjectPageClient({ project: initial }: { project: BrainrotProject }) {
+type StreamEvent = {
+  status: string
+  videoUrl?: string
+  error?: string
+  phase?: BrainrotExportPhase | null
+}
+
+const RECONNECT_DELAY_MS = 1200
+
+export function BrainrotProjectPageClient({
+  project: initial,
+  exportRun,
+}: {
+  project: BrainrotProject
+  exportRun: BrainrotExportHydration | null
+}) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const jobId = searchParams.get('jobId')
 
   const [project, setProject] = useState(initial)
-  const [rendering, setRendering] = useState(initial.status === 'rendering' || !!jobId)
-  const [error, setError] = useState<string | null>(null)
+  // Seeded from the server's reconciled Run, so a reload mid-export shows the
+  // phase it is actually in rather than waiting for the first stream message.
+  const [rendering, setRendering] = useState(exportRun?.status === 'running')
+  const [phase, setPhase] = useState<BrainrotExportPhase | null>(exportRun?.phase ?? null)
+  const [error, setError] = useState<string | null>(
+    exportRun?.status === 'failed' ? friendlyError(exportRun.error) : null,
+  )
+  const [cancelling, setCancelling] = useState(false)
+  const [retrying, setRetrying] = useState(false)
 
-  useEffect(() => {
-    if (!jobId || project.status === 'complete') return
+  const esRef = useRef<EventSource | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stoppedRef = useRef(false)
 
-    const es = new EventSource(
-      `/api/brainrot/${project.id}/stream?jobId=${encodeURIComponent(jobId)}`,
-    )
+  const closeStream = useCallback(() => {
+    esRef.current?.close()
+    esRef.current = null
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
 
-    es.onmessage = (ev) => {
-      try {
-        const data = JSON.parse(ev.data) as { status: string; videoUrl?: string; error?: string }
-        if (data.status === 'done' && data.videoUrl) {
-          setProject((p) => ({ ...p, status: 'complete', outputVideoUrl: data.videoUrl! }))
-          setRendering(false)
-          es.close()
-          router.replace(`/dashboard/brainrot/${project.id}`)
-        } else if (data.status === 'failed') {
-          setError(friendlyError(data.error))
-          setRendering(false)
-          setProject((p) => ({ ...p, status: 'failed' }))
-          es.close()
-        } else if (data.status === 'reconnect') {
-          es.close()
-        }
-      } catch { /* ignore */ }
+  /**
+   * Re-get the project from the server. This is the answer to a dropped
+   * stream: the Run lives on the Target, so the server can always say where
+   * the export got to — the client never has to guess, or time out into a lie.
+   */
+  const reget = useCallback(async (): Promise<'running' | 'done' | 'failed' | 'idle'> => {
+    const res = await fetch(`/api/brainrot/${initial.id}`, { cache: 'no-store' })
+    if (!res.ok) throw new Error('Re-get failed')
+    const data = (await res.json()) as {
+      project: BrainrotProject
+      exportRun: BrainrotExportHydration | null
+    }
+    setProject(data.project)
+
+    if (data.exportRun?.status === 'running') {
+      setPhase(data.exportRun.phase)
+      return 'running'
+    }
+    if (data.exportRun?.status === 'failed') {
+      setError(friendlyError(data.exportRun.error))
+      setRendering(false)
+      setPhase(null)
+      return 'failed'
+    }
+    setRendering(false)
+    setPhase(null)
+    return data.project.outputVideoUrl ? 'done' : 'idle'
+  }, [initial.id])
+
+  const watch = useCallback(() => {
+    closeStream()
+    if (stoppedRef.current) return
+
+    const es = new EventSource(`/api/brainrot/${initial.id}/stream`)
+    esRef.current = es
+
+    const stop = () => {
+      es.close()
+      if (esRef.current === es) esRef.current = null
     }
 
-    es.onerror = () => es.close()
-    return () => es.close()
-  }, [jobId, project.id, project.status, router])
+    es.onmessage = (event) => {
+      let data: StreamEvent
+      try {
+        data = JSON.parse(event.data as string) as StreamEvent
+      } catch {
+        return
+      }
+
+      if (data.status === 'done' && data.videoUrl) {
+        setProject((p) => ({ ...p, status: 'complete', outputVideoUrl: data.videoUrl! }))
+        setRendering(false)
+        setPhase(null)
+        setError(null)
+        stop()
+        router.refresh()
+      } else if (data.status === 'failed') {
+        setError(friendlyError(data.error))
+        setRendering(false)
+        setPhase(null)
+        setProject((p) => ({ ...p, status: 'failed' }))
+        stop()
+      } else if (data.status === 'aborted' || data.status === 'idle') {
+        setRendering(false)
+        setPhase(null)
+        stop()
+        void reget().catch(() => {})
+      } else if (data.status === 'reconnect') {
+        // The server closed a long-lived stream on purpose; pick it straight up.
+        stop()
+        timerRef.current = setTimeout(watch, 100)
+      } else if (data.status === 'progress') {
+        setPhase(data.phase ?? null)
+      }
+    }
+
+    es.onerror = () => {
+      stop()
+      if (stoppedRef.current) return
+      // A dropped stream is not a failed export. Ask the server; only stop
+      // spinning when it says the Run is actually over.
+      void reget()
+        .then((outcome) => {
+          if (stoppedRef.current) return
+          if (outcome === 'running') timerRef.current = setTimeout(watch, RECONNECT_DELAY_MS)
+        })
+        .catch(() => {
+          if (!stoppedRef.current) timerRef.current = setTimeout(watch, RECONNECT_DELAY_MS)
+        })
+    }
+  }, [closeStream, initial.id, reget, router])
+
+  useEffect(() => {
+    stoppedRef.current = false
+    if (!rendering) return
+    watch()
+    return () => {
+      stoppedRef.current = true
+      closeStream()
+    }
+  }, [rendering, watch, closeStream])
 
   const handleDelete = useCallback(async () => {
     const res = await fetch(`/api/brainrot/${project.id}`, { method: 'DELETE' })
@@ -119,9 +239,47 @@ export function BrainrotProjectPageClient({ project: initial }: { project: Brain
     router.refresh()
   }, [project.id, router])
 
+  const handleRetry = useCallback(async () => {
+    setRetrying(true)
+    try {
+      const res = await fetch(`/api/brainrot/${project.id}/retry`, { method: 'POST' })
+      const data = (await res.json()) as { status?: string; error?: string }
+      if (!res.ok) throw new Error(data.error ?? 'Retry failed')
+      setError(null)
+      setPhase(null)
+      setProject((p) => ({ ...p, status: 'rendering' }))
+      setRendering(true)
+      toast.success('Picking the render back up…')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Retry failed')
+    } finally {
+      setRetrying(false)
+    }
+  }, [project.id])
+
+  const handleCancel = useCallback(async () => {
+    setCancelling(true)
+    try {
+      const res = await fetch(`/api/brainrot/${project.id}/cancel`, { method: 'POST' })
+      if (!res.ok) throw new Error('Cancel failed')
+      stoppedRef.current = true
+      closeStream()
+      setRendering(false)
+      setPhase(null)
+      setProject((p) => ({ ...p, status: p.script ? 'script_ready' : 'draft' }))
+      toast.success('Render cancelled')
+      router.refresh()
+    } catch {
+      toast.error('Cancel failed')
+    } finally {
+      setCancelling(false)
+    }
+  }, [closeStream, project.id, router])
+
   const title = project.title || project.inputText.slice(0, 48) || 'Brainrot reel'
   const isFailed = !rendering && !project.outputVideoUrl && project.status === 'failed'
   const status = statusMeta(rendering ? 'rendering' : project.status)
+  const phaseCopy = PHASE_COPY[phase ?? 'composing']
 
   const categoryLabel =
     getGameplayCategory(project.backgroundCategory)?.label ??
@@ -172,9 +330,9 @@ export function BrainrotProjectPageClient({ project: initial }: { project: Brain
             {rendering && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/85 text-white">
                 <Loader2 className="size-8 animate-spin text-[var(--accent)]" />
-                <p className="text-sm">Rendering reel…</p>
+                <p className="text-sm">{phaseCopy.title}</p>
                 <p className="max-w-[200px] text-center text-xs text-white/50">
-                  Compositing gameplay, voiceover and captions.
+                  {phaseCopy.detail}
                 </p>
               </div>
             )}
@@ -208,8 +366,19 @@ export function BrainrotProjectPageClient({ project: initial }: { project: Brain
             )}
           </div>
 
+          {rendering && (
+            <button
+              type="button"
+              onClick={() => void handleCancel()}
+              disabled={cancelling}
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 py-2.5 text-sm font-medium text-[var(--text)] transition hover:border-red-500/40 hover:text-red-400 disabled:opacity-60"
+            >
+              <X size={15} /> {cancelling ? 'Cancelling…' : 'Cancel render'}
+            </button>
+          )}
+
           {/* Primary actions under the player */}
-          {project.outputVideoUrl && (
+          {project.outputVideoUrl && !rendering && (
             <div className="mt-3 grid grid-cols-2 gap-2">
               <a
                 href={project.outputVideoUrl}
@@ -232,10 +401,11 @@ export function BrainrotProjectPageClient({ project: initial }: { project: Brain
           {isFailed && (
             <button
               type="button"
-              onClick={() => router.push('/new?category=brainrot')}
-              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-ink,#fff)] transition hover:opacity-90"
+              onClick={() => void handleRetry()}
+              disabled={retrying}
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-ink,#fff)] transition hover:opacity-90 disabled:opacity-60"
             >
-              <RotateCcw size={15} /> Start a new reel · from {BRAINROT_EXPORT_MIN_CREDITS} credits
+              <RotateCcw size={15} /> {retrying ? 'Retrying…' : 'Retry render'}
             </button>
           )}
         </div>

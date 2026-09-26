@@ -283,7 +283,8 @@ export function BrainrotForm({ onBackToStart }: { onBackToStart?: () => void }) 
       if (!res.ok) throw new Error(data.error ?? 'Export failed')
       if (data.balance != null) setBalance(data.balance)
       toast.success('Rendering your brainrot reel…')
-      router.push(`${brainrotHref(projectId)}?jobId=${encodeURIComponent(data.jobId)}`)
+      // No job id in the URL: the project page reattaches from the Target.
+      router.push(brainrotHref(projectId))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed')
       setExporting(false)

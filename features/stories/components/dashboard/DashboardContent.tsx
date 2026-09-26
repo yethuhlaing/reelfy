@@ -1,5 +1,5 @@
 import { listBrainrotProjectsForUser } from '@/features/brainrot/server/brainrot-db'
-import { reconcileBrainrotExportFromFal } from '@/features/brainrot/server/export-finalize'
+import { reconcileRenderingBrainrotProjects } from '@/features/brainrot/server/brainrot-export'
 import { listGenerationsForUser } from '@/features/meme/server/memes-db'
 import { listUserStories } from '@/features/stories/server/stories-db'
 import { DashboardHero } from '@/features/stories/components/dashboard/DashboardHero'
@@ -18,12 +18,10 @@ export async function DashboardContent({ userId }: DashboardContentProps) {
   ])
 
   // Self-heal reels stuck in 'rendering' (missed completion webhook, common in
-  // dev with no public URL) by polling fal directly, then re-read the fresh rows.
-  const stuck = brainrotRows.filter((b) => b.status === 'rendering' && b.renderJobId)
-  if (stuck.length > 0) {
-    await Promise.all(
-      stuck.map((b) => reconcileBrainrotExportFromFal(b.renderJobId!).catch(() => false)),
-    )
+  // dev with no public URL). The kernel reconciles each Run against fal from
+  // the project Target alone, then we re-read the fresh rows.
+  const healed = await reconcileRenderingBrainrotProjects(userId, brainrotRows)
+  if (healed.length > 0) {
     brainrotRows = await listBrainrotProjectsForUser(userId)
   }
 
