@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
+import type { StoredSceneRow } from '@/features/stories/server/stories-db'
 import type { ExportSceneInput } from '@/shared/lib/jobs/types'
 import type { Run, TargetRef } from '@/shared/lib/video-processing/types'
 
@@ -9,6 +10,7 @@ import {
   buildExportTracksPayload,
   createStoryExportPlanner,
   createStoryExportSink,
+  exportScenesFromRows,
 } from './story-export'
 
 const story: TargetRef = { kind: 'story', userId: 'u1', storyId: 's1' }
@@ -85,5 +87,66 @@ describe('createStoryExportSink', () => {
     assert.deepEqual(writes, [
       { storyId: 's1', userId: 'u1', videoUrl: 'https://cdn.test/composed.mp4' },
     ])
+  })
+})
+
+const sceneRow = (over: Partial<StoredSceneRow> & { id: string }): StoredSceneRow => ({
+  storyId: 's1',
+  orderIndex: 0,
+  imageUrl: 'https://cdn.test/a.png',
+  voiceoverUrl: 'https://cdn.test/a.mp3',
+  videoUrl: null,
+  sentence: '',
+  voiceoverText: '',
+  action: '',
+  setting: '',
+  emotion: 'calm',
+  imagePrompt: '',
+  motionPrompt: null,
+  characters: 1,
+  props: '[]',
+  voiceoverDuration: '2',
+  voiceoverWordTimings: null,
+  imageModel: null,
+  videoModel: null,
+  ...over,
+})
+
+describe('exportScenesFromRows', () => {
+  it('prefers the animated video over the still image', () => {
+    const built = exportScenesFromRows([
+      sceneRow({ id: 'a', videoUrl: 'https://cdn.test/a.mp4' }),
+      sceneRow({ id: 'b', orderIndex: 1 }),
+    ])
+
+    assert.deepEqual(built.map((s) => [s.visualUrl, s.isAnimated]), [
+      ['https://cdn.test/a.mp4', true],
+      ['https://cdn.test/a.png', false],
+    ])
+  })
+
+  // Retry re-plans from the story, so a dropped scene would silently compose a
+  // shorter video than the one the user asked for.
+  it('names the scenes that are not ready instead of composing without them', () => {
+    assert.throws(
+      () =>
+        exportScenesFromRows([
+          sceneRow({ id: 'a' }),
+          sceneRow({ id: 'b', orderIndex: 1, voiceoverUrl: null }),
+          sceneRow({ id: 'c', orderIndex: 2, voiceoverDuration: null }),
+        ]),
+      /Scene 2, 3 are missing a visual, voiceover, or duration/,
+    )
+  })
+
+  it('rejects a scene with neither a video nor an image', () => {
+    assert.throws(
+      () => exportScenesFromRows([sceneRow({ id: 'a', imageUrl: null })]),
+      /Scene 1 is missing/,
+    )
+  })
+
+  it('rejects a story with no scenes', () => {
+    assert.throws(() => exportScenesFromRows([]), /no scenes to export/)
   })
 })

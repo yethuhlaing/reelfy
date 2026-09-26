@@ -80,6 +80,9 @@ export function ExportStateProvider({ children, storyId, initialRun, onComposedV
   })
   const [modalOpen, setModalOpen] = useState(false)
   const generationRef = useRef(0)
+  // The generation an explicit cancel retired. A generation superseded by a
+  // *newer start* is not cancelled — it is joined.
+  const cancelledGenRef = useRef(0)
   const esRef = useRef<EventSource | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
@@ -87,6 +90,23 @@ export function ExportStateProvider({ children, storyId, initialRun, onComposedV
   onComposedVideoRef.current = onComposedVideo
 
   const isCurrent = useCallback((generation: number) => generationRef.current === generation, [])
+
+  const cancelRun = useCallback((runId: string) => {
+    void fetch(`/api/export/${runId}/cancel`, { method: 'POST' }).catch(() => {})
+  }, [])
+
+  /**
+   * A start/retry that lost its generation while its POST was in flight.
+   * Cancel is the only way to lose one and still owe the server something: the
+   * Run was created after the user pressed Cancel, so nobody is watching it and
+   * the next page load would hydrate it as composing. A newer start, by
+   * contrast, joins this same Run — leave it alone.
+   */
+  const settleSupersededRun = useCallback((generation: number, runId: string) => {
+    if (cancelledGenRef.current <= generation) return
+    if (stateRef.current.runId === runId) return
+    cancelRun(runId)
+  }, [cancelRun])
 
   const closeStream = useCallback(() => {
     if (esRef.current) {
@@ -299,7 +319,10 @@ export function ExportStateProvider({ children, storyId, initialRun, onComposedV
       }
 
       const started = (await res.json()) as { runId: string; status?: string; error?: string }
-      if (!isCurrent(generation)) return
+      if (!isCurrent(generation)) {
+        settleSupersededRun(generation, started.runId)
+        return
+      }
 
       if (started.status === 'failed') {
         setState({
@@ -328,17 +351,18 @@ export function ExportStateProvider({ children, storyId, initialRun, onComposedV
       }))
       toast.error('Export failed', { description: msg })
     }
-  }, [closeStream, isCurrent, startWatching])
+  }, [closeStream, isCurrent, settleSupersededRun, startWatching])
 
   const cancelExport: Ctx['cancelExport'] = useCallback(() => {
     const runId = stateRef.current.runId
     generationRef.current += 1
+    cancelledGenRef.current = generationRef.current
     closeStream()
     setState(initial)
-    if (runId) {
-      void fetch(`/api/export/${runId}/cancel`, { method: 'POST' }).catch(() => {})
-    }
-  }, [closeStream])
+    // Cancel before the start POST came back: there is no Run id to cancel yet,
+    // so the start itself settles the Run it created (see settleSupersededRun).
+    if (runId) cancelRun(runId)
+  }, [cancelRun, closeStream])
 
   const retryExport: Ctx['retryExport'] = useCallback(async () => {
     const runId = stateRef.current.runId
@@ -360,7 +384,10 @@ export function ExportStateProvider({ children, storyId, initialRun, onComposedV
         throw new Error((d as { error?: string }).error ?? `HTTP ${res.status}`)
       }
       const retried = (await res.json()) as { runId: string; status?: string; error?: string }
-      if (!isCurrent(generation)) return
+      if (!isCurrent(generation)) {
+        settleSupersededRun(generation, retried.runId)
+        return
+      }
       if (retried.status === 'failed') {
         throw new Error(retried.error ?? 'Export failed')
       }
@@ -377,7 +404,7 @@ export function ExportStateProvider({ children, storyId, initialRun, onComposedV
       }))
       toast.error('Export failed', { description: msg })
     }
-  }, [closeStream, isCurrent, startWatching])
+  }, [closeStream, isCurrent, settleSupersededRun, startWatching])
 
   const reset = useCallback(() => {
     generationRef.current += 1

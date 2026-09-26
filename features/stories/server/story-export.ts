@@ -101,14 +101,41 @@ function sceneToExportInput(scene: StoredSceneRow): ExportSceneInput | null {
   }
 }
 
+/**
+ * The story's scenes as a compose payload, or a readable error naming the
+ * scenes that are not ready.
+ *
+ * `retry` re-plans from the Target rather than from a stored payload, so this
+ * is what a retried compose composes. Dropping the scenes that happen to be
+ * incomplete would silently render a *different*, shorter video than the one
+ * the user asked for — so an unexportable scene fails the plan instead.
+ */
+export function exportScenesFromRows(rows: StoredSceneRow[]): ExportSceneInput[] {
+  if (rows.length === 0) throw new Error('This story has no scenes to export')
+
+  const scenes: ExportSceneInput[] = []
+  const notReady: number[] = []
+
+  rows.forEach((row, index) => {
+    const scene = sceneToExportInput(row)
+    if (scene) scenes.push(scene)
+    else notReady.push(index + 1)
+  })
+
+  if (notReady.length > 0) {
+    const plural = notReady.length > 1
+    throw new Error(
+      `Scene ${notReady.join(', ')} ${plural ? 'are' : 'is'} missing a visual, voiceover, or duration`,
+    )
+  }
+
+  return scenes
+}
+
 async function loadExportScenes(target: Extract<TargetRef, { kind: 'story' }>): Promise<ExportSceneInput[]> {
   const result = await getStoryForUser(target.storyId, target.userId)
   if (!result) throw new Error('Story not found')
-  const scenes = result.scenes.map(sceneToExportInput).filter((s): s is ExportSceneInput => s !== null)
-  if (scenes.length === 0) {
-    throw new Error('No scenes with a visual, voiceover, and duration to export')
-  }
-  return scenes
+  return exportScenesFromRows(result.scenes)
 }
 
 export function createStoryExportPlanner(input?: { scenes: ExportSceneInput[] }): RunPlanner {
