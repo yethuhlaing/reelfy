@@ -26,7 +26,7 @@ import type {
   TargetRef,
   WebhookUrls,
 } from './types'
-import { isInFlight, isTerminal, phaseForKind } from './types'
+import { isInFlight, isStepSettled, isTerminal, phaseForKind } from './types'
 
 export interface KernelDeps {
   fal: FalQueue
@@ -50,7 +50,7 @@ export interface VideoKernel {
   /** The current Run on this Target, reconciled against fal if it is in flight. */
   get(target: TargetRef): Promise<Run | null>
   cancel(runId: string): Promise<Run>
-  /** Only from `failed`. Replays every Step that did not complete. */
+  /** Only from `failed`. Replays every Step that did not complete, skipped ones included. */
   retry(runId: string): Promise<Run>
   onWebhook(params: { runId: string; stepId: string; body: FalWebhookBody }): Promise<Run>
   progress(runId: string): Promise<RunProgress | null>
@@ -62,11 +62,11 @@ export function createVideoKernel(deps: KernelDeps): VideoKernel {
 
   // --- Run shape helpers ----------------------------------------------------
 
-  /** Lowest stage that still has work, or `null` when every Step has completed. */
+  /** Lowest stage that still has work, or `null` when every Step has settled. */
   function currentStage(run: Run): number | null {
     let lowest: number | null = null
     for (const step of run.steps) {
-      if (step.status === 'completed') continue
+      if (isStepSettled(step)) continue
       if (lowest === null || step.stage < lowest) lowest = step.stage
     }
     return lowest
@@ -218,7 +218,14 @@ export function createVideoKernel(deps: KernelDeps): VideoKernel {
         step.providerRequestId = submitted.requestId
         step.status = 'running'
       } catch (err) {
-        return errorMessage(err, 'Failed to enqueue the fal request')
+        const message = errorMessage(err, 'Failed to enqueue the fal request')
+        // One music loop fal would not take is not a dead lofi video.
+        if (step.optional) {
+          step.status = 'skipped'
+          step.error = message
+          continue
+        }
+        return message
       }
     }
 
@@ -287,6 +294,12 @@ export function createVideoKernel(deps: KernelDeps): VideoKernel {
         if (step.status === 'running') await reconcileStep(run, step)
       }
 
+      // An optional Step that failed is written off here, keeping its error for
+      // the UI, so only a Step the Run actually needs can fail the Run.
+      for (const step of steps) {
+        if (step.status === 'failed' && step.optional) step.status = 'skipped'
+      }
+
       const failed = steps.find((step) => step.status === 'failed')
       if (failed) {
         failRunInPlace(run, failed.error ?? 'A Step failed', true)
@@ -295,7 +308,7 @@ export function createVideoKernel(deps: KernelDeps): VideoKernel {
       }
 
       // Stage finished — loop round to submit the next one or complete the Run.
-      if (steps.every((step) => step.status === 'completed')) continue
+      if (steps.every(isStepSettled)) continue
 
       break
     }
@@ -323,6 +336,8 @@ export function createVideoKernel(deps: KernelDeps): VideoKernel {
         kind: stepPlan.kind,
         stage: stepPlan.stage,
         status: 'pending',
+        ref: stepPlan.ref,
+        optional: stepPlan.optional,
         credits: stepPlan.credits,
         creditsConsumed: 0,
       })),
@@ -404,6 +419,9 @@ export function createVideoKernel(deps: KernelDeps): VideoKernel {
     const run = await requireRun(runId)
     if (run.status !== 'failed') throw new RunNotRetryableError(run.status)
 
+    // Everything that did not produce a result runs again — written-off
+    // optional Steps included, because regenerating the music loops that were
+    // skipped is exactly what a user retrying a thin lofi render wants.
     const replayed = run.steps.filter((step) => step.status !== 'completed')
 
     for (const step of replayed) {
@@ -465,7 +483,10 @@ export function createVideoKernel(deps: KernelDeps): VideoKernel {
     if (!run) return null
 
     const stage = currentStage(run)
-    const currentStep = stage === null ? undefined : stepsInStage(run, stage)[0]
+    const currentStep =
+      stage === null
+        ? undefined
+        : stepsInStage(run, stage).find((step) => !isStepSettled(step))
 
     return {
       runId: run.id,

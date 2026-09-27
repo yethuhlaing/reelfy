@@ -2,19 +2,30 @@ import { fal, withAbort } from '@/shared/lib/providers/fal'
 import type { ImageProvider, ImageOpts } from './image'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
 
+const MODEL_ID = 'fal-ai/fast-lightning-sdxl'
+
+function buildInput(prompt: string): Record<string, unknown> {
+  return {
+    prompt,
+    image_size: 'landscape_16_9',
+    num_inference_steps: '4',
+    num_images: 1,
+  }
+}
+
 export const sdxlLightningFal: ImageProvider = {
   id: 'sdxl-lightning-fal',
+  falModel: MODEL_ID,
   costEstimateUsd: 0.004,
+  queueInput(prompt: string) {
+    return buildInput(prompt)
+  },
   async generate(prompt: string, opts: ImageOpts) {
     const { signal, costContext } = opts
     const result = await withAbort(
-      fal.subscribe('fal-ai/fast-lightning-sdxl', {
-        input: {
-          prompt,
-          image_size: 'landscape_16_9',
-          num_inference_steps: '4',
-          num_images: 1,
-        },
+      fal.subscribe(MODEL_ID, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        input: buildInput(prompt) as any,
         logs: false,
       }),
       signal,

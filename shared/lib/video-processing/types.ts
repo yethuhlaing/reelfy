@@ -10,7 +10,17 @@
 
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'aborted'
 
-export type StepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'aborted'
+/**
+ * `skipped` is a Step the Run gave up on without failing: it produced nothing,
+ * but the stage moves on regardless. Only an `optional` Step reaches it.
+ */
+export type StepStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'aborted'
+  | 'skipped'
 
 /** An inner fal call belonging to a Run, never a user-facing action of its own. */
 export type StepKind = 'animate' | 'compose' | 'subtitle' | 'asset' | 'render'
@@ -52,6 +62,20 @@ export interface Step {
   id: string
   kind: StepKind
   /**
+   * The product row this Step writes into, for a path that keeps one per Step
+   * (a lofi asset). Opaque to the kernel — adapters use it to put a result back
+   * on the right row without counting Step positions.
+   */
+  ref?: string
+  /**
+   * A Step the Run can do without. Failing it marks it `skipped` and the stage
+   * moves on instead of failing the Run. Whether enough optional Steps survived
+   * is the next stage's business: lofi's music threshold is enforced where the
+   * render Step builds its input, because the rule is about the set, not one
+   * loop.
+   */
+  optional?: boolean
+  /**
    * Sequential group. Every Step in a stage is submitted together and the Run
    * only advances to `stage + 1` once all of them have completed. Animate and
    * story export have one stage of one Step; brainrot has two stages of one
@@ -91,6 +115,11 @@ export function isInFlight(run: Run): boolean {
 
 export function isTerminal(run: Run): boolean {
   return !isInFlight(run)
+}
+
+/** A Step the Run is done waiting on, whether it produced anything or not. */
+export function isStepSettled(step: Step): boolean {
+  return step.status === 'completed' || step.status === 'skipped'
 }
 
 const PHASE_BY_KIND: Record<StepKind, RunPhase> = {
@@ -194,6 +223,10 @@ export interface StepPlan {
   stage: number
   endpoint: string
   credits: number
+  /** Persisted onto the Step. See `Step.ref`. */
+  ref?: string
+  /** Persisted onto the Step. See `Step.optional`. */
+  optional?: boolean
   /** Built immediately before submit, so a later stage can use earlier results. */
   buildInput(context: StepInputContext): Promise<Record<string, unknown>> | Record<string, unknown>
 }

@@ -2,20 +2,31 @@ import { fal, withAbort } from '@/shared/lib/providers/fal'
 import type { ImageProvider, ImageOpts } from './image'
 import { logApiCost } from '@/shared/lib/db/cost-logger'
 
+const MODEL_ID = 'fal-ai/flux/dev'
+
+function buildInput(prompt: string): Record<string, unknown> {
+  return {
+    prompt,
+    image_size: 'landscape_16_9',
+    num_inference_steps: 28,
+    enable_safety_checker: false,
+    num_images: 1,
+  }
+}
+
 export const fluxDevFal: ImageProvider = {
   id: 'flux-dev-fal',
+  falModel: MODEL_ID,
   costEstimateUsd: 0.025,
+  queueInput(prompt: string) {
+    return buildInput(prompt)
+  },
   async generate(prompt: string, opts: ImageOpts) {
     const { signal, costContext } = opts
     const result = await withAbort(
-      fal.subscribe('fal-ai/flux/dev', {
-        input: {
-          prompt,
-          image_size: 'landscape_16_9',
-          num_inference_steps: 28,
-          enable_safety_checker: false,
-          num_images: 1,
-        },
+      fal.subscribe(MODEL_ID, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        input: buildInput(prompt) as any,
         logs: false,
       }),
       signal,

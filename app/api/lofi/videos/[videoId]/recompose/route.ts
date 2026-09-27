@@ -1,10 +1,11 @@
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
-import { recomposeVideo } from '@/features/lofi/server/lofi-orchestrator'
+import { recomposeLofiVideo } from '@/features/lofi/server/lofi-run'
+import type { FreetouseTrackRef } from '@/features/lofi/server/lofi-run'
+import { InsufficientCreditsError } from '@/shared/lib/video-processing/errors'
 import type { VisualConfig } from '@/shared/lib/types'
-import type { FreetouseTrackRef } from '@/features/lofi/server/lofi-orchestrator'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 120
 
 export async function POST(
   request: Request,
@@ -41,7 +42,7 @@ export async function POST(
   }
 
   try {
-    await recomposeVideo(videoId, userId, {
+    await recomposeLofiVideo(videoId, userId, {
       selectedTracks,
       musicModel: musicModel ?? 'freetouse',
       musicLoopCount: selectedTracks?.length ?? musicLoopCount ?? 0,
@@ -51,6 +52,12 @@ export async function POST(
     })
     return Response.json({ ok: true })
   } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      return Response.json(
+        { error: err.message, balance: err.balance, required: err.required },
+        { status: 402 },
+      )
+    }
     const message = err instanceof Error ? err.message : 'Recompose failed'
     const status = message.includes('terminal') ? 409 : message.includes('not found') ? 404 : 500
     return Response.json({ error: message }, { status })

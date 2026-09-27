@@ -1,40 +1,35 @@
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
-import { getLofiVideoForUser, getLofiAssetsForVideo } from '@/features/lofi/server/lofi-db'
+import {
+  assetProgressFromRows,
+  hydrateLofiVideo,
+} from '@/features/lofi/server/lofi-run'
+import { getLofiVideoForUser } from '@/features/lofi/server/lofi-db'
 import { deleteStoryWithAssets } from '@/features/stories/server/story-assets'
 
 export const runtime = 'nodejs'
+export const maxDuration = 120
 
-function computeAssetProgress(assets: { kind: string; status: string }[]) {
-  const music = assets.filter((a) => a.kind === 'music' || a.kind === 'stock-music')
-  const visual = assets.filter((a) => a.kind === 'visual')
-  const musicReady = music.filter((a) => a.status === 'ready').length
-  const visualReady = visual.filter((a) => a.status === 'ready').length
-  const total = music.length + visual.length
-  const ready = musicReady + visualReady
-  return {
-    musicReady,
-    musicTotal: music.length,
-    visualReady,
-    visualTotal: visual.length,
-    overallPct: total > 0 ? Math.round((ready / total) * 100) : 0,
-  }
-}
-
+/**
+ * The video, its assets, and its current Run.
+ *
+ * This reconciles against fal before answering, so a missed asset or render
+ * webhook is healed by whoever loads the page next — the wait belongs to the
+ * video URL, not to the tab that started it.
+ */
 export async function GET(
   request: Request,
   ctx: { params: Promise<{ videoId: string }> },
 ) {
   const session = await requireUserSession(request)
   if (isAuthError(session)) return session
-  const userId = session.user.id
 
   const { videoId } = await ctx.params
   if (!videoId) return new Response('Missing videoId', { status: 400 })
 
-  const video = await getLofiVideoForUser(videoId, userId)
-  if (!video) return new Response('Not found', { status: 404 })
+  const hydrated = await hydrateLofiVideo(session.user.id, videoId)
+  if (!hydrated) return new Response('Not found', { status: 404 })
 
-  const assets = await getLofiAssetsForVideo(videoId)
+  const { video, assets, run } = hydrated
 
   return Response.json({
     id: video.id,
@@ -64,7 +59,8 @@ export async function GET(
       resultUrl: a.resultUrl,
       sourceTrackId: a.sourceTrackId,
     })),
-    progress: computeAssetProgress(assets),
+    progress: assetProgressFromRows(assets),
+    run,
   })
 }
 

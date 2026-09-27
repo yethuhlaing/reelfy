@@ -3,17 +3,21 @@ import { readFalHeaders, verifyFalWebhook } from '@/shared/lib/jobs/verify-fal'
 import { createAnimateKernel } from '@/features/stories/server/animate-kernel'
 import { createStoryExportKernel } from '@/features/stories/server/story-export'
 import { createBrainrotExportKernel } from '@/features/brainrot/server/brainrot-export'
+import { createLofiKernel } from '@/features/lofi/server/lofi-run'
 import { createPgRunStore } from '@/shared/lib/video-processing/run-store-pg'
 import type { VideoKernel } from '@/shared/lib/video-processing/kernel'
 import type { FalWebhookBody } from '@/shared/lib/video-processing/types'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+// The ack is immediate; the download and R2 upload run after it, and a lofi
+// render can be a two-hour MP4.
+export const maxDuration = 300
 
 function kernelForTarget(kind: string): VideoKernel {
   if (kind === 'scene') return createAnimateKernel()
   if (kind === 'story') return createStoryExportKernel()
   if (kind === 'brainrotProject') return createBrainrotExportKernel()
+  if (kind === 'lofiVideo') return createLofiKernel()
   throw new Error(`No kernel for Target kind ${kind}`)
 }
 

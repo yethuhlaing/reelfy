@@ -9,23 +9,29 @@ export function createFalMusicProvider(config: {
   defaultDurationSec: number
   creditsPerLoop: number
   costPerLoopUsd: number
-  buildInput: (input: MusicGenInput & { durationSec: number }) => Record<string, unknown>
+  buildInput: (input: { prompt: string; durationSec: number }) => Record<string, unknown>
 }): MusicGenProvider {
+  function queueInput(input: Omit<MusicGenInput, 'webhookUrl'>): Record<string, unknown> {
+    const durationSec = Math.min(
+      input.durationSec > 0 ? input.durationSec : config.defaultDurationSec,
+      config.maxDurationSec,
+    )
+    return config.buildInput({ prompt: input.prompt, durationSec })
+  }
+
   return {
     key: config.key,
     label: config.label,
+    falModel: config.falModel,
     maxDurationSec: config.maxDurationSec,
     defaultDurationSec: config.defaultDurationSec,
     creditsPerLoop: config.creditsPerLoop,
     costPerLoopUsd: config.costPerLoopUsd,
+    queueInput,
     async submit(input) {
-      const durationSec = Math.min(
-        input.durationSec > 0 ? input.durationSec : config.defaultDurationSec,
-        config.maxDurationSec,
-      )
       const submitted = await fal.queue.submit(config.falModel, {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        input: config.buildInput({ ...input, durationSec }) as any,
+        input: queueInput(input) as any,
         webhookUrl: input.webhookUrl,
       })
       return {

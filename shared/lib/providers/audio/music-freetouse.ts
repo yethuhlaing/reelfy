@@ -63,10 +63,16 @@ async function apiFetch<T>(path: string, params: Record<string, string> = {}): P
 export class FreetouseProvider implements MusicGenProvider {
   key = 'freetouse'
   label = 'Free To Use Stock Music'
+  /** Stock tracks are picked, never generated, so there is no fal model behind them. */
+  falModel = ''
   maxDurationSec = 300
   defaultDurationSec = 30
   creditsPerLoop = 0
   costPerLoopUsd = 0
+
+  queueInput(): Record<string, unknown> {
+    throw new Error('Freetouse tracks are picked, not generated — there is nothing to enqueue')
+  }
 
   async submit(_input: MusicGenInput): Promise<MusicGenSubmitResult> {
     throw new Error('Freetouse provider does not support AI generation — use search instead')

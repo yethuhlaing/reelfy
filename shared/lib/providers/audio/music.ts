@@ -19,10 +19,14 @@ export interface MusicGenSubmitResult {
 export interface MusicGenProvider {
   key: string
   label: string
+  /** The fal model id, so a loop can be a queued Step and not only a `submit` call. */
+  falModel: string
   maxDurationSec: number
   defaultDurationSec: number
   creditsPerLoop: number
   costPerLoopUsd: number
+  /** The queue payload for `falModel`. Same input `submit` sends. */
+  queueInput(input: Omit<MusicGenInput, 'webhookUrl'>): Record<string, unknown>
   submit(input: MusicGenInput): Promise<MusicGenSubmitResult>
 }
 

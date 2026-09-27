@@ -577,6 +577,94 @@ describe('lofi: asset Steps then render', () => {
   })
 })
 
+describe('optional Steps', () => {
+  // One music loop that fal would not produce is not a dead lofi video: the
+  // loop is written off and the render goes ahead with what is ready.
+  const plan = () => [
+    step('asset', { stage: 0, credits: 2, optional: true }),
+    step('asset', { stage: 0, credits: 2, optional: true }),
+    step('render', { stage: 1, credits: 5 }),
+  ]
+
+  it('writes off a failed optional Step and renders with the rest', async () => {
+    const { kernel, fal } = setup(plan())
+
+    await kernel.start(lofiVideo)
+    fal.completeWithError(fal.requestIdAt(1), 'model refused the prompt')
+    fal.completeWithVideo(fal.requestIdAt(2), 'https://fal.test/music-2.mp3')
+
+    const run = present(await kernel.get(lofiVideo))
+
+    assert.equal(run.status, 'running')
+    assert.equal(run.steps[0].status, 'skipped')
+    assert.equal(run.steps[0].error, 'model refused the prompt')
+    assert.equal(fal.submits.length, 3)
+  })
+
+  it('still fails the Run when a Step it needs fails', async () => {
+    const { kernel, fal } = setup(plan())
+
+    await kernel.start(lofiVideo)
+    fal.completeWithVideo(fal.requestIdAt(1), 'https://fal.test/music-1.mp3')
+    fal.completeWithVideo(fal.requestIdAt(2), 'https://fal.test/music-2.mp3')
+    await kernel.get(lofiVideo)
+    fal.completeWithError(fal.requestIdAt(3), 'compose blew up')
+
+    const run = present(await kernel.get(lofiVideo))
+
+    assert.equal(run.status, 'failed')
+    assert.equal(run.error, 'compose blew up')
+  })
+
+  it('keeps the phase on the Step still being waited on', async () => {
+    const { kernel, fal } = setup(plan())
+
+    const started = await kernel.start(lofiVideo)
+    fal.completeWithError(fal.requestIdAt(1), 'model refused the prompt')
+    await kernel.get(lofiVideo)
+
+    assert.equal(present(await kernel.progress(started.id)).phase, 'generating_assets')
+  })
+
+  it('does not charge for a Step that was written off', async () => {
+    const { kernel, fal, credits } = setup(plan())
+
+    await kernel.start(lofiVideo)
+    fal.completeWithError(fal.requestIdAt(1), 'model refused the prompt')
+    fal.completeWithVideo(fal.requestIdAt(2), 'https://fal.test/music-2.mp3')
+    await kernel.get(lofiVideo)
+    fal.completeWithVideo(fal.requestIdAt(3), 'https://fal.test/final.mp4')
+
+    const run = present(await kernel.get(lofiVideo))
+
+    assert.equal(run.status, 'completed')
+    assert.equal(credits.totalOf('reserve'), 9)
+    assert.equal(credits.totalOf('consume'), 7)
+    assert.equal(credits.totalOf('release'), 2)
+  })
+
+  it('replays a written-off Step on retry and charges only for it', async () => {
+    const { kernel, fal, credits } = setup(plan())
+
+    const started = await kernel.start(lofiVideo)
+    fal.completeWithError(fal.requestIdAt(1), 'model refused the prompt')
+    fal.completeWithVideo(fal.requestIdAt(2), 'https://fal.test/music-2.mp3')
+    await kernel.get(lofiVideo)
+    fal.completeWithError(fal.requestIdAt(3), 'compose blew up')
+    const failed = present(await kernel.get(lofiVideo))
+    assert.equal(failed.status, 'failed')
+
+    const retried = await kernel.retry(started.id)
+
+    assert.equal(retried.status, 'running')
+    assert.equal(retried.steps[0].status, 'running')
+    assert.equal(retried.steps[1].status, 'completed')
+    // The loop that was written off and the render: the music we already have
+    // is not paid for twice.
+    assert.equal(credits.calls.filter((call) => call.op === 'reserve').at(-1)?.amount, 7)
+  })
+})
+
 describe('progress', () => {
   it('reports the phase of the current Step while in flight', async () => {
     const { kernel } = setup([step('animate')])

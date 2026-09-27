@@ -10,7 +10,11 @@ export interface ImageOpts {
 
 export interface ImageProvider {
   id: string
+  /** The fal model id, so an image can be a queued Step and not only a blocking call. */
+  falModel: string
   costEstimateUsd: number
+  /** The queue payload for `falModel`. Same input `generate` subscribes with. */
+  queueInput(prompt: string, opts: ImageOpts): Record<string, unknown>
   generate(prompt: string, opts: ImageOpts): Promise<{ mimeType: string; data: Buffer }>
 }
 

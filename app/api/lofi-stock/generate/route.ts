@@ -1,6 +1,7 @@
 import { requireUserSession, isAuthError } from '@/shared/lib/db/user'
-import { launchVideo, InsufficientCreditsError } from '@/features/lofi/server/lofi-orchestrator'
-import type { FreetouseTrackRef } from '@/features/lofi/server/lofi-orchestrator'
+import { launchLofiVideo } from '@/features/lofi/server/lofi-run'
+import type { FreetouseTrackRef } from '@/features/lofi/server/lofi-run'
+import { InsufficientCreditsError } from '@/shared/lib/video-processing/errors'
 import { toUserErrorMessage } from '@/shared/lib/user-error-message'
 import type { VisualConfig } from '@/shared/lib/types'
 import { ALLOWED_DURATION_SEC } from '@/features/lofi/lib/pricing-constants'
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await launchVideo({
+    const result = await launchLofiVideo({
       vibe: vibe.trim(),
       targetDurationSec,
       musicModel: 'freetouse',

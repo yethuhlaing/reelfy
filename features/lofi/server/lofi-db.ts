@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { db } from '@/shared/lib/db'
 import { lofiAssets, lofiVideos, stories } from '@/shared/lib/db/schema'
 export async function getLofiVideo(videoId: string) {
@@ -35,6 +35,7 @@ export async function updateLofiVideo(
     arrangementJson: string | null
     finalVideoUrl: string | null
     finalDurationSec: number | null
+    creditsPreAuth: number
     creditsSettled: number
     costUsd: string
     updatedAt: Date
@@ -44,15 +45,6 @@ export async function updateLofiVideo(
     .update(lofiVideos)
     .set({ ...patch, updatedAt: new Date() })
     .where(eq(lofiVideos.id, videoId))
-}
-
-export async function claimVideoForRendering(videoId: string) {
-  const rows = await db
-    .update(lofiVideos)
-    .set({ status: 'rendering', updatedAt: new Date() })
-    .where(and(eq(lofiVideos.id, videoId), eq(lofiVideos.status, 'generating')))
-    .returning({ id: lofiVideos.id })
-  return rows.length > 0
 }
 
 export async function getLofiAssetsForVideo(videoId: string) {
@@ -79,18 +71,6 @@ export async function updateLofiAsset(
     .update(lofiAssets)
     .set(patch)
     .where(eq(lofiAssets.id, assetId))
-}
-
-export async function getAssetFanInCounts(videoId: string) {
-  const rows = await db
-    .select({
-      total: sql<number>`count(*)`,
-      done: sql<number>`count(*) filter (where ${lofiAssets.status} in ('ready', 'failed', 'skipped'))`,
-      ready: sql<number>`count(*) filter (where ${lofiAssets.status} = 'ready')`,
-    })
-    .from(lofiAssets)
-    .where(eq(lofiAssets.videoId, videoId))
-  return rows[0]
 }
 
 export async function finalizeLofiVideo(videoId: string, blobUrl: string, durationSec: number) {

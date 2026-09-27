@@ -1,35 +1,32 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
+import { lofiPhaseLabel, type LofiRunPhase } from '@/features/lofi/lib/lofi-run-view'
 
 export function LofiProgress({
   musicReady,
   musicTotal,
   visualReady,
   visualTotal,
-  status,
+  phase,
 }: {
   musicReady: number
   musicTotal: number
   visualReady: number
   visualTotal: number
-  status: string
+  phase: LofiRunPhase | null
 }) {
   const total = musicTotal + visualTotal
   const ready = musicReady + visualReady
-  const pct = total > 0 ? Math.round((ready / total) * 100) : 0
+  // Rendering is the last thing that happens, so the bar is full by then even
+  // though the file is not written yet.
+  const pct = phase === 'rendering' ? 100 : total > 0 ? Math.round((ready / total) * 100) : 0
 
   return (
     <div className="flex flex-col gap-3" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-live="polite">
       <div className="flex items-center gap-2 text-[0.85rem] text-[var(--text)]">
         <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
-        <span>
-          {status === 'rendering'
-            ? 'Rendering video... (this can take 5-15 min)'
-            : status === 'gating'
-              ? 'Compiling arrangement...'
-              : 'Generating assets...'}
-        </span>
+        <span>{lofiPhaseLabel(phase)}</span>
       </div>
 
       <div className="flex h-2 overflow-hidden rounded-full bg-[var(--surface)]">

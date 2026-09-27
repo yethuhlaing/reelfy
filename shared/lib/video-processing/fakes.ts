@@ -286,13 +286,21 @@ export function fakePlanner(build: (target: TargetRef) => RunPlan): RunPlanner {
 /** A Step plan whose fal input does not depend on earlier Steps. */
 export function step(
   kind: StepKind,
-  options: { stage?: number; endpoint?: string; credits?: number } = {},
+  options: {
+    stage?: number
+    endpoint?: string
+    credits?: number
+    optional?: boolean
+    ref?: string
+  } = {},
 ): StepPlan {
   return {
     kind,
     stage: options.stage ?? 0,
     endpoint: options.endpoint ?? `fal-ai/test/${kind}`,
     credits: options.credits ?? 0,
+    optional: options.optional,
+    ref: options.ref,
     buildInput: () => ({ kind }),
   }
 }
@@ -300,7 +308,7 @@ export function step(
 /** A Step plan that feeds on the previous Step's rehosted URL, like subtitling. */
 export function stepFromPrevious(
   kind: StepKind,
-  options: { stage?: number; endpoint?: string; credits?: number } = {},
+  options: { stage?: number; endpoint?: string; credits?: number; optional?: boolean } = {},
 ): StepPlan {
   return {
     ...step(kind, options),

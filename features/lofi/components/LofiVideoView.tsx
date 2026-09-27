@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { LofiProgress } from './LofiProgress'
+import type { LofiRunHydration } from '@/features/lofi/lib/lofi-run-view'
 import { LofiStockRecomposePanel } from './LofiStockRecomposePanel'
 import { SoundtrackPanel } from './SoundtrackPanel'
 import { VisualGalleryViewer } from './VisualGalleryViewer'
@@ -70,6 +71,8 @@ interface VideoStatusResponse {
     visualTotal: number
     overallPct: number
   }
+  /** The server's Run. Null only for a video whose Run never reached the store. */
+  run: LofiRunHydration | null
 }
 
 const STATUS_META: Record<
@@ -77,7 +80,6 @@ const STATUS_META: Record<
   { label: string; tone: 'accent' | 'success' | 'danger' | 'muted' }
 > = {
   generating: { label: 'Generating', tone: 'accent' },
-  gating: { label: 'Arranging', tone: 'accent' },
   rendering: { label: 'Rendering', tone: 'accent' },
   complete: { label: 'Complete', tone: 'success' },
   failed: { label: 'Failed', tone: 'danger' },
@@ -177,6 +179,8 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
+  const [streamEpoch, setStreamEpoch] = useState(0)
+  const [phase, setPhase] = useState<LofiRunHydration['phase']>(null)
   const initialLoadRef = useRef(true)
 
   const resolvedCategory = category ?? 'lofi'
@@ -194,6 +198,7 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
       }
       const json = (await res.json()) as VideoStatusResponse
       setData(json)
+      setPhase(json.run?.phase ?? null)
       initialLoadRef.current = false
       setLoading(false)
       setError(null)
@@ -208,53 +213,82 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
     }
   }, [id])
 
+  const run = data?.run ?? null
+  const isRunning = run?.status === 'running'
+
   useEffect(() => {
     fetchStatus()
   }, [fetchStatus])
 
+  // A render runs for 5-15 minutes and the stream's window is shorter than
+  // that, so a stream that ends is expected. Every ending — the window closing,
+  // a dead socket — refetches the Run and opens a new stream; the Run on the
+  // server, not this socket, decides when the wait is over.
   useEffect(() => {
-    if (!data) return
-    const terminal = ['complete', 'failed', 'aborted']
-    if (terminal.includes(data.status)) return
+    if (!isRunning) return
 
     const es = new EventSource(`/api/lofi/videos/${id}/stream`)
+    let reopen: ReturnType<typeof setTimeout> | null = null
+    let done = 0
 
-    es.onmessage = (event) => {
-      try {
-        const update = JSON.parse(event.data as string) as Partial<VideoStatusResponse> & {
-          finalVideoUrl?: string
-          ts?: number
-          done?: number
-          total?: number
-        }
-        if (update.status) {
-          setData((prev) => (prev ? { ...prev, ...update } : prev))
-          if (terminal.includes(update.status!)) {
-            es.close()
-            fetchStatus()
-          } else if (update.done !== undefined) {
-            fetchStatus()
-          }
-        }
-      } catch {
-        /* ignore parse errors */
-      }
+    function reattach(delayMs: number) {
+      es.close()
+      fetchStatus()
+      reopen = setTimeout(() => setStreamEpoch((epoch) => epoch + 1), delayMs)
     }
 
-    es.onerror = () => es.close()
+    es.onmessage = (event) => {
+      let update: { status?: string; phase?: string | null; done?: number; total?: number }
+      try {
+        update = JSON.parse(event.data as string) as typeof update
+      } catch {
+        return
+      }
+      if (!update.status) return
 
-    return () => es.close()
-  }, [data?.status, id, fetchStatus])
+      if (update.status === 'reconnect') {
+        reattach(0)
+        return
+      }
+      if (update.status === 'idle') {
+        es.close()
+        fetchStatus()
+        return
+      }
+      if (['complete', 'failed', 'aborted'].includes(update.status)) {
+        es.close()
+        fetchStatus()
+        return
+      }
+      // A finished asset changes the soundtrack and gallery too, so take the
+      // whole video rather than patching a counter.
+      if (update.done !== undefined && update.done !== done) {
+        done = update.done
+        fetchStatus()
+      }
+      setPhase((update.phase as LofiRunHydration['phase']) ?? null)
+    }
+
+    es.onerror = () => reattach(3000)
+
+    return () => {
+      es.close()
+      if (reopen) clearTimeout(reopen)
+    }
+  }, [id, isRunning, streamEpoch, fetchStatus])
 
   const handleCancel = async () => {
     setCancelling(true)
     try {
-      await fetch(`/api/lofi/videos/${id}/cancel`, { method: 'POST' })
+      const res = await fetch(`/api/lofi/videos/${id}/cancel`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to cancel')
       toast.success('Cancelled')
-      setData((prev) => (prev ? { ...prev, status: 'aborted' } : prev))
     } catch {
       toast.error('Failed to cancel')
     }
+    // The server decides what cancelling left behind, including a Step that
+    // had already finished.
+    await fetchStatus()
     setCancelling(false)
   }
 
@@ -266,11 +300,11 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
           ((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'Retry failed'
         throw new Error(msg)
       }
-      toast.success('Retrying render...')
-      setData((prev) => (prev ? { ...prev, status: 'rendering' } : prev))
+      toast.success('Retrying…')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Retry failed')
     }
+    await fetchStatus()
   }
 
   const handleDelete = async () => {
@@ -308,12 +342,15 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
 
   if (!data) return null
 
-  const isActive = ['generating', 'gating', 'rendering'].includes(data.status)
+  // The Run is in charge of what the page is doing. A completed or failed Run
+  // can never render as loading, and a video with no Run at all is not waiting
+  // on anything.
+  const isActive = isRunning
   const isComplete = data.status === 'complete'
-  const isFailed = data.status === 'failed'
-  const isAborted = data.status === 'aborted'
+  const isFailed = !isRunning && data.status === 'failed'
+  const isAborted = !isRunning && data.status === 'aborted'
   const progress = data.progress ?? computeProgressFromAssets(data.assets)
-  const isTerminal = isComplete || isFailed || isAborted
+  const isTerminal = !isRunning
   const visualModel = data.imageModel ?? data.videoModel ?? 'flux-schnell-fal'
 
   const musicAssets = data.assets
@@ -377,7 +414,7 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
                 musicTotal={progress.musicTotal}
                 visualReady={progress.visualReady}
                 visualTotal={progress.visualTotal}
-                status={data.status}
+                phase={phase ?? run?.phase ?? null}
               />
               <button
                 className="inline-flex h-9 w-fit cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-4 text-[0.8rem] text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -414,7 +451,9 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
         {isFailed && (
           <FailurePanel
             assets={data.assets}
-            arrangementJson={data.arrangementJson}
+            error={run?.error}
+            retryable={run?.retryable ?? false}
+            retryBlockedReason={run?.retryBlockedReason}
             onRetry={handleRetryRender}
           />
         )}
@@ -452,45 +491,36 @@ export function LofiVideoView({ id, category }: { id: string; category?: string 
   )
 }
 
+/**
+ * Why the video failed and what Retry would do about it.
+ *
+ * The server owns both answers — it knows which Steps produced something and
+ * whether the Run is retryable at all — so this renders them rather than
+ * guessing from asset rows.
+ */
 function FailurePanel({
   assets,
-  arrangementJson,
+  error,
+  retryable,
+  retryBlockedReason,
   onRetry,
 }: {
   assets: AssetStatus[]
-  arrangementJson: string | null
+  error?: string
+  retryable: boolean
+  retryBlockedReason?: string
   onRetry: () => void
 }) {
   const music = assets.filter((a) => a.kind === 'music' || a.kind === 'stock-music')
   const visual = assets.filter((a) => a.kind === 'visual')
-  const musicReady = music.filter((a) => a.status === 'ready' || a.status === 'skipped').length
-  const visualReady = visual.filter((a) => a.status === 'ready' || a.status === 'skipped').length
-  const assetsAllReady =
-    music.length > 0 && musicReady === music.length && visualReady === visual.length
+  const musicReady = music.filter((a) => a.status === 'ready').length
+  const visualReady = visual.filter((a) => a.status === 'ready').length
+  const assetsShort = musicReady < music.length || visualReady < visual.length
 
-  let headline: string
-  let detail: string
-  let retryLabel: string
-  let retryable = true
-
-  if (!assetsAllReady && assets.length > 0) {
-    headline = 'Asset generation failed'
-    detail = `Music ${musicReady}/${music.length} ready · Visuals ${visualReady}/${visual.length} ready`
-    retryLabel = 'Retry render with ready assets'
-  } else if (assetsAllReady && !arrangementJson) {
-    headline = 'Could not arrange tracks'
-    detail = 'All assets generated but arrangement planning failed'
-    retryLabel = 'Retry render'
-  } else {
-    headline = 'Video rendering failed'
-    detail = 'Assets were ready — rendering service error'
-    retryLabel = 'Retry render'
-  }
-
-  if (music.length > 0 && musicReady === 0) {
-    retryable = false
-    detail = 'No music tracks could be generated. Try a different vibe or track selection.'
-  }
+  const headline = assetsShort ? 'Asset generation failed' : 'Video rendering failed'
+  const detail =
+    error ??
+    `Music ${musicReady}/${music.length} ready · Visuals ${visualReady}/${visual.length} ready`
 
   return (
     <div className="card-gradient-border glass flex flex-col gap-4 rounded-2xl border border-[color-mix(in_srgb,var(--danger)_30%,var(--border))] p-4">
@@ -501,15 +531,24 @@ function FailurePanel({
         <div>
           <p className="text-[0.9rem] font-semibold text-[var(--text)]">{headline}</p>
           <p className="mt-1 text-[0.78rem] text-[var(--muted)]">{detail}</p>
+          {music.length > 0 && (
+            <p className="mt-1 text-[0.72rem] text-[var(--muted)]">
+              Music {musicReady}/{music.length} ready · Visuals {visualReady}/{visual.length} ready
+            </p>
+          )}
         </div>
       </div>
-      {retryable && (
+      {retryable ? (
         <button
           className="inline-flex h-9 w-fit cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-[0.8rem] text-[var(--text)] hover:bg-[var(--surface2)]"
           onClick={onRetry}
         >
-          <RefreshCw size={14} /> {retryLabel}
+          <RefreshCw size={14} /> Retry with the assets already generated
         </button>
+      ) : (
+        <p className="text-[0.78rem] text-[var(--muted)]">
+          {retryBlockedReason ?? 'This generation cannot be retried. Recompose below to start again.'}
+        </p>
       )}
     </div>
   )
