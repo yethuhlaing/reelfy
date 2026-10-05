@@ -1,30 +1,36 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import type { Job } from '@/shared/lib/jobs/types'
 
 const BASE_INTERVAL_MS = 3000
 const MAX_INTERVAL_MS = 15000
 const BACKOFF_AFTER_MS = 60_000
 
-export interface PendingJob {
-  jobId: string
+/** A Run this tab is watching, and when it first saw it (for the "stuck" timer). */
+export interface PendingRun {
+  runId: string
   startedAt: number
 }
 
-export interface PollerOptions {
-  pending: PendingJob[]
-  onCompleted: (jobId: string, job: Job) => void
-  onFailed: (jobId: string, error: string) => void
-  path?: (jobId: string) => string
+/** What a Run endpoint answers with. Status and result come from the Run, never from a queue record. */
+interface RunPoll {
+  status: string
+  error?: string
+  result?: { videoUrl?: string }
 }
 
-export function useJobPoller({
-  pending,
-  onCompleted,
-  onFailed,
-  path = (jobId) => `/api/jobs/${jobId}`,
-}: PollerOptions): void {
+export interface RunPollerOptions {
+  pending: PendingRun[]
+  onCompleted: (runId: string, videoUrl: string | undefined) => void
+  onFailed: (runId: string, error: string) => void
+  /**
+   * Where to read the Run. Required: there is no default job endpoint to fall
+   * back to, because a Run is only ever addressed by its own id or its Target.
+   */
+  path: (runId: string) => string
+}
+
+export function useRunPoller({ pending, onCompleted, onFailed, path }: RunPollerOptions): void {
   const pendingRef = useRef(pending)
   const handlersRef = useRef({ onCompleted, onFailed, path })
 
@@ -51,21 +57,19 @@ export function useJobPoller({
       }
 
       await Promise.all(
-        current.map(async ({ jobId }) => {
+        current.map(async ({ runId }) => {
           try {
-            const res = await fetch(handlersRef.current.path(jobId), { cache: 'no-store' })
+            const res = await fetch(handlersRef.current.path(runId), { cache: 'no-store' })
+            // A Run we cannot read right now is not a failed Run. The next
+            // story GET hydrates from the Target regardless of this poll.
             if (!res.ok) return
-            const job = (await res.json()) as {
-              status: string
-              error?: string
-              result?: Job['result']
-            }
-            const status = job.status
-            if (status === 'completed') handlersRef.current.onCompleted(jobId, job as Job)
-            else if (status === 'failed' || status === 'aborted') {
+            const run = (await res.json()) as RunPoll
+            if (run.status === 'completed') {
+              handlersRef.current.onCompleted(runId, run.result?.videoUrl)
+            } else if (run.status === 'failed' || run.status === 'aborted') {
               handlersRef.current.onFailed(
-                jobId,
-                status === 'aborted' ? '' : (job.error ?? 'Job failed'),
+                runId,
+                run.status === 'aborted' ? '' : (run.error ?? 'Run failed'),
               )
             }
           } catch {

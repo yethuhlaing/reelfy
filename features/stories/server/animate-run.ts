@@ -22,7 +22,7 @@ export function applyAnimateRunToScene(scene: Scene, run: Run | null): Scene {
   if (!run) {
     return {
       ...scene,
-      pendingJobId: undefined,
+      pendingRunId: undefined,
       lastError: undefined,
       runCreatedAt: undefined,
     }
@@ -31,7 +31,7 @@ export function applyAnimateRunToScene(scene: Scene, run: Run | null): Scene {
   if (isInFlight(run)) {
     return {
       ...scene,
-      pendingJobId: run.id,
+      pendingRunId: run.id,
       lastError: undefined,
       runCreatedAt: run.createdAt,
     }
@@ -40,7 +40,7 @@ export function applyAnimateRunToScene(scene: Scene, run: Run | null): Scene {
   if (run.status === 'failed') {
     return {
       ...scene,
-      pendingJobId: undefined,
+      pendingRunId: undefined,
       lastError: run.error ?? 'Animation failed',
       runCreatedAt: undefined,
     }
@@ -51,7 +51,7 @@ export function applyAnimateRunToScene(scene: Scene, run: Run | null): Scene {
 
   return {
     ...scene,
-    pendingJobId: undefined,
+    pendingRunId: undefined,
     lastError: undefined,
     runCreatedAt: undefined,
     videoUrl,

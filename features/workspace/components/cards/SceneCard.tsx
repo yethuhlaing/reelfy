@@ -16,7 +16,7 @@ interface SceneCardProps {
   onRegenImage?: () => void
   onPlay?: () => void
   readOnly?: boolean
-  jobStartedAt?: number
+  runStartedAt?: number
 }
 
 const emotionColors: Record<Emotion, string> = {
@@ -41,7 +41,7 @@ export function SceneCard({
   onRegenImage,
   onPlay,
   readOnly,
-  jobStartedAt,
+  runStartedAt,
 }: SceneCardProps) {
   const { retryVoice } = useWorkspace()
   return (
@@ -58,7 +58,7 @@ export function SceneCard({
       }}
     >
       <div className="absolute left-3 top-3 z-[1] rounded bg-[var(--bg)] px-2 py-1 text-[0.7rem] text-[var(--muted)]">Scene {index + 1}</div>
-      <SceneStateBadge scene={scene} jobStartedAt={jobStartedAt} onClick={scene.lastError ? onClick : undefined} />
+      <SceneStateBadge scene={scene} runStartedAt={runStartedAt} onClick={scene.lastError ? onClick : undefined} />
 
       <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-white">
         {isPlaying && scene.videoUrl ? (

@@ -49,7 +49,12 @@ function setup(steps: StepPlan[], options: { balance?: number } = {}) {
     now: () => ++clock,
   })
 
-  return { kernel, fal, store, credits, media, sink }
+  /** Push the clock forward. A Run's age is not a lifecycle event. */
+  const advance = (ms: number) => {
+    clock += ms
+  }
+
+  return { kernel, fal, store, credits, media, sink, advance }
 }
 
 function present<T>(value: T | null | undefined, what = 'value'): T {
@@ -842,5 +847,90 @@ describe('story export: one compose Step', () => {
 
     assert.equal(run.status, 'running')
     assert.equal(sink.applied.length, 0)
+  })
+})
+
+
+/**
+ * Postgres is the only place a Run lives.
+ *
+ * A queue record with a TTL was never the record of truth, so nothing here may
+ * depend on one: the Target is the only handle a client needs, and a Run stays
+ * readable and reconcilable long after a 24h job key would have expired.
+ */
+describe('the store is the only record of a Run', () => {
+  const JOB_TTL_MS = 24 * 60 * 60 * 1000
+
+  it('needs nothing but the Target to find an animate Run again', async () => {
+    const { kernel, store } = setup([step('animate')])
+
+    const started = await kernel.start(scene)
+    // Rebuilt from the story URL, not the object `start` was handed. A client
+    // that kept no id at all still lands on this Run.
+    const fromUrl: TargetRef = { kind: 'scene', userId: 'u1', storyId: 's1', sceneId: 'sc1' }
+    const reattached = present(await kernel.get(fromUrl))
+
+    assert.equal(reattached.id, started.id)
+    assert.equal(reattached.status, 'running')
+    assert.equal(store.countForTarget(scene), 1)
+  })
+
+  it('still has the export composing a day after the last client saw it', async () => {
+    const { kernel, advance } = setup([step('compose', { credits: 4 })])
+
+    const started = await kernel.start(story)
+    advance(JOB_TTL_MS + 1)
+
+    const reattached = present(await kernel.get(story))
+    const progress = present(await kernel.progress(started.id))
+
+    assert.equal(reattached.id, started.id)
+    assert.equal(reattached.status, 'running')
+    assert.equal(progress.phase, 'composing')
+  })
+
+  it('reattaches a brainrot export between Steps from the project alone', async () => {
+    const { kernel, fal, advance } = setup([
+      step('compose', { stage: 0, credits: 6 }),
+      stepFromPrevious('subtitle', { stage: 1, credits: 4 }),
+    ])
+
+    const started = await kernel.start(project)
+    fal.completeWithVideo(fal.requestIdAt(1), 'https://fal.test/composed.mp4')
+    await kernel.get(project)
+    advance(JOB_TTL_MS + 1)
+
+    const reattached = present(await kernel.get(project))
+    const progress = present(await kernel.progress(started.id))
+
+    assert.equal(reattached.id, started.id)
+    assert.equal(reattached.status, 'running')
+    assert.equal(progress.phase, 'subtitling')
+  })
+
+  it('finishes an export whose webhook went missing a day ago', async () => {
+    const { kernel, fal, sink, advance } = setup([step('compose')])
+
+    await kernel.start(story)
+    fal.completeWithVideo(fal.lastRequestId(), 'https://fal.test/export.mp4')
+    advance(JOB_TTL_MS + 1)
+
+    const run = present(await kernel.get(story))
+
+    assert.equal(run.status, 'completed')
+    assert.equal(sink.videoUrlFor(story), 'rehosted:https://fal.test/export.mp4')
+  })
+
+  it('does not fail a live Run that nothing has reported progress for, and still reconciles it', async () => {
+    const { kernel, fal, advance } = setup([step('animate')])
+
+    await kernel.start(scene)
+    advance(JOB_TTL_MS * 7)
+
+    assert.equal(present(await kernel.get(scene)).status, 'running')
+
+    fal.completeWithVideo(fal.lastRequestId(), 'https://fal.test/late.mp4')
+
+    assert.equal(present(await kernel.get(scene)).status, 'completed')
   })
 })

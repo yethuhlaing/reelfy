@@ -11,7 +11,6 @@ import {
   type StoredSceneRow,
 } from '@/features/stories/server/stories-db'
 import type { StoryExportHydration } from '@/features/stories/lib/story-export-view'
-import type { ExportSceneInput } from '@/shared/lib/jobs/types'
 import { RunNotFoundError } from '@/shared/lib/video-processing/errors'
 import { createCredits } from '@/shared/lib/video-processing/credits-port'
 import { createFalQueue } from '@/shared/lib/video-processing/fal-queue'
@@ -29,6 +28,15 @@ import { isInFlight } from '@/shared/lib/video-processing/types'
 import { videoWebhookUrls } from '@/shared/lib/video-processing/webhooks'
 
 export const STORY_EXPORT_MODEL_ID = 'fal-ai/ffmpeg-api/compose'
+
+/** One scene as the compose Step consumes it: a visual, its voiceover, and how long it holds. */
+export interface ExportSceneInput {
+  sceneId: string
+  visualUrl: string
+  isAnimated: boolean
+  voiceoverUrl: string
+  duration: number
+}
 
 interface FalKeyframe {
   timestamp: number

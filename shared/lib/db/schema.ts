@@ -525,9 +525,11 @@ export type VideoRunTargetKind = 'scene' | 'story' | 'brainrotProject' | 'lofiVi
 // (animate a scene, export a story, export a brainrot project, generate a lofi
 // video). Distinct from the chat `runs` table above, which is chat production.
 //
-// This is the source of truth: Redis jobs expire after 24h, so a Run that only
-// lived there was lost on refresh. The inner fal calls are Steps, held as JSON
-// on the Run; the current Step carries the provider pair reconcile needs.
+// This is the source of truth, and the only one. Runs used to live in an
+// expiring Redis job key, so a Run outliving its TTL was simply lost; nothing
+// here expires, and the Target is enough to find a Run again. The inner fal
+// calls are Steps, held as JSON on the Run; the current Step carries the
+// provider pair reconcile needs.
 export const videoRuns = pgTable(
   'video_runs',
   {

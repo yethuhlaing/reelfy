@@ -12,12 +12,12 @@ const HEARTBEAT_MS = 15 * 1000
 
 export async function GET(
   request: Request,
-  ctx: { params: Promise<{ jobId: string }> },
+  ctx: { params: Promise<{ runId: string }> },
 ) {
   const session = await requireUserSession(request)
   if (isAuthError(session)) return session
 
-  const { jobId: runId } = await ctx.params
+  const { runId } = await ctx.params
   try {
     await requireStoryExportRun(runId, session.user.id)
   } catch (err) {

@@ -65,7 +65,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
 
   const handleRegenImage = () => {
     if (readOnly) return
-    if (scene.pendingJobId) {
+    if (scene.pendingRunId) {
       toast.message('Wait for the current animation to finish')
       return
     }
@@ -79,7 +79,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
 
   const handleAnimate = async () => {
     if (readOnly) return
-    if (scene.pendingJobId) {
+    if (scene.pendingRunId) {
       toast.message('This scene is already animating')
       return
     }
@@ -165,7 +165,7 @@ export function SceneDrawer({ open, onClose, onAnimate, onPlay }: Props) {
         >
           <RefreshCw size={14} /> {scene.imageUrl ? 'Regen image' : 'Generate image'}
         </button>
-        {scene.pendingJobId ? (
+        {scene.pendingRunId ? (
           <button
             type="button"
             className="inline-flex h-[34px] min-w-[34px] items-center justify-center gap-1.5 rounded-lg border border-[#b91c1c] bg-[#b91c1c] px-2.5 font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"

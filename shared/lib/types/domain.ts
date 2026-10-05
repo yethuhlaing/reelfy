@@ -43,7 +43,7 @@ export interface Scene extends ScenePlan {
    * Current animate Run id, hydrated from the server. In-flight only.
    * Not a tab-local handle — Story GET sets this from the kernel.
    */
-  pendingJobId?: string
+  pendingRunId?: string
   /** Set from a failed animate Run; survives reload because the Run is durable. */
   lastError?: string
   /** Run.createdAt, so the “stuck” timer survives refresh. */

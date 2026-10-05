@@ -6,12 +6,12 @@ import { AlertCircle, Loader2, Play, Clock } from 'lucide-react'
 
 interface Props {
   scene: Scene
-  jobStartedAt?: number
+  runStartedAt?: number
   onClick?: () => void
 }
 
-export function SceneStateBadge({ scene, jobStartedAt, onClick }: Props) {
-  const state = sceneState(scene, jobStartedAt)
+export function SceneStateBadge({ scene, runStartedAt, onClick }: Props) {
+  const state = sceneState(scene, runStartedAt)
 
   if (state === 'image' || state === 'skeleton') return null
 

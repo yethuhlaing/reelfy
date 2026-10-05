@@ -48,7 +48,7 @@ describe('applyAnimateRunToScene', () => {
   it('hydrates an in-flight Run as animating, not a tab-only pending id', () => {
     const hydrated = applyAnimateRunToScene(scene, run({ status: 'running' }))
 
-    assert.equal(hydrated.pendingJobId, 'run-1')
+    assert.equal(hydrated.pendingRunId, 'run-1')
     assert.equal(hydrated.lastError, undefined)
     assert.equal(hydrated.runCreatedAt, 1_700_000_000_000)
     assert.equal(hydrated.videoUrl, null)
@@ -60,7 +60,7 @@ describe('applyAnimateRunToScene', () => {
       run({ status: 'failed', error: 'fal is down', retryable: true }),
     )
 
-    assert.equal(hydrated.pendingJobId, undefined)
+    assert.equal(hydrated.pendingRunId, undefined)
     assert.equal(hydrated.lastError, 'fal is down')
   })
 
@@ -83,7 +83,7 @@ describe('applyAnimateRunToScene', () => {
       }),
     )
 
-    assert.equal(hydrated.pendingJobId, undefined)
+    assert.equal(hydrated.pendingRunId, undefined)
     assert.equal(hydrated.lastError, undefined)
     assert.equal(hydrated.videoUrl, 'https://cdn.test/clip.mp4')
   })
@@ -94,18 +94,18 @@ describe('applyAnimateRunToScene', () => {
       run({ status: 'aborted' }),
     )
 
-    assert.equal(hydrated.pendingJobId, undefined)
+    assert.equal(hydrated.pendingRunId, undefined)
     assert.equal(hydrated.lastError, undefined)
     assert.equal(hydrated.videoUrl, 'https://cdn.test/old.mp4')
   })
 
   it('clears tab-only fields when the Target has no Run', () => {
     const hydrated = applyAnimateRunToScene(
-      { ...scene, pendingJobId: 'stale', lastError: 'stale', runCreatedAt: 1 },
+      { ...scene, pendingRunId: 'stale', lastError: 'stale', runCreatedAt: 1 },
       null,
     )
 
-    assert.equal(hydrated.pendingJobId, undefined)
+    assert.equal(hydrated.pendingRunId, undefined)
     assert.equal(hydrated.lastError, undefined)
     assert.equal(hydrated.runCreatedAt, undefined)
   })

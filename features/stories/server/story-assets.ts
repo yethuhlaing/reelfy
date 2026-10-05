@@ -7,7 +7,6 @@ import {
   type StoredSceneRow,
   type StoredStoryRow,
 } from '@/features/stories/server/stories-db'
-import { deleteJobsForStory } from '@/shared/lib/jobs/store'
 import {
   deleteByKeys,
   deleteByPrefix,
@@ -265,8 +264,6 @@ export async function deleteStoryWithAssets(
   if (!result) {
     return { ok: false, error: 'Not found', summary: { deleted: 0, failed: 0 } }
   }
-
-  await deleteJobsForStory(storyId)
 
   const keySet = new Set(collectStoryAssetKeys(result.story, result.scenes))
   if (result.story.category === 'lofi' || result.story.category === 'lofi-stock') {

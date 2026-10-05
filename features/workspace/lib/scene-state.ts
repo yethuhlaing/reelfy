@@ -4,10 +4,10 @@ export type SceneRenderState = 'skeleton' | 'image' | 'animating' | 'video' | 'e
 
 const STALE_MS = 5 * 60 * 1000
 
-export function sceneState(scene: Scene, jobStartedAt?: number): SceneRenderState {
-  if (scene.lastError && !scene.pendingJobId) return 'error'
-  if (scene.pendingJobId) {
-    if (jobStartedAt && Date.now() - jobStartedAt > STALE_MS) return 'stuck'
+export function sceneState(scene: Scene, runStartedAt?: number): SceneRenderState {
+  if (scene.lastError && !scene.pendingRunId) return 'error'
+  if (scene.pendingRunId) {
+    if (runStartedAt && Date.now() - runStartedAt > STALE_MS) return 'stuck'
     return 'animating'
   }
   if (scene.videoUrl) return 'video'

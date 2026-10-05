@@ -15,7 +15,7 @@ interface SceneGridProps {
   onPlayScene?: (index: number) => void
   readOnly?: boolean
   skeletonCount?: number
-  jobStartedAt?: (sceneId: string) => number | undefined
+  runStartedAt?: (sceneId: string) => number | undefined
 }
 
 export function SceneGrid({
@@ -28,7 +28,7 @@ export function SceneGrid({
   onPlayScene,
   readOnly,
   skeletonCount = 0,
-  jobStartedAt,
+  runStartedAt,
 }: SceneGridProps) {
   const gridRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map())
@@ -55,7 +55,7 @@ export function SceneGrid({
             onRegenImage={onRegenImageScene ? () => onRegenImageScene(scene.id) : undefined}
             onPlay={onPlayScene ? () => onPlayScene(index) : undefined}
             readOnly={readOnly}
-            jobStartedAt={jobStartedAt?.(scene.id)}
+            runStartedAt={runStartedAt?.(scene.id)}
           />
         </div>
       ))}

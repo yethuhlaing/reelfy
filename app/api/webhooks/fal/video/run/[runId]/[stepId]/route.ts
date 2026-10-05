@@ -1,5 +1,5 @@
 import { after } from 'next/server'
-import { readFalHeaders, verifyFalWebhook } from '@/shared/lib/jobs/verify-fal'
+import { readFalHeaders, verifyFalWebhook } from '@/shared/lib/video-processing/verify-fal'
 import { createAnimateKernel } from '@/features/stories/server/animate-kernel'
 import { createStoryExportKernel } from '@/features/stories/server/story-export'
 import { createBrainrotExportKernel } from '@/features/brainrot/server/brainrot-export'

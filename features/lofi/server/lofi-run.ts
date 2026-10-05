@@ -150,7 +150,9 @@ async function publishLofiStatus(
  *
  * The page reads asset rows and the dashboard reads the video's status, so
  * neither can be left saying "generating" once the Run behind it is done. The
- * Redis publish is what stops a second tab sitting on a cancelled video.
+ * Redis publish alongside them is a progress hint for another tab, never the
+ * record: it expires, it is best-effort, and every reader here reconciles from
+ * the Run regardless of whether the key is still there.
  */
 async function mirrorRunToRows(run: Run): Promise<void> {
   if (run.target.kind !== 'lofiVideo') return

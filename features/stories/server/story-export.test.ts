@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import type { StoredSceneRow } from '@/features/stories/server/stories-db'
-import type { ExportSceneInput } from '@/shared/lib/jobs/types'
 import type { Run, TargetRef } from '@/shared/lib/video-processing/types'
 
 import {
   STORY_EXPORT_MODEL_ID,
+  type ExportSceneInput,
   buildExportTracksPayload,
   createStoryExportPlanner,
   createStoryExportSink,

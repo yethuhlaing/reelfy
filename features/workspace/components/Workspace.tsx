@@ -27,8 +27,7 @@ import type { StoryExportHydration } from '@/features/stories/lib/story-export-v
 import { notifications } from '@/shared/lib/notifications'
 import { shouldShowToastFor } from '@/shared/lib/utils'
 import { usePathname } from 'next/navigation'
-import { useJobPoller, type PendingJob } from '@/features/workspace/hooks/use-poller'
-import type { AnimateResult, Job } from '@/shared/lib/jobs/types'
+import { useRunPoller, type PendingRun } from '@/features/workspace/hooks/use-run-poller'
 import type { GenerateOptions, Stage, StageId, StoryData } from '@/shared/lib/types'
 import { storyHref } from '@/shared/lib/categories'
 
@@ -147,36 +146,35 @@ function WorkspaceInner({ storyId, category }: Props) {
     setStages((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
   }
 
-  const jobStartedAtRef = useRef<Map<string, number>>(new Map())
-  const pendingAnimateJobs: PendingJob[] = (storyData?.scenes ?? [])
-    .filter((s) => s.pendingJobId && s.pendingJobId !== 'pending')
+  const runStartedAtRef = useRef<Map<string, number>>(new Map())
+  const pendingAnimateRuns: PendingRun[] = (storyData?.scenes ?? [])
+    .filter((s) => s.pendingRunId && s.pendingRunId !== 'pending')
     .map((s) => {
-      const jobId = s.pendingJobId as string
-      const map = jobStartedAtRef.current
-      if (!map.has(jobId)) map.set(jobId, Date.now())
-      return { jobId, startedAt: map.get(jobId) as number }
+      const runId = s.pendingRunId as string
+      const map = runStartedAtRef.current
+      if (!map.has(runId)) map.set(runId, Date.now())
+      return { runId, startedAt: map.get(runId) as number }
     })
 
-  const sceneByJobId = (jobId: string): string | null => {
-    const scene = storyData?.scenes.find((s) => s.pendingJobId === jobId)
+  const sceneByRunId = (runId: string): string | null => {
+    const scene = storyData?.scenes.find((s) => s.pendingRunId === runId)
     return scene?.id ?? null
   }
 
-  useJobPoller({
-    pending: pendingAnimateJobs,
+  useRunPoller({
+    pending: pendingAnimateRuns,
     path: videoRunPath,
-    onCompleted: (jobId, job: Job) => {
-      const sid = sceneByJobId(jobId)
+    onCompleted: (runId, videoUrl) => {
+      const sid = sceneByRunId(runId)
       if (!sid) return
-      const result = job.result as AnimateResult | undefined
-      if (!result?.videoUrl) return
+      if (!videoUrl) return
       setStoryData((prev) =>
         prev
           ? {
               ...prev,
               scenes: prev.scenes.map((s) =>
                 s.id === sid
-                  ? { ...s, videoUrl: result.videoUrl, pendingJobId: undefined, lastError: undefined, runCreatedAt: undefined }
+                  ? { ...s, videoUrl, pendingRunId: undefined, lastError: undefined, runCreatedAt: undefined }
                   : s,
               ),
             }
@@ -195,8 +193,8 @@ function WorkspaceInner({ storyId, category }: Props) {
         toast.success(`Scene ${idx + 1} animated`, { action: { label: 'Open', onClick: () => router.push(link) } })
       }
     },
-    onFailed: (jobId, error) => {
-      const sid = sceneByJobId(jobId)
+    onFailed: (runId, error) => {
+      const sid = sceneByRunId(runId)
       if (!sid) return
       setStoryData((prev) =>
         prev
@@ -204,7 +202,7 @@ function WorkspaceInner({ storyId, category }: Props) {
               ...prev,
               scenes: prev.scenes.map((s) =>
                 s.id === sid
-                  ? { ...s, pendingJobId: undefined, lastError: error || undefined, runCreatedAt: undefined }
+                  ? { ...s, pendingRunId: undefined, lastError: error || undefined, runCreatedAt: undefined }
                   : s,
               ),
             }
@@ -548,7 +546,7 @@ function WorkspaceInner({ storyId, category }: Props) {
     if (!storyData) return
     const scene = storyData.scenes.find((s) => s.id === sceneId)
     if (!scene) return
-    if (scene.pendingJobId) {
+    if (scene.pendingRunId) {
       toast.message('This scene is already animating')
       return
     }
@@ -560,7 +558,7 @@ function WorkspaceInner({ storyId, category }: Props) {
       toast.error('Add a motion prompt', { description: 'Describe movement in the scene drawer.' })
       return
     }
-    patchScene(sceneId, { lastError: undefined, pendingJobId: 'pending' })
+    patchScene(sceneId, { lastError: undefined, pendingRunId: 'pending' })
     try {
       const res = await fetch('/api/animate', {
         method: 'POST',
@@ -569,7 +567,7 @@ function WorkspaceInner({ storyId, category }: Props) {
       })
       if (res.status === 402) {
         const d = (await res.json().catch(() => ({}))) as { balance?: number; required?: number }
-        patchScene(sceneId, { pendingJobId: undefined, lastError: undefined })
+        patchScene(sceneId, { pendingRunId: undefined, lastError: undefined })
         toast.error('Not enough credits', {
           description: `Need ${d.required ?? '?'} credits (balance: ${d.balance ?? 0})`,
         })
@@ -577,24 +575,24 @@ function WorkspaceInner({ storyId, category }: Props) {
       }
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
-        patchScene(sceneId, { pendingJobId: undefined, lastError: d.error ?? `HTTP ${res.status}` })
+        patchScene(sceneId, { pendingRunId: undefined, lastError: d.error ?? `HTTP ${res.status}` })
         return
       }
       const data = (await res.json()) as { runId: string; status: string; error?: string }
       if (data.status === 'failed') {
-        patchScene(sceneId, { pendingJobId: undefined, lastError: data.error ?? 'Animation failed' })
+        patchScene(sceneId, { pendingRunId: undefined, lastError: data.error ?? 'Animation failed' })
         return
       }
-      patchScene(sceneId, { pendingJobId: data.runId, lastError: undefined, runCreatedAt: Date.now() })
+      patchScene(sceneId, { pendingRunId: data.runId, lastError: undefined, runCreatedAt: Date.now() })
     } catch (err) {
-      patchScene(sceneId, { pendingJobId: undefined, lastError: err instanceof Error ? err.message : 'Enqueue failed' })
+      patchScene(sceneId, { pendingRunId: undefined, lastError: err instanceof Error ? err.message : 'Enqueue failed' })
     }
   }
 
   const cancelAnimate = async (sceneId: string) => {
     const scene = storyData?.scenes.find((s) => s.id === sceneId)
-    if (!scene?.pendingJobId) return
-    patchScene(sceneId, { pendingJobId: undefined, lastError: undefined, runCreatedAt: undefined })
+    if (!scene?.pendingRunId) return
+    patchScene(sceneId, { pendingRunId: undefined, lastError: undefined, runCreatedAt: undefined })
     try {
       const res = await fetch('/api/animate/cancel', {
         method: 'POST',
@@ -604,11 +602,11 @@ function WorkspaceInner({ storyId, category }: Props) {
       if (!res.ok) {
         const d = (await res.json().catch(() => ({}))) as { error?: string }
         toast.error('Could not stop', { description: d.error ?? `HTTP ${res.status}` })
-        patchScene(sceneId, { pendingJobId: scene.pendingJobId, runCreatedAt: scene.runCreatedAt })
+        patchScene(sceneId, { pendingRunId: scene.pendingRunId, runCreatedAt: scene.runCreatedAt })
       }
     } catch (err) {
       toast.error('Could not stop', { description: err instanceof Error ? err.message : 'Try again' })
-      patchScene(sceneId, { pendingJobId: scene.pendingJobId, runCreatedAt: scene.runCreatedAt })
+      patchScene(sceneId, { pendingRunId: scene.pendingRunId, runCreatedAt: scene.runCreatedAt })
     }
   }
 
@@ -669,7 +667,7 @@ function WorkspaceInner({ storyId, category }: Props) {
   const retryImage = async (sceneId: string) => {
     const scene = storyData?.scenes.find((s) => s.id === sceneId)
     if (!scene) return
-    if (scene.pendingJobId) {
+    if (scene.pendingRunId) {
       toast.message('Wait for the current animation to finish')
       return
     }
@@ -677,7 +675,7 @@ function WorkspaceInner({ storyId, category }: Props) {
       toast.error('Add an image prompt', { description: 'Describe the still frame in the scene drawer.' })
       return
     }
-    patchScene(sceneId, { imageUrl: null, videoUrl: null, lastError: undefined, pendingJobId: undefined })
+    patchScene(sceneId, { imageUrl: null, videoUrl: null, lastError: undefined, pendingRunId: undefined })
     try {
       const res = await fetch('/api/scene/regen-image', {
         method: 'POST',
@@ -705,7 +703,7 @@ function WorkspaceInner({ storyId, category }: Props) {
 
   const animateAll = async () => {
     if (!storyData) return
-    const scenes = storyData.scenes.filter((s) => s.imageUrl && s.motionPrompt && !s.videoUrl && !s.pendingJobId)
+    const scenes = storyData.scenes.filter((s) => s.imageUrl && s.motionPrompt && !s.videoUrl && !s.pendingRunId)
     await Promise.allSettled(scenes.map((s) => enqueueAnimate(s.id)))
   }
 
@@ -910,11 +908,11 @@ function WorkspaceInner({ storyId, category }: Props) {
               skeletonCount={
                 isGenerating && options ? Number.parseInt(options.density, 10) || 0 : 0
               }
-              jobStartedAt={(sid) => {
+              runStartedAt={(sid) => {
                 const s = storyData?.scenes.find((x) => x.id === sid)
                 if (s?.runCreatedAt) return s.runCreatedAt
-                const jid = s?.pendingJobId
-                return jid && jid !== 'pending' ? jobStartedAtRef.current.get(jid) : undefined
+                const rid = s?.pendingRunId
+                return rid && rid !== 'pending' ? runStartedAtRef.current.get(rid) : undefined
               }}
             />
           )

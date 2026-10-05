@@ -23,7 +23,7 @@ export function deriveWorkspaceActions(
 ): WorkspaceActions {
   const scenes = storyData?.scenes ?? []
   const animatable = scenes.filter((s) => s.imageUrl && s.motionPrompt && !s.videoUrl)
-  const pending = scenes.filter((s) => !!s.pendingJobId)
+  const pending = scenes.filter((s) => !!s.pendingRunId)
   const done = scenes.filter((s) => !!s.videoUrl).length
   const total = scenes.filter((s) => s.imageUrl && s.motionPrompt).length
   const anyVideoReady = scenes.some((s) => !!s.videoUrl)
